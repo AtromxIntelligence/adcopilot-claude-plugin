@@ -1,0 +1,174 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      ablation:
+        description: "Also run the tools-only ablation (about the suite's cost again)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    # Structure only. `claude plugin validate` checks one manifest per call and,
+    # in CLI 2.1.280, does not list skills at all — so this job proves the
+    # manifests parse, not that a skill loads. The eval job is what proves that.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Claude Code
+        run: |
+          curl -fsSL https://claude.ai/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - run: claude --version
+      - name: Marketplace manifest
+        run: claude plugin validate . --strict
+      - name: Plugin manifest
+        run: claude plugin validate .claude-plugin/plugin.json --strict
+      - name: Skills and commands
+        run: |
+          claude plugin validate skills --strict
+          claude plugin validate commands --strict
+      - name: Fixture bodies are JSON
+        run: |
+          python3 - <<'PY'
+          import glob, json, sys
+          bad = []
+          for p in glob.glob("evals/**/mocks/adcopilot/*.md", recursive=True):
+              head, body = open(p).read().split("---", 2)[1:]
+              if "type: agent" in head or "error: true" in head:
+                  continue
+              try:
+                  json.loads(body.replace("{{input.property}}", "x").replace("{{input.account}}", "x")
+                              .replace("{{input.event_name}}", "x").replace("{{input.display_name}}", "x")
+                              .replace("{{input.name}}", "x").replace("{{input.type}}", "x").replace("{{input.category}}", "x"))
+              except Exception as e:
+                  bad.append(f"{p}: {e}")
+          json.load(open("evals/mocks/adcopilot/_tools.json"))
+          print("\n".join(bad) or "all fixture bodies parse")
+          sys.exit(1 if bad else 0)
+          PY
+
+  eval:
+    # The behaviour gate. Needs ANTHROPIC_API_KEY in repository secrets; without
+    # it this job says so in the run summary and stops, so a green run without
+    # the secret is never mistaken for a passing suite.
+    needs: validate
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Is a credential configured?
+        id: cred
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "## Eval suite: NOT RUN"
+              echo
+              echo "No \`ANTHROPIC_API_KEY\` in this repository's secrets, so only \`claude plugin validate\` ran."
+              echo "The behaviour gate (every case at or above 0.8) has **not** been checked on this commit."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install Claude Code
+        if: steps.cred.outputs.configured == 'true'
+        run: |
+          curl -fsSL https://claude.ai/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Run the suite
+        if: steps.cred.outputs.configured == 'true'
+        # Threshold 0.8, never 1.0: every case measured sits at 0.81-0.93 with
+        # one dissenting judge vote, so 1.0 flaps on correct work. The judge is
+        # pinned to sonnet, which was steadier than the default on the launch
+        # rubrics. --ablation none: the harness's own baseline removes the
+        # connector with the plugin and measures nothing about the skills; the
+        # honest delta is the ablation job below.
+        run: |
+          claude plugin eval . \
+            --trust-plugin \
+            --ablation none \
+            --threshold 0.8 \
+            --judge-model sonnet \
+            --concurrency 2 \
+            --max-cost-usd 20 \
+            --no-publish \
+            --json eval-results.json \
+            --report eval-report.html
+      - name: Summarise
+        if: always() && steps.cred.outputs.configured == 'true'
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, os
+          if not os.path.exists("eval-results.json"):
+              print("## Eval suite: no result file (the run did not start)"); raise SystemExit
+          d = json.load(open("eval-results.json"))
+          a = d["aggregates"]
+          print(f"## Eval suite: {a['casesPassed']}/{a['casesTotal']} cases at or above 0.8 (suite score {a['overallScore']:.3f}, ${d.get('costUsd', 0):.2f}{', PARTIAL' if d.get('partial') else ''})")
+          print()
+          print("| Case | Score | Failing grader (worst run) |")
+          print("|---|---|---|")
+          for c in d["cases"]:
+              runs = c["arms"].get("with") or []
+              note = ""
+              worst = min(runs, key=lambda r: r["score"], default=None)
+              if worst:
+                  note = worst.get("error") or "; ".join(g["name"] for g in worst.get("graders", []) if g.get("scored") and not g.get("passed"))
+              print(f"| {c['name']} | {c['aggregates']['score']:.3f} | {note} |")
+          PY
+      - name: Keep the result and report
+        if: always() && steps.cred.outputs.configured == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: |
+            eval-results.json
+            eval-report.html
+          if-no-files-found: ignore
+
+  ablation:
+    # The tools-only ablation, on demand: the same suite against a copy of the
+    # plugin whose skills are reduced to their frontmatter, and the delta per
+    # skill. This is the number the spec gates a skill's existence on.
+    if: github.event_name == 'workflow_dispatch' && inputs.ablation
+    needs: eval
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Claude Code
+        run: |
+          curl -fsSL https://claude.ai/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Fetch the with-skills result from the eval job
+        uses: actions/download-artifact@v4
+        with:
+          name: eval-results
+          path: with
+      - name: Tools-only arm and delta
+        env:
+          ABLATION_OUT: ablation-out
+          ABLATION_WITH_JSON: with/eval-results.json
+          ABLATION_JUDGE_MODEL: sonnet
+          ABLATION_CONCURRENCY: "2"
+          ABLATION_MAX_COST_USD: "20"
+        run: evals/ablation/tools-only.sh
+      - name: Summarise
+        if: always()
+        run: |
+          if [ -f ablation-out/delta.md ]; then cat ablation-out/delta.md >> "$GITHUB_STEP_SUMMARY"; else echo "## Ablation: no delta table (the tools-only arm did not finish)" >> "$GITHUB_STEP_SUMMARY"; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ablation-results
+          path: ablation-out
+          if-no-files-found: ignore
