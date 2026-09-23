@@ -19,7 +19,7 @@
 #         ABLATION_CONCURRENCY   -j for claude plugin eval (default 3)
 #         ABLATION_MAX_COST_USD  --max-cost-usd per arm (default 15)
 #         ABLATION_WORKDIR       where the tools-only copy is built (default: a temp dir, removed afterwards)
-#         ABLATION_FAIL_BELOW    exit 1 if any skill's delta over its own cases is below this (default: report only)
+#         ABLATION_FAIL_BELOW    exit 1 if any skill's delta over its own cases — the mean OR the minimum — is below this (default: report only; CI sets 0.05)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -41,6 +41,7 @@ mkdir -p "$OUT" "$COPY"
 
 command -v claude >/dev/null || { echo "claude is not on PATH" >&2; exit 1; }
 command -v python3 >/dev/null || { echo "python3 is not on PATH" >&2; exit 1; }
+command -v rsync >/dev/null || { echo "rsync is not on PATH" >&2; exit 1; }
 
 # 1. The tools-only copy: everything the plugin ships except the skill bodies.
 rsync -a --exclude .git --exclude 'evals/results' "$ROOT/" "$COPY/"
@@ -70,8 +71,12 @@ fi
 # 4. The delta.
 DELTA_ARGS=(--markdown)
 [ -n "$FAIL_BELOW" ] && DELTA_ARGS+=(--fail-below "$FAIL_BELOW")
-python3 "$ROOT/evals/ablation/delta.py" "$OUT/with-skills.json" "$OUT/tools-only.json" "${DELTA_ARGS[@]}" | tee "$OUT/delta.md"
-status=$?
+# Under set -e a failing pipeline would end the script here; take the gate's verdict explicitly.
+if python3 "$ROOT/evals/ablation/delta.py" "$OUT/with-skills.json" "$OUT/tools-only.json" "${DELTA_ARGS[@]}" | tee "$OUT/delta.md"; then
+  status=0
+else
+  status=1
+fi
 echo "results in $OUT"
 [ "$CLEAN" = 1 ] && rm -rf "$WORK"
 exit $status

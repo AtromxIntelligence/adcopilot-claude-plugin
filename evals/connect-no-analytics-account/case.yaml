@@ -18,6 +18,7 @@ graders:
   - name: names-the-human-step
     type: llm
     focus: trace
+    weight: 2
     criteria: |
       Judge the whole run: the tool calls and the final reply. The server reported Analytics connected with no property. Listing Analytics accounts returns none, and the property-create tool refuses because no Analytics account exists for this login.
 

@@ -14,6 +14,12 @@ on:
 permissions:
   contents: read
 
+env:
+  # The CLI is the thing under test as much as the plugin: `plugin eval`'s flags, scoring and
+  # sandbox change between releases, and a release could turn this gate red or green with no
+  # commit. Pinned to the version the suite was calibrated on; bump it on purpose, with a run.
+  CLAUDE_CODE_VERSION: "2.1.280"
+
 jobs:
   validate:
     # Structure only. `claude plugin validate` checks one manifest per call and,
@@ -22,11 +28,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Claude Code
+      - name: Install Claude Code (pinned)
         run: |
-          curl -fsSL https://claude.ai/install.sh | bash
+          curl -fsSL https://claude.ai/install.sh | bash -s -- "$CLAUDE_CODE_VERSION"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-      - run: claude --version
+      - name: CLI version
+        run: |
+          claude --version
+          echo "validate ran on Claude Code $(claude --version)" >> "$GITHUB_STEP_SUMMARY"
       - name: Marketplace manifest
         run: claude plugin validate . --strict
       - name: Plugin manifest
@@ -38,16 +47,14 @@ jobs:
       - name: Fixture bodies are JSON
         run: |
           python3 - <<'PY'
-          import glob, json, sys
+          import glob, json, re, sys
           bad = []
           for p in glob.glob("evals/**/mocks/adcopilot/*.md", recursive=True):
               head, body = open(p).read().split("---", 2)[1:]
               if "type: agent" in head or "error: true" in head:
                   continue
               try:
-                  json.loads(body.replace("{{input.property}}", "x").replace("{{input.account}}", "x")
-                              .replace("{{input.event_name}}", "x").replace("{{input.display_name}}", "x")
-                              .replace("{{input.name}}", "x").replace("{{input.type}}", "x").replace("{{input.category}}", "x"))
+                  json.loads(re.sub(r"\{\{input\.[a-z_]+\}\}", "x", body))
               except Exception as e:
                   bad.append(f"{p}: {e}")
           json.load(open("evals/mocks/adcopilot/_tools.json"))
@@ -79,20 +86,25 @@ jobs:
           else
             echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
-      - name: Install Claude Code
+      - name: Install Claude Code (pinned)
         if: steps.cred.outputs.configured == 'true'
         run: |
-          curl -fsSL https://claude.ai/install.sh | bash
+          curl -fsSL https://claude.ai/install.sh | bash -s -- "$CLAUDE_CODE_VERSION"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Run the suite
         if: steps.cred.outputs.configured == 'true'
         # Threshold 0.8, never 1.0: every case measured sits at 0.81-0.93 with
-        # one dissenting judge vote, so 1.0 flaps on correct work. The judge is
-        # pinned to sonnet, which was steadier than the default on the launch
-        # rubrics. --ablation none: the harness's own baseline removes the
-        # connector with the plugin and measures nothing about the skills; the
-        # honest delta is the ablation job below.
+        # one dissenting judge vote, so 1.0 flaps on correct work. What makes
+        # 0.8 bite is the WEIGHTS: every meaning rubric weighs 2 (3 for the
+        # skill-carried half of measure-import-trap), so a run whose rubrics
+        # all fail lands at 0.62-0.75 — below the gate — while its process
+        # graders still pass. The judge is pinned to sonnet, which was
+        # steadier than the default on the launch rubrics. --ablation none:
+        # the harness's own baseline removes the connector with the plugin and
+        # measures nothing about the skills; the honest delta is the ablation
+        # job below.
         run: |
+          echo "eval ran on Claude Code $(claude --version), judge sonnet" >> "$GITHUB_STEP_SUMMARY"
           claude plugin eval . \
             --trust-plugin \
             --ablation none \
@@ -137,7 +149,12 @@ jobs:
   ablation:
     # The tools-only ablation, on demand: the same suite against a copy of the
     # plugin whose skills are reduced to their frontmatter, and the delta per
-    # skill. This is the number the spec gates a skill's existence on.
+    # skill. This is the number the spec gates a skill's existence on, and the
+    # job is RED — and the release blocked — when any skill's owned delta, mean
+    # or minimum, is below ABLATION_FAIL_BELOW. 0.05 is the smallest delta that
+    # cannot be judge noise in one direction: one judge flip on one run of a
+    # three-run case moves a case score by about 0.11, so 0.05 means at least
+    # one run went the skill's way and none went against it.
     if: github.event_name == 'workflow_dispatch' && inputs.ablation
     needs: eval
     runs-on: ubuntu-latest
@@ -145,29 +162,48 @@ jobs:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - uses: actions/checkout@v4
-      - name: Install Claude Code
+      - name: Is a credential configured?
+        id: cred
         run: |
-          curl -fsSL https://claude.ai/install.sh | bash
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "## Ablation: NOT RUN"
+              echo
+              echo "No \`ANTHROPIC_API_KEY\` in this repository's secrets, so neither the eval suite nor the tools-only arm ran."
+              echo "No skill's delta has been measured on this commit."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install Claude Code (pinned)
+        if: steps.cred.outputs.configured == 'true'
+        run: |
+          curl -fsSL https://claude.ai/install.sh | bash -s -- "$CLAUDE_CODE_VERSION"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "ablation ran on Claude Code $("$HOME/.local/bin/claude" --version), judge sonnet, gate 0.05" >> "$GITHUB_STEP_SUMMARY"
       - name: Fetch the with-skills result from the eval job
+        if: steps.cred.outputs.configured == 'true'
         uses: actions/download-artifact@v4
         with:
           name: eval-results
           path: with
       - name: Tools-only arm and delta
+        if: steps.cred.outputs.configured == 'true'
         env:
           ABLATION_OUT: ablation-out
           ABLATION_WITH_JSON: with/eval-results.json
           ABLATION_JUDGE_MODEL: sonnet
           ABLATION_CONCURRENCY: "2"
           ABLATION_MAX_COST_USD: "20"
+          ABLATION_FAIL_BELOW: "0.05"
         run: evals/ablation/tools-only.sh
       - name: Summarise
-        if: always()
+        if: always() && steps.cred.outputs.configured == 'true'
         run: |
           if [ -f ablation-out/delta.md ]; then cat ablation-out/delta.md >> "$GITHUB_STEP_SUMMARY"; else echo "## Ablation: no delta table (the tools-only arm did not finish)" >> "$GITHUB_STEP_SUMMARY"; fi
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.cred.outputs.configured == 'true'
         with:
           name: ablation-results
           path: ablation-out

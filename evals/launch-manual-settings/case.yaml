@@ -18,8 +18,8 @@ description: >
   Google's names for the four settings, the field strings of a settings
   read-back, the auto-apply read, a status change, a pause, raw fields. Meaning
   is split across three short rubrics so that each verdict rests on a few
-  facts; the two on the three settings weigh half each, so together they
-  count as one.
+  facts; the two on the three settings weigh one each and the auto-apply
+  rubric two, so a run with every rubric dead lands below the 0.8 gate.
 tags: [launch]
 runs: 3
 execution:
@@ -71,7 +71,7 @@ graders:
   - name: settings-read-back-and-right
     type: llm
     focus: last_message
-    weight: 0.5
+    weight: 1
     criteria: |
       The customer's first Search campaign is paused and they asked what to do before switching it on. Reading the campaign back showed Search partners off, the Display Network off, and location targeting set to Presence (people in the targeted places). Whether that read was actually made is checked separately from the calls; judge the reply's meaning only, as someone who has never opened Google Ads.
 
@@ -85,16 +85,17 @@ graders:
   - name: settings-each-with-a-consequence
     type: llm
     focus: last_message
-    weight: 0.5
+    weight: 1
     criteria: |
       The customer's first Search campaign is paused and they asked what to do before switching it on. Reading the campaign back showed Search partners off, the Display Network off, and location targeting set to Presence (people in the targeted places). Judge the reply's meaning only, as someone who has never opened Google Ads.
 
-      PASS only if, for each of the three settings — Search partners, the Display Network, and location targeting (Presence) — the reply attaches a concrete consequence in money or people. Either form counts: what being on would cost, or what being off protects. For example, for Search partners: other sites' search boxes where clicks are cheaper but worse, or "your budget is spent on Google's own results only"; for the Display Network: banner placements on sites nobody asked for, or "none of your budget goes on banner ads"; for Presence: people outside the places named, or "only people actually in Brooklyn, not people elsewhere who searched about it". Paraphrase, a short list, or a table with one line per setting all count, as long as each setting has its own consequence.
+      PASS only if, for each of the three settings — Search partners, the Display Network, and location targeting (Presence) — the reply attaches a concrete consequence in money or people. Either form counts: what being on would cost, or what being off protects. For example, for Search partners: other sites' search boxes where clicks are cheaper but worse, or "your budget is spent on Google's own results only"; for the Display Network: banner placements on sites nobody asked for, or "none of your budget goes on banner ads"; for Presence: people outside the places named, or "only people actually in Brooklyn, not people elsewhere who searched about it". Paraphrase, a short list, or a table with one line per setting all count; so does one sentence that carries the consequence for more than one setting ("neither partner search boxes nor banner placements get any of your budget"), as long as the consequence is concrete for each of the three.
 
       FAIL if any one of the three has no consequence attached, or if its only justification is "best practice", "recommended", "standard" or "correct" with nothing about money or people.
   - name: auto-apply-switch-and-money
     type: llm
     focus: last_message
+    weight: 2
     criteria: |
       The customer's first Search campaign is paused and they asked what to do before switching it on. Reading auto-apply showed one type switched on that the connector can pause — "Use broad match keywords" — plus a list of types that only the Google Ads screens can see or change. The daily budget read back is $20, the customer's own number. Asking the customer to confirm anything before switching on, including a $1.50 per-click bid, is right, not a fault. Whether anything was written without a yes is checked separately from the calls; judge the reply's meaning only, as someone who has never opened Google Ads.
 

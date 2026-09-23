@@ -49,11 +49,11 @@ Together with the connector registration above, the commands and skills above ar
 
 ## AdCopilot version
 
-Written against AdCopilot **v2.14.1** (connector tools revision `e9328870`, snapshot taken 2026-09-23). `/adcopilot:audit` relies on the `tools_revision` that `get_org_context` reports from v2.14.1 on, to refresh a stale tool description in-conversation.
+Written against AdCopilot **v2.14.1**. The tool snapshot the eval suite mocks against (`evals/mocks/adcopilot/_tools.json`) is frozen at connector tools revision `0066a60e`, taken 2026-09-23; the live revision moves independently of this plugin, and a difference between the two is not a fault. `/adcopilot:audit` relies on the `tools_revision` that `get_org_context` reports from v2.14.1 on, to refresh a stale tool description in-conversation.
 
 ## Evals, and how a skill earns its place
 
-The suite in `evals/` runs with `claude plugin eval . --trust-plugin --threshold 0.8`, which is what CI runs on every push. The harness's own with/without comparison removes the whole plugin — connector included — so it cannot say what a skill adds; `evals/ablation/tools-only.sh` runs the same cases against a copy of the plugin whose skills are cut to their frontmatter and prints each skill's delta over that tools-only arm. A skill whose cases show no delta there is deleted, not kept. Fixtures under `evals/**/mocks/` are a fictional tenant: the field names follow the live connector's answers and every value is invented.
+The suite in `evals/` runs with `claude plugin eval . --trust-plugin --threshold 0.8`, which is what CI runs on every push. The harness's own with/without comparison removes the whole plugin — connector included — so it cannot say what a skill adds; `evals/ablation/tools-only.sh` runs the same cases against a copy of the plugin whose skills are cut to their frontmatter and prints each skill's delta over that tools-only arm. A skill whose cases show no delta there is deleted, not kept; the gate reads on each skill's weakest case as well as its mean, so one strong case cannot carry a dead one. Fixtures under `evals/**/mocks/` are a fictional tenant: the field names follow the live connector's answers and every value is invented.
 
 ## Releasing
 
@@ -64,7 +64,7 @@ Before a version tag is pushed, in a fresh Claude Code — a profile with no han
 3. `/mcp` — choose `adcopilot` and sign in with the Google account that owns the ad account.
 4. `/adcopilot:setup` on a real account: it reports what is connected, in prose, and one next step.
 5. `/adcopilot:audit` on the same account: the full audit and this month's pacing, with newness kept out of the findings.
-6. `claude plugin validate . --strict` and `claude plugin validate .claude-plugin/plugin.json --strict` both pass; the suite passes at 0.8; every skill's delta in `evals/ablation/tools-only.sh` is positive.
+6. `claude plugin validate . --strict` and `claude plugin validate .claude-plugin/plugin.json --strict` both pass; the suite passes at 0.8; the tools-only ablation is green — every skill's delta over the connector alone, on its mean and on its weakest case, is at least 0.05 (`ABLATION_FAIL_BELOW=0.05 evals/ablation/tools-only.sh`, or the CI workflow dispatched with `ablation: true`). A red ablation blocks the tag: the skill it names is fixed or deleted first.
 7. Record the AdCopilot version and `tools_revision` the steps above ran against, in the release notes and in the section above.
 
 ## Licence

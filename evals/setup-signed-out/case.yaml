@@ -38,6 +38,7 @@ graders:
   - name: sign-in-once-and-stop
     type: llm
     focus: last_message
+    weight: 2
     criteria: |
       The customer ran /adcopilot:setup. The only connector tool available answered its call with an error saying the server needs the user to sign in again. Nothing about the account was read. Judge the reply's meaning only, as someone who first opened a terminal this week.
 

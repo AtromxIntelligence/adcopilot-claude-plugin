@@ -8,7 +8,7 @@ belongs to the skill its `tool_used: Skill` grader names (the skill that fired),
 and is OWNED by the skill whose tag it carries (connect, measure, launch); the
 setup-* cases are the setup command's and fire adcopilot-connect, so they count
 towards "fired" but not "owned". The deletion rule in the spec reads on owned.
-With --fail-below, exit 1 when any skill's owned delta is below X.
+With --fail-below X, exit 1 when any skill's owned delta — its mean OR its minimum — is below X.
 """
 import argparse
 import json
@@ -95,27 +95,37 @@ def main():
 
     skills = sorted({r[1] for r in rows if r[1] != "-"} | {r[2] for r in rows if r[2] != "-"})
     print()
-    print("| Skill | Owned cases | Owned delta (mean) | Min owned delta | Cases that fire it | Fired delta (mean) |")
-    print("|---|---|---|---|---|---|")
-    worst = {}
+    print("| Skill | Owned cases | Owned delta (mean) | Min owned delta | Cases that fire it | Fired delta (mean) | Verdict |")
+    print("|---|---|---|---|---|---|---|")
+    bad = []
     for s in skills:
         owned = [r for r in rows if r[1] == s]
         fired = [r for r in rows if r[2] == s]
         om = sum(r[5] for r in owned) / len(owned) if owned else float("nan")
         omin = min((r[5] for r in owned), default=float("nan"))
         fm = sum(r[5] for r in fired) / len(fired) if fired else float("nan")
-        worst[s] = om
-        print(f"| {s} | {len(owned)} | {om:+.3f} | {omin:+.3f} | {len(fired)} | {fm:+.3f} |")
+        # The gate reads on BOTH the mean and the minimum of the owned cases: one strong case must
+        # not carry a dead one. Without --fail-below the verdict still names a skill with no delta.
+        if a.fail_below is None:
+            verdict = "NO DELTA on a case" if not (omin > 0) else "ok"
+        else:
+            reasons = []
+            if not (om >= a.fail_below):
+                reasons.append(f"mean {om:+.3f} < {a.fail_below:+.3f}")
+            if not (omin >= a.fail_below):
+                reasons.append(f"min {omin:+.3f} < {a.fail_below:+.3f}")
+            verdict = "FAIL: " + "; ".join(reasons) if reasons else "ok"
+            if reasons:
+                bad.append(s)
+        print(f"| {s} | {len(owned)} | {om:+.3f} | {omin:+.3f} | {len(fired)} | {fm:+.3f} | {verdict} |")
 
     print()
-    print("A skill with no positive owned delta has not earned its place: the connector's own playbook and tool descriptions already carry what its cases measure.")
+    print("A skill with no positive owned delta has not earned its place: the connector's own playbook and tool descriptions already carry what its cases measure. The gate reads on the minimum as well as the mean, so one strong case cannot carry a dead one.")
 
-    if a.fail_below is not None:
-        bad = [s for s, v in worst.items() if not (v >= a.fail_below)]
-        if bad:
-            print()
-            print(f"FAIL: owned delta below {a.fail_below:+.3f} for: " + ", ".join(bad))
-            sys.exit(1)
+    if a.fail_below is not None and bad:
+        print()
+        print(f"FAIL: owned delta (mean or minimum) below {a.fail_below:+.3f} for: " + ", ".join(bad))
+        sys.exit(1)
 
 
 if __name__ == "__main__":

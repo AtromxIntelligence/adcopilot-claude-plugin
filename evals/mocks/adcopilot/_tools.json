@@ -2,153 +2,1206 @@
   "tools": [
     {
       "name": "get_org_context",
-      "description": "Returns this workspace's AdCopilot context: which Google products are connected, the enabled Google Ads accounts (name, currency, time zone), whether campaigns and conversion tracking exist, the saved business profile, the onboarding stage, plan limits, and a `situation` code with a suggested `next_step`, a `playbook`, and `cross_reads` — reads outside Google Ads with their arguments. Also returns `tools_revision`, the revision this connection's tool descriptions end with; given `tools`, returns only those tools' current descriptions and input schemas. Read-only; changes nothing.",
-      "inputSchema": {"properties":{"refresh":{"default":false,"title":"Refresh","type":"boolean"},"tools":{"anyOf":[{"items":{"type":"string"},"type":"array"},{"type":"null"}],"default":null,"description":"Tool names (at most 10) whose current description and input schema to return instead of the context.","title":"Tools"}},"title":"get_org_contextArguments","type":"object"}
+      "description": "Returns this workspace's AdCopilot context: which Google products are connected, the enabled Google Ads accounts (name, currency, time zone), whether campaigns and conversion tracking exist, the saved business profile, the onboarding stage, plan limits, and a `situation` code with a suggested `next_step`, a `playbook`, and `cross_reads` — reads outside Google Ads with their arguments. Also returns `tools_revision`, the revision this connection's tool descriptions end with; given `tools`, returns only those tools' current descriptions and input schemas. Read-only; changes nothing.\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "refresh": {
+            "default": false,
+            "title": "Refresh",
+            "type": "boolean"
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Tool names (at most 10) whose current description and input schema to return instead of the context.",
+            "title": "Tools"
+          }
+        },
+        "title": "get_org_contextArguments",
+        "type": "object"
+      }
     },
     {
       "name": "ga4_list_account_summaries",
-      "description": "List GA4 accounts and their properties this Google login can reach.",
-      "inputSchema": {"properties":{"page_size":{"default":200,"title":"Page Size","type":"integer"}},"title":"ga4_list_account_summariesArguments","type":"object"}
+      "description": "List GA4 accounts and their properties this Google login can reach.\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "page_size": {
+            "default": 200,
+            "title": "Page Size",
+            "type": "integer"
+          }
+        },
+        "title": "ga4_list_account_summariesArguments",
+        "type": "object"
+      }
     },
     {
       "name": "ga4_list_properties",
-      "description": "List GA4 properties under an account (accounts/<id>).",
-      "inputSchema": {"properties":{"account":{"title":"Account","type":"string"}},"required":["account"],"title":"ga4_list_propertiesArguments","type":"object"}
+      "description": "List GA4 properties under an account (accounts/<id>).\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "account": {
+            "title": "Account",
+            "type": "string"
+          }
+        },
+        "required": [
+          "account"
+        ],
+        "title": "ga4_list_propertiesArguments",
+        "type": "object"
+      }
     },
     {
       "name": "ga4_create_property",
-      "description": "Create a GA4 property under an Analytics account (accounts/<id>).\n\n    Use the Google Ads account's time zone and currency — get_org_context\n    carries them as the Analytics card's property_defaults; if it has none,\n    ask the user. time_zone is an IANA name (e.g. \"Asia/Kolkata\"),\n    currency_code ISO 4217 (e.g. \"INR\"). Next: ga4_create_data_stream on the\n    returned property for the website, which gives the measurement ID.",
-      "inputSchema": {"properties":{"account":{"title":"Account","type":"string"},"display_name":{"title":"Display Name","type":"string"},"time_zone":{"title":"Time Zone","type":"string"},"currency_code":{"title":"Currency Code","type":"string"},"industry_category":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null,"title":"Industry Category"}},"required":["account","display_name","time_zone","currency_code"],"title":"ga4_create_propertyArguments","type":"object"}
+      "description": "Create a GA4 property under an Analytics account (accounts/<id>).\n\n    Use the Google Ads account's time zone and currency — get_org_context\n    carries them as the Analytics card's property_defaults; if it has none,\n    ask the user. time_zone is an IANA name (e.g. \"Asia/Kolkata\"),\n    currency_code ISO 4217 (e.g. \"INR\"). Next: ga4_create_data_stream on the\n    returned property for the website, which gives the measurement ID.\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "account": {
+            "title": "Account",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "time_zone": {
+            "title": "Time Zone",
+            "type": "string"
+          },
+          "currency_code": {
+            "title": "Currency Code",
+            "type": "string"
+          },
+          "industry_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Industry Category"
+          }
+        },
+        "required": [
+          "account",
+          "display_name",
+          "time_zone",
+          "currency_code"
+        ],
+        "title": "ga4_create_propertyArguments",
+        "type": "object"
+      }
     },
     {
       "name": "ga4_create_google_ads_link",
-      "description": "Link a GA4 property (properties/<id>) to a Google Ads account, so its key\n    events can be imported into Google Ads as conversions and paid visits join\n    the organic ones. customer_id is the Google Ads account (digits; hyphens are\n    stripped). ads_personalization_enabled shares Analytics audiences and\n    remarketing events with Google Ads — off unless the user asks for it.\n    Read ga4_list_google_ads_links first: a property already linked to this\n    account needs no second link. There is no unlink tool.",
-      "inputSchema": {"properties":{"property":{"title":"Property","type":"string"},"customer_id":{"title":"Customer Id","type":"string"},"ads_personalization_enabled":{"default":false,"title":"Ads Personalization Enabled","type":"boolean"}},"required":["property","customer_id"],"title":"ga4_create_google_ads_linkArguments","type":"object"}
+      "description": "Link a GA4 property (properties/<id>) to a Google Ads account, so its key\n    events can be imported into Google Ads as conversions and paid visits join\n    the organic ones. customer_id is the Google Ads account (digits; hyphens are\n    stripped). ads_personalization_enabled shares Analytics audiences and\n    remarketing events with Google Ads — off unless the user asks for it.\n    Read ga4_list_google_ads_links first: a property already linked to this\n    account needs no second link. There is no unlink tool.\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "property": {
+            "title": "Property",
+            "type": "string"
+          },
+          "customer_id": {
+            "title": "Customer Id",
+            "type": "string"
+          },
+          "ads_personalization_enabled": {
+            "default": false,
+            "title": "Ads Personalization Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "property",
+          "customer_id"
+        ],
+        "title": "ga4_create_google_ads_linkArguments",
+        "type": "object"
+      }
     },
     {
       "name": "ga4_list_google_ads_links",
-      "description": "List the Google Ads links of a GA4 property (the paid+organic join).",
-      "inputSchema": {"properties":{"property":{"title":"Property","type":"string"}},"required":["property"],"title":"ga4_list_google_ads_linksArguments","type":"object"}
+      "description": "List the Google Ads links of a GA4 property (the paid+organic join).\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "property": {
+            "title": "Property",
+            "type": "string"
+          }
+        },
+        "required": [
+          "property"
+        ],
+        "title": "ga4_list_google_ads_linksArguments",
+        "type": "object"
+      }
     },
     {
       "name": "search",
-      "description": "\nFetches data from the Google Ads API using the search method\n\n    Args:\n        customer_id: The id of the customer\n        fields: The fields to fetch\n        resource: The resource to return fields from\n        conditions: List of conditions to filter the data, combined using AND clauses\n        orderings: How the data is ordered\n        limit: The maximum number of rows to return\n        start_date: Report start date (YYYY-MM-DD). Adds a quoted `segments.date`\n            filter — use this instead of hand-writing dates into `conditions`.\n            On change_event/change_status it filters their own date-time.\n        end_date: Report end date (YYYY-MM-DD). Combined with start_date this\n            produces a finite `segments.date BETWEEN 'start' AND 'end'` filter.\n\n    \n\nRuns a Google Ads Query Language (GAQL) query against the Google Ads API\n(https://developers.google.com/google-ads/api/docs/query/overview).\n\n### Hints\n    Language Grammar can be found at https://developers.google.com/google-ads/api/docs/query/grammar\n    All resources and descriptions are found at https://developers.google.com/google-ads/api/fields/v23/overview\n\n    For Conversion issues try looking in offline_conversion_upload_conversion_action_summary\n\n### Hint for customer_id\n    should be a string of numbers without punctuation\n    if presented in the form 123-456-7890 remove the hyphens and use 1234567890\n\n### Hints for Dates\n    For a date range, PREFER the `start_date` and `end_date` parameters\n    (YYYY-MM-DD). The tool adds a correctly-quoted `segments.date` filter for you,\n    which avoids the most common query error.\n    If you instead put a date inside `conditions`, it MUST be a quoted string —\n    e.g. segments.date BETWEEN '2026-08-01' AND '2026-08-28' (an unquoted date is\n    a GAQL syntax error). All dates are YYYY-MM-DD with the dashes.\n    Date literals from the Grammar (e.g. DURING LAST_7_DAYS) are not supported here;\n    use start_date/end_date or a quoted range instead.\n\n### Hint for keyword and search-term reporting\n    Metrics on keyword_view and search_term_view are attributed only to the matched\n    keyword/term, so they will NOT sum to the campaign or ad_group totals. The\n    remainder is traffic with no single matched keyword, plus low-volume search\n    terms Google withholds below a privacy threshold. This is expected Google\n    attribution, NOT a data error — reconcile top-line numbers at the campaign or\n    ad level, and treat the keyword slice as a subset.\n\n### Hints for change_event and change_status\n    Pass start_date AND end_date plus a limit of at most 10000. The dates\n    filter change_event.change_date_time / change_status.last_change_date_time\n    (these resources forbid segments.date). Google keeps change_event for the\n    last 30 days and change_status for the last 90 days.\n\n### Hints for conversions questions\n    https://developers.google.com/google-ads/api/docs/conversions/upload-summaries\n\n\n### Hints for all resources\n    What follows is a list of valid resources that can be queried.\n    To find out which specific fields you can select, filter by, or sort by for a given resource, you MUST use the `get_resource_metadata` tool.\n    Do not guess the fields. Use the tool to look them up.\n    Once you have the fields, ensure the whole field name is used (e.g., 'campaign.id', not just 'id'). Wildcards and partial fields are not allowed.\n    accessible_bidding_strategy\naccount_budget\naccount_budget_proposal\naccount_link\nad\nad_group\nad_group_ad\nad_group_ad_asset_combination_view\nad_group_ad_asset_view\nad_group_ad_label\nad_group_asset\nad_group_asset_set\nad_group_audience_view\nad_group_bid_modifier\nad_group_criterion\nad_group_criterion_customizer\nad_group_criterion_label\nad_group_criterion_simulation\nad_group_customizer\nad_group_label\nad_group_simulation\nad_parameter\nad_schedule_view\nage_range_view\nai_max_search_term_ad_combination_view\nandroid_privacy_shared_key_google_ad_group\nandroid_privacy_shared_key_google_campaign\nandroid_privacy_shared_key_google_network_type\napplied_incentive\nasset\nasset_field_type_view\nasset_group\nasset_group_asset\nasset_group_listing_group_filter\nasset_group_product_group_view\nasset_group_signal\nasset_group_top_combination_view\nasset_set\nasset_set_asset\nasset_set_type_view\naudience\nbatch_job\nbidding_data_exclusion\nbidding_seasonality_adjustment\nbidding_strategy\nbidding_strategy_simulation\nbilling_setup\ncall_view\ncampaign\ncampaign_aggregate_asset_view\ncampaign_asset\ncampaign_asset_set\ncampaign_audience_view\ncampaign_bid_modifier\ncampaign_budget\ncampaign_conversion_goal\ncampaign_criterion\ncampaign_customizer\ncampaign_draft\ncampaign_goal_config\ncampaign_group\ncampaign_label\ncampaign_lifecycle_goal\ncampaign_search_term_insight\ncampaign_search_term_view\ncampaign_shared_set\ncampaign_simulation\ncarrier_constant\nchange_event\nchange_status\nchannel_aggregate_asset_view\nclick_view\ncombined_audience\ncontent_criterion_view\nconversion_action\nconversion_custom_variable\nconversion_goal_campaign_config\nconversion_value_rule\nconversion_value_rule_set\ncurrency_constant\ncustom_audience\ncustom_conversion_goal\ncustom_interest\ncustomer\ncustomer_asset\ncustomer_asset_set\ncustomer_client\ncustomer_client_link\ncustomer_conversion_goal\ncustomer_customizer\ncustomer_label\ncustomer_lifecycle_goal\ncustomer_manager_link\ncustomer_negative_criterion\ncustomer_search_term_insight\ncustomer_user_access\ncustomer_user_access_invitation\ncustomizer_attribute\ndata_link\ndetail_content_suitability_placement_view\ndetail_placement_view\ndetailed_demographic\ndisplay_keyword_view\ndistance_view\ndomain_category\ndynamic_search_ads_search_term_view\nexpanded_landing_page_view\nexperiment\nexperiment_arm\nfinal_url_expansion_asset_view\ngender_view\ngeo_target_constant\ngeographic_view\ngoal\ngroup_content_suitability_placement_view\ngroup_placement_view\nhotel_group_view\nhotel_performance_view\nhotel_reconciliation\nincome_range_view\nkeyword_plan\nkeyword_plan_ad_group\nkeyword_plan_ad_group_keyword\nkeyword_plan_campaign\nkeyword_plan_campaign_keyword\nkeyword_theme_constant\nkeyword_view\nlabel\nlanding_page_view\nlanguage_constant\nlead_form_submission_data\nlife_event\nlocal_services_employee\nlocal_services_lead\nlocal_services_lead_conversation\nlocal_services_verification_artifact\nlocation_interest_view\nlocation_view\nmanaged_placement_view\nmatched_location_interest_view\nmedia_file\nmobile_app_category_constant\nmobile_device_constant\noffline_conversion_upload_client_summary\noffline_conversion_upload_conversion_action_summary\noffline_user_data_job\noperating_system_version_constant\npaid_organic_search_term_view\nparental_status_view\nper_store_view\nperformance_max_placement_view\nproduct_category_constant\nproduct_group_view\nproduct_link\nproduct_link_invitation\nqualifying_question\nrecommendation\nrecommendation_subscription\nremarketing_action\nsearch_term_view\nshared_criterion\nshared_set\nshopping_performance_view\nshopping_product\nsmart_campaign_search_term_view\nsmart_campaign_setting\ntargeting_expansion_view\nthird_party_app_analytics_link\ntopic_constant\ntopic_view\ntravel_activity_group_view\ntravel_activity_performance_view\nuser_interest\nuser_list\nuser_list_customer_type\nuser_location_view\nvideo\nwebpage_view\nyou_tube_video_upload\n\n",
-      "inputSchema": {"properties":{"customer_id":{"title":"Customer Id","type":"string"},"fields":{"items":{"type":"string"},"title":"Fields","type":"array"},"resource":{"title":"Resource","type":"string"},"conditions":{"default":null,"items":{"type":"string"},"title":"Conditions","type":"array"},"orderings":{"default":null,"items":{"type":"string"},"title":"Orderings","type":"array"},"limit":{"anyOf":[{"type":"integer"},{"type":"string"}],"default":null,"title":"Limit"},"start_date":{"default":null,"title":"Start Date","type":"string"},"end_date":{"default":null,"title":"End Date","type":"string"}},"required":["customer_id","fields","resource"],"title":"searchArguments","type":"object"}
+      "description": "\nFetches data from the Google Ads API using the search method\n\n    Args:\n        customer_id: The id of the customer\n        fields: The fields to fetch\n        resource: The resource to return fields from\n        conditions: List of conditions to filter the data, combined using AND clauses\n        orderings: How the data is ordered\n        limit: The maximum number of rows to return\n        start_date: Report start date (YYYY-MM-DD). Adds a quoted `segments.date`\n            filter — use this instead of hand-writing dates into `conditions`.\n            On change_event/change_status it filters their own date-time.\n        end_date: Report end date (YYYY-MM-DD). Combined with start_date this\n            produces a finite `segments.date BETWEEN 'start' AND 'end'` filter.\n\n    \n\nRuns a Google Ads Query Language (GAQL) query against the Google Ads API\n(https://developers.google.com/google-ads/api/docs/query/overview).\n\n### Hints\n    Language Grammar can be found at https://developers.google.com/google-ads/api/docs/query/grammar\n    All resources and descriptions are found at https://developers.google.com/google-ads/api/fields/v23/overview\n\n    For Conversion issues try looking in offline_conversion_upload_conversion_action_summary\n\n### Hint for customer_id\n    should be a string of numbers without punctuation\n    if presented in the form 123-456-7890 remove the hyphens and use 1234567890\n\n### Hints for Dates\n    For a date range, PREFER the `start_date` and `end_date` parameters\n    (YYYY-MM-DD). The tool adds a correctly-quoted `segments.date` filter for you,\n    which avoids the most common query error.\n    If you instead put a date inside `conditions`, it MUST be a quoted string —\n    e.g. segments.date BETWEEN '2026-08-01' AND '2026-08-28' (an unquoted date is\n    a GAQL syntax error). All dates are YYYY-MM-DD with the dashes.\n    Date literals from the Grammar (e.g. DURING LAST_7_DAYS) are not supported here;\n    use start_date/end_date or a quoted range instead.\n\n### Hint for keyword and search-term reporting\n    Metrics on keyword_view and search_term_view are attributed only to the matched\n    keyword/term, so they will NOT sum to the campaign or ad_group totals. The\n    remainder is traffic with no single matched keyword, plus low-volume search\n    terms Google withholds below a privacy threshold. This is expected Google\n    attribution, NOT a data error — reconcile top-line numbers at the campaign or\n    ad level, and treat the keyword slice as a subset.\n\n### Hints for change_event and change_status\n    Pass start_date AND end_date plus a limit of at most 10000. The dates\n    filter change_event.change_date_time / change_status.last_change_date_time\n    (these resources forbid segments.date). Google keeps change_event for the\n    last 30 days and change_status for the last 90 days.\n\n### Hints for conversions questions\n    https://developers.google.com/google-ads/api/docs/conversions/upload-summaries\n\n\n### Hints for all resources\n    What follows is a list of valid resources that can be queried.\n    To find out which specific fields you can select, filter by, or sort by for a given resource, you MUST use the `get_resource_metadata` tool.\n    Do not guess the fields. Use the tool to look them up.\n    Once you have the fields, ensure the whole field name is used (e.g., 'campaign.id', not just 'id'). Wildcards and partial fields are not allowed.\n    accessible_bidding_strategy\naccount_budget\naccount_budget_proposal\naccount_link\nad\nad_group\nad_group_ad\nad_group_ad_asset_combination_view\nad_group_ad_asset_view\nad_group_ad_label\nad_group_asset\nad_group_asset_set\nad_group_audience_view\nad_group_bid_modifier\nad_group_criterion\nad_group_criterion_customizer\nad_group_criterion_label\nad_group_criterion_simulation\nad_group_customizer\nad_group_label\nad_group_simulation\nad_parameter\nad_schedule_view\nage_range_view\nai_max_search_term_ad_combination_view\nandroid_privacy_shared_key_google_ad_group\nandroid_privacy_shared_key_google_campaign\nandroid_privacy_shared_key_google_network_type\napplied_incentive\nasset\nasset_field_type_view\nasset_group\nasset_group_asset\nasset_group_listing_group_filter\nasset_group_product_group_view\nasset_group_signal\nasset_group_top_combination_view\nasset_set\nasset_set_asset\nasset_set_type_view\naudience\nbatch_job\nbidding_data_exclusion\nbidding_seasonality_adjustment\nbidding_strategy\nbidding_strategy_simulation\nbilling_setup\ncall_view\ncampaign\ncampaign_aggregate_asset_view\ncampaign_asset\ncampaign_asset_set\ncampaign_audience_view\ncampaign_bid_modifier\ncampaign_budget\ncampaign_conversion_goal\ncampaign_criterion\ncampaign_customizer\ncampaign_draft\ncampaign_goal_config\ncampaign_group\ncampaign_label\ncampaign_lifecycle_goal\ncampaign_search_term_insight\ncampaign_search_term_view\ncampaign_shared_set\ncampaign_simulation\ncarrier_constant\nchange_event\nchange_status\nchannel_aggregate_asset_view\nclick_view\ncombined_audience\ncontent_criterion_view\nconversion_action\nconversion_custom_variable\nconversion_goal_campaign_config\nconversion_value_rule\nconversion_value_rule_set\ncurrency_constant\ncustom_audience\ncustom_conversion_goal\ncustom_interest\ncustomer\ncustomer_asset\ncustomer_asset_set\ncustomer_client\ncustomer_client_link\ncustomer_conversion_goal\ncustomer_customizer\ncustomer_label\ncustomer_lifecycle_goal\ncustomer_manager_link\ncustomer_negative_criterion\ncustomer_search_term_insight\ncustomer_user_access\ncustomer_user_access_invitation\ncustomizer_attribute\ndata_link\ndetail_content_suitability_placement_view\ndetail_placement_view\ndetailed_demographic\ndisplay_keyword_view\ndistance_view\ndomain_category\ndynamic_search_ads_search_term_view\nexpanded_landing_page_view\nexperiment\nexperiment_arm\nfinal_url_expansion_asset_view\ngender_view\ngeo_target_constant\ngeographic_view\ngoal\ngroup_content_suitability_placement_view\ngroup_placement_view\nhotel_group_view\nhotel_performance_view\nhotel_reconciliation\nincome_range_view\nkeyword_plan\nkeyword_plan_ad_group\nkeyword_plan_ad_group_keyword\nkeyword_plan_campaign\nkeyword_plan_campaign_keyword\nkeyword_theme_constant\nkeyword_view\nlabel\nlanding_page_view\nlanguage_constant\nlead_form_submission_data\nlife_event\nlocal_services_employee\nlocal_services_lead\nlocal_services_lead_conversation\nlocal_services_verification_artifact\nlocation_interest_view\nlocation_view\nmanaged_placement_view\nmatched_location_interest_view\nmedia_file\nmobile_app_category_constant\nmobile_device_constant\noffline_conversion_upload_client_summary\noffline_conversion_upload_conversion_action_summary\noffline_user_data_job\noperating_system_version_constant\npaid_organic_search_term_view\nparental_status_view\nper_store_view\nperformance_max_placement_view\nproduct_category_constant\nproduct_group_view\nproduct_link\nproduct_link_invitation\nqualifying_question\nrecommendation\nrecommendation_subscription\nremarketing_action\nsearch_term_view\nshared_criterion\nshared_set\nshopping_performance_view\nshopping_product\nsmart_campaign_search_term_view\nsmart_campaign_setting\ntargeting_expansion_view\nthird_party_app_analytics_link\ntopic_constant\ntopic_view\ntravel_activity_group_view\ntravel_activity_performance_view\nuser_interest\nuser_list\nuser_list_customer_type\nuser_location_view\nvideo\nwebpage_view\nyou_tube_video_upload\n\n\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "customer_id": {
+            "title": "Customer Id",
+            "type": "string"
+          },
+          "fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "resource": {
+            "title": "Resource",
+            "type": "string"
+          },
+          "conditions": {
+            "default": null,
+            "items": {
+              "type": "string"
+            },
+            "title": "Conditions",
+            "type": "array"
+          },
+          "orderings": {
+            "default": null,
+            "items": {
+              "type": "string"
+            },
+            "title": "Orderings",
+            "type": "array"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "default": null,
+            "title": "Limit"
+          },
+          "start_date": {
+            "default": null,
+            "title": "Start Date",
+            "type": "string"
+          },
+          "end_date": {
+            "default": null,
+            "title": "End Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "customer_id",
+          "fields",
+          "resource"
+        ],
+        "title": "searchArguments",
+        "type": "object"
+      }
     },
     {
       "name": "conversion_setup_audit",
-      "description": "Check whether conversion tracking can be trusted: primary actions, enhanced conversions, attribution model, conversion values, duplicate counting, GA4 link, consent mode, and whether the tag is actually firing — the measurement every other number in the account rests on. Read-only.",
-      "inputSchema": {"properties":{"customer_id":{"title":"Customer Id","type":"string"},"days":{"default":30,"title":"Days","type":"integer"},"max_findings":{"default":12,"title":"Max Findings","type":"integer"},"detail":{"default":"summary","enum":["summary","full"],"title":"Detail","type":"string"},"render":{"default":"both","enum":["json","markdown","both"],"title":"Render","type":"string"}},"required":["customer_id"],"title":"conversion_setup_auditArguments","type":"object"}
+      "description": "Check whether conversion tracking can be trusted: primary actions, enhanced conversions, attribution model, conversion values, duplicate counting, GA4 link, consent mode, and whether the tag is actually firing — the measurement every other number in the account rests on. Read-only.\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "customer_id": {
+            "title": "Customer Id",
+            "type": "string"
+          },
+          "days": {
+            "default": 30,
+            "title": "Days",
+            "type": "integer"
+          },
+          "max_findings": {
+            "default": 12,
+            "title": "Max Findings",
+            "type": "integer"
+          },
+          "detail": {
+            "default": "summary",
+            "enum": [
+              "summary",
+              "full"
+            ],
+            "title": "Detail",
+            "type": "string"
+          },
+          "render": {
+            "default": "both",
+            "enum": [
+              "json",
+              "markdown",
+              "both"
+            ],
+            "title": "Render",
+            "type": "string"
+          }
+        },
+        "required": [
+          "customer_id"
+        ],
+        "title": "conversion_setup_auditArguments",
+        "type": "object"
+      }
     },
     {
       "name": "create_campaign",
-      "description": "Creates a new Google Ads campaign with a budget.\n\n    SEARCH campaigns are built conservatively on purpose: Google search on,\n    Search partners OFF, Display Network OFF, location targeting PRESENCE.\n    The last three are the opposite of the Google Ads API's own defaults, and\n    that is deliberate. Search budget leaking into partner sites and banner\n    placements is the single most common way a small advertiser wastes money,\n    and PRESENCE — people actually in the targeted places — is what a user\n    means when they name a country. Pass search_partners, display_network or\n    geo_target_type to get the looser values instead. Those three arguments\n    are also the only thing that touches these settings on a non-SEARCH\n    campaign: left unset, every other channel type behaves exactly as before.\n\n    Args:\n        customer_id: The Google Ads customer ID (numbers only, no hyphens).\n        name: The name for the new campaign.\n        budget_amount_micros: Daily budget in micros of the account's currency (10000000 = 10.00: ₹10 on an INR account, $10 on a USD one).\n        advertising_channel_type: Channel type. One of: SEARCH, DISPLAY, SHOPPING, VIDEO, MULTI_CHANNEL. Default: SEARCH.\n        status: Initial campaign status. One of: ENABLED, PAUSED. Default: PAUSED.\n        bidding_strategy_type: Bidding strategy. One of: MANUAL_CPC, MAXIMIZE_CONVERSIONS, MAXIMIZE_CONVERSION_VALUE, TARGET_CPA, TARGET_ROAS, TARGET_SPEND. Default: MANUAL_CPC.\n        target_cpa_micros: Target CPA in micros of the account's currency, required when bidding_strategy_type is TARGET_CPA.\n        target_roas: Target ROAS (e.g., 2.0 for 200%), required when bidding_strategy_type is TARGET_ROAS.\n        cpc_bid_ceiling_micros: Maximize Clicks' max CPC cap — the most\n            Google may bid for one click — in micros of the account's currency\n            (10000000 = 10.00: ₹10 on an INR account, $10 on a USD one). Only\n            with bidding_strategy_type TARGET_SPEND. Optional.\n        start_date: Campaign start date in YYYY-MM-DD format. Optional.\n        end_date: Campaign end date in YYYY-MM-DD format. Optional.\n        search_partners: Whether ads may serve on the Google Search Partners\n            network. SEARCH default: False. Optional.\n        display_network: Whether ads may serve on the Google Display Network.\n            SEARCH default: False. Optional.\n        geo_target_type: Positive location targeting. One of: PRESENCE (only\n            people in the targeted locations), PRESENCE_OR_INTEREST (also\n            people elsewhere who show interest in them), SEARCH_INTEREST.\n            SEARCH default: PRESENCE. Optional.\n        login_customer_id: The Manager Account ID for accessing client accounts via a manager. Optional.\n\n    Returns:\n        Dictionary with created campaign and budget resource names.\n    ",
-      "inputSchema": {"properties":{"customer_id":{"title":"Customer Id","type":"string"},"name":{"title":"Name","type":"string"},"budget_amount_micros":{"title":"Budget Amount Micros","type":"integer"},"advertising_channel_type":{"default":"SEARCH","title":"Advertising Channel Type","type":"string"},"status":{"default":"PAUSED","title":"Status","type":"string"},"bidding_strategy_type":{"default":"MANUAL_CPC","title":"Bidding Strategy Type","type":"string"},"target_cpa_micros":{"anyOf":[{"type":"integer"},{"type":"null"}],"default":null,"title":"Target Cpa Micros"},"target_roas":{"anyOf":[{"type":"number"},{"type":"null"}],"default":null,"title":"Target Roas"},"cpc_bid_ceiling_micros":{"anyOf":[{"type":"integer"},{"type":"null"}],"default":null,"title":"Cpc Bid Ceiling Micros"},"start_date":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null,"title":"Start Date"},"end_date":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null,"title":"End Date"},"search_partners":{"anyOf":[{"type":"boolean"},{"type":"null"}],"default":null,"title":"Search Partners"},"display_network":{"anyOf":[{"type":"boolean"},{"type":"null"}],"default":null,"title":"Display Network"},"geo_target_type":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null,"title":"Geo Target Type"},"login_customer_id":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null,"title":"Login Customer Id"}},"required":["customer_id","name","budget_amount_micros"],"title":"create_campaignArguments","type":"object"}
+      "description": "Creates a new Google Ads campaign with a budget.\n\n    SEARCH campaigns are built conservatively on purpose: Google search on,\n    Search partners OFF, Display Network OFF, location targeting PRESENCE.\n    The last three are the opposite of the Google Ads API's own defaults, and\n    that is deliberate. Search budget leaking into partner sites and banner\n    placements is the single most common way a small advertiser wastes money,\n    and PRESENCE — people actually in the targeted places — is what a user\n    means when they name a country. Pass search_partners, display_network or\n    geo_target_type to get the looser values instead. Those three arguments\n    are also the only thing that touches these settings on a non-SEARCH\n    campaign: left unset, every other channel type behaves exactly as before.\n\n    Args:\n        customer_id: The Google Ads customer ID (numbers only, no hyphens).\n        name: The name for the new campaign.\n        budget_amount_micros: Daily budget in micros of the account's currency (10000000 = 10.00: ₹10 on an INR account, $10 on a USD one).\n        advertising_channel_type: Channel type. One of: SEARCH, DISPLAY, SHOPPING, VIDEO, MULTI_CHANNEL. Default: SEARCH.\n        status: Initial campaign status. One of: ENABLED, PAUSED. Default: PAUSED.\n        bidding_strategy_type: Bidding strategy. One of: MANUAL_CPC, MAXIMIZE_CONVERSIONS, MAXIMIZE_CONVERSION_VALUE, TARGET_CPA, TARGET_ROAS, TARGET_SPEND. Default: MANUAL_CPC.\n        target_cpa_micros: Target CPA in micros of the account's currency, required when bidding_strategy_type is TARGET_CPA.\n        target_roas: Target ROAS (e.g., 2.0 for 200%), required when bidding_strategy_type is TARGET_ROAS.\n        cpc_bid_ceiling_micros: Maximize Clicks' max CPC cap — the most\n            Google may bid for one click — in micros of the account's currency\n            (10000000 = 10.00: ₹10 on an INR account, $10 on a USD one). Only\n            with bidding_strategy_type TARGET_SPEND. Optional.\n        start_date: Campaign start date in YYYY-MM-DD format. Optional.\n        end_date: Campaign end date in YYYY-MM-DD format. Optional.\n        search_partners: Whether ads may serve on the Google Search Partners\n            network. SEARCH default: False. Optional.\n        display_network: Whether ads may serve on the Google Display Network.\n            SEARCH default: False. Optional.\n        geo_target_type: Positive location targeting. One of: PRESENCE (only\n            people in the targeted locations), PRESENCE_OR_INTEREST (also\n            people elsewhere who show interest in them), SEARCH_INTEREST.\n            SEARCH default: PRESENCE. Optional.\n        over_comfort_ack: The user's own words or reason when they asked for\n            a budget above their saved comfort (e.g. \"user asked for 6,000/day\n            on 2026-09-23\"). Recorded with the change by the hosted connector;\n            never sent to Google. Optional.\n        login_customer_id: The Manager Account ID for accessing client accounts via a manager. Optional.\n\n    Returns:\n        Dictionary with created campaign and budget resource names.\n    \n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "customer_id": {
+            "title": "Customer Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "budget_amount_micros": {
+            "title": "Budget Amount Micros",
+            "type": "integer"
+          },
+          "advertising_channel_type": {
+            "default": "SEARCH",
+            "title": "Advertising Channel Type",
+            "type": "string"
+          },
+          "status": {
+            "default": "PAUSED",
+            "title": "Status",
+            "type": "string"
+          },
+          "bidding_strategy_type": {
+            "default": "MANUAL_CPC",
+            "title": "Bidding Strategy Type",
+            "type": "string"
+          },
+          "target_cpa_micros": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Target Cpa Micros"
+          },
+          "target_roas": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Target Roas"
+          },
+          "cpc_bid_ceiling_micros": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cpc Bid Ceiling Micros"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "End Date"
+          },
+          "search_partners": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Search Partners"
+          },
+          "display_network": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Display Network"
+          },
+          "geo_target_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Geo Target Type"
+          },
+          "over_comfort_ack": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Over Comfort Ack"
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Login Customer Id"
+          }
+        },
+        "required": [
+          "customer_id",
+          "name",
+          "budget_amount_micros"
+        ],
+        "title": "create_campaignArguments",
+        "type": "object"
+      }
     },
     {
       "name": "set_campaign_status",
-      "description": "Enables, pauses, or removes a Google Ads campaign.\n\n    This is a convenience tool for quickly changing campaign status.\n\n    Args:\n        customer_id: The Google Ads customer ID (numbers only, no hyphens).\n        campaign_id: The ID of the campaign.\n        status: The new status. One of: ENABLED, PAUSED, REMOVED.\n        login_customer_id: The Manager Account ID for accessing client accounts via a manager. Optional.\n\n    Returns:\n        Dictionary with the updated resource name and confirmation message.\n    ",
-      "inputSchema": {"properties":{"customer_id":{"title":"Customer Id","type":"string"},"campaign_id":{"title":"Campaign Id","type":"string"},"status":{"title":"Status","type":"string"},"login_customer_id":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null,"title":"Login Customer Id"}},"required":["customer_id","campaign_id","status"],"title":"set_campaign_statusArguments","type":"object"}
+      "description": "Enables, pauses, or removes a Google Ads campaign.\n\n    This is a convenience tool for quickly changing campaign status.\n\n    Args:\n        customer_id: The Google Ads customer ID (numbers only, no hyphens).\n        campaign_id: The ID of the campaign.\n        status: The new status. One of: ENABLED, PAUSED, REMOVED.\n        login_customer_id: The Manager Account ID for accessing client accounts via a manager. Optional.\n\n    Returns:\n        Dictionary with the updated resource name and confirmation message.\n    \n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "customer_id": {
+            "title": "Customer Id",
+            "type": "string"
+          },
+          "campaign_id": {
+            "title": "Campaign Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Login Customer Id"
+          }
+        },
+        "required": [
+          "customer_id",
+          "campaign_id",
+          "status"
+        ],
+        "title": "set_campaign_statusArguments",
+        "type": "object"
+      }
     },
     {
       "name": "list_auto_apply_subscriptions",
-      "description": "Lists the account's auto-apply recommendation subscriptions.\n\n    An ENABLED subscription lets Google apply that type of recommendation to\n    the account without asking. The Google Ads API covers only some of the\n    types the Google Ads UI can auto-apply: the answer names the rest in\n    ui_only_types, and only the Google Ads UI can see or change those. Never\n    tell the user auto-apply is fully off on the strength of this list alone.\n\n    Args:\n        customer_id: The Google Ads customer ID (numbers only, no hyphens).\n        login_customer_id: The Manager Account ID for accessing client\n            accounts via a manager. Optional.\n\n    Returns:\n        Dictionary with subscriptions (type, ui_label, status, dates),\n        enabled_types, api_subscribable_types, ui_only_types and\n        coverage_note.\n    ",
-      "inputSchema": {"properties":{"customer_id":{"title":"Customer Id","type":"string"},"login_customer_id":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null,"title":"Login Customer Id"}},"required":["customer_id"],"title":"list_auto_apply_subscriptionsArguments","type":"object"}
+      "description": "Lists the account's auto-apply recommendation subscriptions.\n\n    An ENABLED subscription lets Google apply that type of recommendation to\n    the account without asking. The Google Ads API covers only some of the\n    types the Google Ads UI can auto-apply: the answer names the rest in\n    ui_only_types, and only the Google Ads UI can see or change those. Never\n    tell the user auto-apply is fully off on the strength of this list alone.\n\n    Args:\n        customer_id: The Google Ads customer ID (numbers only, no hyphens).\n        login_customer_id: The Manager Account ID for accessing client\n            accounts via a manager. Optional.\n\n    Returns:\n        Dictionary with subscriptions (type, ui_label, status, dates),\n        enabled_types, api_subscribable_types, ui_only_types and\n        coverage_note.\n    \n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "customer_id": {
+            "title": "Customer Id",
+            "type": "string"
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Login Customer Id"
+          }
+        },
+        "required": [
+          "customer_id"
+        ],
+        "title": "list_auto_apply_subscriptionsArguments",
+        "type": "object"
+      }
     },
     {
       "name": "pause_auto_apply_subscription",
-      "description": "Pauses one auto-apply recommendation subscription.\n\n    Stops Google applying that type of recommendation to the account\n    unattended. It only pauses: it cannot enable, create or remove a\n    subscription. Pausing an already-paused subscription changes nothing. A\n    type the account has no subscription for is reported, not created. Only\n    the types in list_auto_apply_subscriptions' api_subscribable_types can be\n    paused here; the ui_only_types can only be changed in the Google Ads UI.\n\n    Args:\n        customer_id: The Google Ads customer ID (numbers only, no hyphens).\n        recommendation_type: The subscription's type, as listed by\n            list_auto_apply_subscriptions, e.g. SEARCH_PARTNERS_OPT_IN or\n            USE_BROAD_MATCH_KEYWORD.\n        login_customer_id: The Manager Account ID for accessing client\n            accounts via a manager. Optional.\n\n    Returns:\n        Dictionary with recommendation_type, previous_status, status,\n        changed, message and the subscription's resource_name when one\n        exists.\n    ",
-      "inputSchema": {"properties":{"customer_id":{"title":"Customer Id","type":"string"},"recommendation_type":{"title":"Recommendation Type","type":"string"},"login_customer_id":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null,"title":"Login Customer Id"}},"required":["customer_id","recommendation_type"],"title":"pause_auto_apply_subscriptionArguments","type":"object"}
+      "description": "Pauses one auto-apply recommendation subscription.\n\n    Stops Google applying that type of recommendation to the account\n    unattended. It only pauses: it cannot enable, create or remove a\n    subscription. Pausing an already-paused subscription changes nothing. A\n    type the account has no subscription for is reported, not created. Only\n    the types in list_auto_apply_subscriptions' api_subscribable_types can be\n    paused here; the ui_only_types can only be changed in the Google Ads UI.\n\n    Args:\n        customer_id: The Google Ads customer ID (numbers only, no hyphens).\n        recommendation_type: The subscription's type, as listed by\n            list_auto_apply_subscriptions, e.g. SEARCH_PARTNERS_OPT_IN or\n            USE_BROAD_MATCH_KEYWORD.\n        login_customer_id: The Manager Account ID for accessing client\n            accounts via a manager. Optional.\n\n    Returns:\n        Dictionary with recommendation_type, previous_status, status,\n        changed, message and the subscription's resource_name when one\n        exists.\n    \n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "customer_id": {
+            "title": "Customer Id",
+            "type": "string"
+          },
+          "recommendation_type": {
+            "title": "Recommendation Type",
+            "type": "string"
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Login Customer Id"
+          }
+        },
+        "required": [
+          "customer_id",
+          "recommendation_type"
+        ],
+        "title": "pause_auto_apply_subscriptionArguments",
+        "type": "object"
+      }
     },
     {
       "name": "get_resource_metadata",
-      "description": "Retrieves the selectable, filterable, and sortable fields for a specific Google Ads resource.\n\n    Use this tool to find out which fields you can select, filter by, or sort by\n    when querying a specific resource (e.g., 'campaign', 'ad_group').\n    Do not guess fields, you MUST use this tool to discover them.\n\n    The responses of this tool should be cached, as they don't change frequently.\n\n    Args:\n        resource_name: The name of the Google Ads resource (e.g., 'campaign', 'ad_group').\n    ",
-      "inputSchema": {"properties":{"resource_name":{"title":"Resource Name","type":"string"}},"required":["resource_name"],"title":"get_resource_metadataArguments","type":"object"}
+      "description": "Retrieves the selectable, filterable, and sortable fields for a specific Google Ads resource.\n\n    Use this tool to find out which fields you can select, filter by, or sort by\n    when querying a specific resource (e.g., 'campaign', 'ad_group').\n    Do not guess fields, you MUST use this tool to discover them.\n\n    The responses of this tool should be cached, as they don't change frequently.\n\n    Args:\n        resource_name: The name of the Google Ads resource (e.g., 'campaign', 'ad_group').\n    \n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "resource_name": {
+            "title": "Resource Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "resource_name"
+        ],
+        "title": "get_resource_metadataArguments",
+        "type": "object"
+      }
     },
     {
       "name": "ga4_list_data_streams",
-      "description": "List the data streams of a GA4 property (properties/<id>).",
-      "inputSchema": {"properties":{"property":{"title":"Property","type":"string"}},"required":["property"],"title":"ga4_list_data_streamsArguments","type":"object"}
+      "description": "List the data streams of a GA4 property (properties/<id>).\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "property": {
+            "title": "Property",
+            "type": "string"
+          }
+        },
+        "required": [
+          "property"
+        ],
+        "title": "ga4_list_data_streamsArguments",
+        "type": "object"
+      }
     },
     {
       "name": "ga4_create_data_stream",
-      "description": "Create a data stream on a GA4 property.",
-      "inputSchema": {"properties":{"property":{"title":"Property","type":"string"},"display_name":{"title":"Display Name","type":"string"},"stream_type":{"default":"WEB_DATA_STREAM","title":"Stream Type","type":"string"},"web_stream_data":{"anyOf":[{"additionalProperties":true,"type":"object"},{"type":"null"}],"default":null,"title":"Web Stream Data"}},"required":["property","display_name"],"title":"ga4_create_data_streamArguments","type":"object"}
+      "description": "Create a data stream on a GA4 property.\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "property": {
+            "title": "Property",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "stream_type": {
+            "default": "WEB_DATA_STREAM",
+            "title": "Stream Type",
+            "type": "string"
+          },
+          "web_stream_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Web Stream Data"
+          }
+        },
+        "required": [
+          "property",
+          "display_name"
+        ],
+        "title": "ga4_create_data_streamArguments",
+        "type": "object"
+      }
     },
     {
       "name": "ga4_list_conversion_events",
-      "description": "List the conversion events configured on a GA4 property.",
-      "inputSchema": {"properties":{"property":{"title":"Property","type":"string"}},"required":["property"],"title":"ga4_list_conversion_eventsArguments","type":"object"}
+      "description": "List the conversion events configured on a GA4 property.\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "property": {
+            "title": "Property",
+            "type": "string"
+          }
+        },
+        "required": [
+          "property"
+        ],
+        "title": "ga4_list_conversion_eventsArguments",
+        "type": "object"
+      }
     },
     {
       "name": "ga4_create_conversion_event",
-      "description": "Mark an event as a conversion on a GA4 property.",
-      "inputSchema": {"properties":{"property":{"title":"Property","type":"string"},"event_name":{"title":"Event Name","type":"string"}},"required":["property","event_name"],"title":"ga4_create_conversion_eventArguments","type":"object"}
+      "description": "Mark an event as a conversion on a GA4 property.\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "property": {
+            "title": "Property",
+            "type": "string"
+          },
+          "event_name": {
+            "title": "Event Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "property",
+          "event_name"
+        ],
+        "title": "ga4_create_conversion_eventArguments",
+        "type": "object"
+      }
     },
     {
       "name": "ga4_run_realtime_report",
-      "description": "Run a GA4 realtime report (last ~30 min) for a property.",
-      "inputSchema": {"properties":{"property":{"title":"Property","type":"string"},"metrics":{"items":{"type":"string"},"title":"Metrics","type":"array"},"dimensions":{"anyOf":[{"items":{"type":"string"},"type":"array"},{"type":"null"}],"default":null,"title":"Dimensions"}},"required":["property","metrics"],"title":"ga4_run_realtime_reportArguments","type":"object"}
+      "description": "Run a GA4 realtime report (last ~30 min) for a property.\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "property": {
+            "title": "Property",
+            "type": "string"
+          },
+          "metrics": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Metrics",
+            "type": "array"
+          },
+          "dimensions": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Dimensions"
+          }
+        },
+        "required": [
+          "property",
+          "metrics"
+        ],
+        "title": "ga4_run_realtime_reportArguments",
+        "type": "object"
+      }
     },
     {
       "name": "create_conversion_action",
-      "description": "Creates a Google Ads conversion action (what the account counts as a\n    result) and returns the conversion ID and label its website tag needs.\n\n    Only type WEBPAGE can be created: a result counted by a Google Ads\n    conversion tag on the website. Stage that tag in Tag Manager with the\n    returned conversion_id and conversion_label (the \"Google Ads Conversion\n    Tracking\" tag, fired on the sign-up / thank-you trigger); nothing is\n    counted until the user publishes the Tag Manager container.\n\n    Analytics-imported types (GOOGLE_ANALYTICS_4_CUSTOM, _PURCHASE) cannot be\n    created through the Google Ads API and are refused with an explanation.\n\n    This tool creates one ENABLED action and changes nothing else: it never\n    edits, demotes or removes an existing conversion action or goal.\n    primary_for_goal has no default on purpose — a primary action is one the\n    account's bidding aims for, so ask the user and pass their answer.\n\n    Args:\n        customer_id: The Google Ads customer ID (numbers only, no hyphens).\n        name: The conversion action's name, unique in the account\n            (e.g. \"Sign-up (website)\").\n        category: What the result is. One of: SIGNUP, SUBMIT_LEAD_FORM,\n            PURCHASE, CONTACT, BOOK_APPOINTMENT, REQUEST_QUOTE, SUBSCRIBE_PAID,\n            BEGIN_CHECKOUT, ADD_TO_CART, DOWNLOAD, GET_DIRECTIONS,\n            OUTBOUND_CLICK, PAGE_VIEW, DEFAULT.\n        primary_for_goal: True makes this a primary action — campaigns that\n            bid for conversions aim for it. False records it as secondary\n            (reported, not bid on). Required: pass what the user chose.\n        type: The conversion action type. Only WEBPAGE is supported.\n        counting_type: ONE_PER_CLICK (one result per ad click — right for\n            sign-ups and leads) or MANY_PER_CLICK (every result — right for\n            purchases). Defaults to MANY_PER_CLICK for PURCHASE and\n            ONE_PER_CLICK for every other category.\n        default_value: The value of one result, in the account's currency\n            (a plain amount, not micros). Optional; no value is set if omitted.\n        default_currency_code: ISO 4217 currency code for default_value,\n            e.g. the account's own currency. Optional.\n        always_use_default_value: True always records default_value, ignoring\n            any value the tag sends. Optional.\n        click_through_lookback_window_days: How many days after an ad click a\n            result still counts (1-90). Optional; Google's default if omitted.\n        login_customer_id: The Manager Account ID for accessing client accounts via a manager. Optional.\n\n    Returns:\n        Dictionary with the new action's resource name and id, its\n        conversion_id / conversion_label / send_to for the website tag, the\n        other enabled primary actions already in this category (read only),\n        and whether the account's goal for this category is biddable.\n    ",
-      "inputSchema": {"properties":{"customer_id":{"title":"Customer Id","type":"string"},"name":{"title":"Name","type":"string"},"category":{"title":"Category","type":"string"},"primary_for_goal":{"title":"Primary For Goal","type":"boolean"},"type":{"default":"WEBPAGE","title":"Type","type":"string"},"counting_type":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null,"title":"Counting Type"},"default_value":{"anyOf":[{"type":"number"},{"type":"null"}],"default":null,"title":"Default Value"},"default_currency_code":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null,"title":"Default Currency Code"},"always_use_default_value":{"anyOf":[{"type":"boolean"},{"type":"null"}],"default":null,"title":"Always Use Default Value"},"click_through_lookback_window_days":{"anyOf":[{"type":"integer"},{"type":"null"}],"default":null,"title":"Click Through Lookback Window Days"},"login_customer_id":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null,"title":"Login Customer Id"}},"required":["customer_id","name","category","primary_for_goal"],"title":"create_conversion_actionArguments","type":"object"}
+      "description": "Creates a Google Ads conversion action (what the account counts as a\n    result) and returns the conversion ID and label its website tag needs.\n\n    Only type WEBPAGE can be created: a result counted by a Google Ads\n    conversion tag on the website. Stage that tag in Tag Manager with the\n    returned conversion_id and conversion_label (the \"Google Ads Conversion\n    Tracking\" tag, fired on the sign-up / thank-you trigger); nothing is\n    counted until the user publishes the Tag Manager container.\n\n    Analytics-imported types (GOOGLE_ANALYTICS_4_CUSTOM, _PURCHASE) cannot be\n    created through the Google Ads API and are refused with an explanation.\n\n    This tool creates one ENABLED action and changes nothing else: it never\n    edits, demotes or removes an existing conversion action or goal.\n    primary_for_goal has no default on purpose — a primary action is one the\n    account's bidding aims for, so ask the user and pass their answer.\n\n    Args:\n        customer_id: The Google Ads customer ID (numbers only, no hyphens).\n        name: The conversion action's name, unique in the account\n            (e.g. \"Sign-up (website)\").\n        category: What the result is. One of: SIGNUP, SUBMIT_LEAD_FORM,\n            PURCHASE, CONTACT, BOOK_APPOINTMENT, REQUEST_QUOTE, SUBSCRIBE_PAID,\n            BEGIN_CHECKOUT, ADD_TO_CART, DOWNLOAD, GET_DIRECTIONS,\n            OUTBOUND_CLICK, PAGE_VIEW, DEFAULT.\n        primary_for_goal: True makes this a primary action — campaigns that\n            bid for conversions aim for it. False records it as secondary\n            (reported, not bid on). Required: pass what the user chose.\n        type: The conversion action type. Only WEBPAGE is supported.\n        counting_type: ONE_PER_CLICK (one result per ad click — right for\n            sign-ups and leads) or MANY_PER_CLICK (every result — right for\n            purchases). Defaults to MANY_PER_CLICK for PURCHASE and\n            ONE_PER_CLICK for every other category.\n        default_value: The value of one result, in the account's currency\n            (a plain amount, not micros). Optional; no value is set if omitted.\n        default_currency_code: ISO 4217 currency code for default_value,\n            e.g. the account's own currency. Optional.\n        always_use_default_value: True always records default_value, ignoring\n            any value the tag sends. Optional.\n        click_through_lookback_window_days: How many days after an ad click a\n            result still counts (1-90). Optional; Google's default if omitted.\n        login_customer_id: The Manager Account ID for accessing client accounts via a manager. Optional.\n\n    Returns:\n        Dictionary with the new action's resource name and id, its\n        conversion_id / conversion_label / send_to for the website tag, the\n        other enabled primary actions already in this category (read only),\n        and whether the account's goal for this category is biddable.\n    \n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "customer_id": {
+            "title": "Customer Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "primary_for_goal": {
+            "title": "Primary For Goal",
+            "type": "boolean"
+          },
+          "type": {
+            "default": "WEBPAGE",
+            "title": "Type",
+            "type": "string"
+          },
+          "counting_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Counting Type"
+          },
+          "default_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Default Value"
+          },
+          "default_currency_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Default Currency Code"
+          },
+          "always_use_default_value": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Always Use Default Value"
+          },
+          "click_through_lookback_window_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Click Through Lookback Window Days"
+          },
+          "login_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Login Customer Id"
+          }
+        },
+        "required": [
+          "customer_id",
+          "name",
+          "category",
+          "primary_for_goal"
+        ],
+        "title": "create_conversion_actionArguments",
+        "type": "object"
+      }
     },
     {
       "name": "gtm_list_containers",
-      "description": "List containers under a GTM account (accounts/<id>).",
-      "inputSchema": {"properties":{"account":{"title":"Account","type":"string"}},"required":["account"],"title":"gtm_list_containersArguments","type":"object"}
+      "description": "List containers under a GTM account (accounts/<id>).\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "account": {
+            "title": "Account",
+            "type": "string"
+          }
+        },
+        "required": [
+          "account"
+        ],
+        "title": "gtm_list_containersArguments",
+        "type": "object"
+      }
     },
     {
       "name": "gtm_list_workspaces",
-      "description": "List the draft workspaces of a container (accounts/<a>/containers/<c>).",
-      "inputSchema": {"properties":{"container":{"title":"Container","type":"string"}},"required":["container"],"title":"gtm_list_workspacesArguments","type":"object"}
+      "description": "List the draft workspaces of a container (accounts/<a>/containers/<c>).\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "container": {
+            "title": "Container",
+            "type": "string"
+          }
+        },
+        "required": [
+          "container"
+        ],
+        "title": "gtm_list_workspacesArguments",
+        "type": "object"
+      }
     },
     {
       "name": "gtm_list_tags",
-      "description": "List tags in a workspace (accounts/<a>/containers/<c>/workspaces/<w>).",
-      "inputSchema": {"properties":{"workspace":{"title":"Workspace","type":"string"}},"required":["workspace"],"title":"gtm_list_tagsArguments","type":"object"}
+      "description": "List tags in a workspace (accounts/<a>/containers/<c>/workspaces/<w>).\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "workspace": {
+            "title": "Workspace",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace"
+        ],
+        "title": "gtm_list_tagsArguments",
+        "type": "object"
+      }
     },
     {
       "name": "gtm_list_triggers",
-      "description": "List triggers in a workspace.",
-      "inputSchema": {"properties":{"workspace":{"title":"Workspace","type":"string"}},"required":["workspace"],"title":"gtm_list_triggersArguments","type":"object"}
+      "description": "List triggers in a workspace.\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "workspace": {
+            "title": "Workspace",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace"
+        ],
+        "title": "gtm_list_triggersArguments",
+        "type": "object"
+      }
     },
     {
       "name": "gtm_list_variables",
-      "description": "List user-defined variables in a workspace.",
-      "inputSchema": {"properties":{"workspace":{"title":"Workspace","type":"string"}},"required":["workspace"],"title":"gtm_list_variablesArguments","type":"object"}
+      "description": "List user-defined variables in a workspace.\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "workspace": {
+            "title": "Workspace",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace"
+        ],
+        "title": "gtm_list_variablesArguments",
+        "type": "object"
+      }
     },
     {
       "name": "gtm_list_built_in_variables",
-      "description": "List the enabled built-in variables in a workspace.",
-      "inputSchema": {"properties":{"workspace":{"title":"Workspace","type":"string"}},"required":["workspace"],"title":"gtm_list_built_in_variablesArguments","type":"object"}
+      "description": "List the enabled built-in variables in a workspace.\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "workspace": {
+            "title": "Workspace",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace"
+        ],
+        "title": "gtm_list_built_in_variablesArguments",
+        "type": "object"
+      }
     },
     {
       "name": "gtm_enable_built_in_variable",
-      "description": "Enable a built-in variable in the managed AdCopilot workspace (enable-only;\n    disabling is a delete and is intentionally not exposed).",
-      "inputSchema": {"properties":{"container":{"title":"Container","type":"string"},"type":{"title":"Type","type":"string"}},"required":["container","type"],"title":"gtm_enable_built_in_variableArguments","type":"object"}
+      "description": "Enable a built-in variable in the managed AdCopilot workspace (enable-only;\n    disabling is a delete and is intentionally not exposed).\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "container": {
+            "title": "Container",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "container",
+          "type"
+        ],
+        "title": "gtm_enable_built_in_variableArguments",
+        "type": "object"
+      }
     },
     {
       "name": "gtm_create_tag",
-      "description": "Create a tag STAGED in the managed AdCopilot workspace (never published).\n\n    `firing_trigger_id` is the list of trigger ids the tag fires on (e.g. the id\n    returned by gtm_create_trigger); `blocking_trigger_id` suppresses it. Without\n    a firing trigger a tag is staged but never fires, so pass the trigger it\n    should run on to stage a working tag.\n    ",
-      "inputSchema": {"properties":{"container":{"title":"Container","type":"string"},"name":{"title":"Name","type":"string"},"type":{"title":"Type","type":"string"},"parameter":{"anyOf":[{"items":{},"type":"array"},{"type":"null"}],"default":null,"title":"Parameter"},"firing_trigger_id":{"anyOf":[{"items":{},"type":"array"},{"type":"null"}],"default":null,"title":"Firing Trigger Id"},"blocking_trigger_id":{"anyOf":[{"items":{},"type":"array"},{"type":"null"}],"default":null,"title":"Blocking Trigger Id"}},"required":["container","name","type"],"title":"gtm_create_tagArguments","type":"object"}
+      "description": "Create a tag STAGED in the managed AdCopilot workspace (never published).\n\n    `firing_trigger_id` is the list of trigger ids the tag fires on (e.g. the id\n    returned by gtm_create_trigger); `blocking_trigger_id` suppresses it. Without\n    a firing trigger a tag is staged but never fires, so pass the trigger it\n    should run on to stage a working tag.\n    \n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "container": {
+            "title": "Container",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "parameter": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Parameter"
+          },
+          "firing_trigger_id": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Firing Trigger Id"
+          },
+          "blocking_trigger_id": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Blocking Trigger Id"
+          }
+        },
+        "required": [
+          "container",
+          "name",
+          "type"
+        ],
+        "title": "gtm_create_tagArguments",
+        "type": "object"
+      }
     },
     {
       "name": "gtm_create_trigger",
-      "description": "Create a trigger STAGED in the managed AdCopilot workspace (never published).\n\n    For a CUSTOM_EVENT trigger (type=\"customEvent\"), give the dataLayer event it\n    fires on via `event_name` (convenience — builds the required customEventFilter\n    matching {{_event}} to that name) OR pass `custom_event_filter` as the raw GTM\n    condition list. `filter` / `auto_event_filter` carry extra firing conditions\n    for other trigger types; `parameter` passes trigger-type parameters through.\n    ",
-      "inputSchema": {"properties":{"container":{"title":"Container","type":"string"},"name":{"title":"Name","type":"string"},"type":{"title":"Type","type":"string"},"parameter":{"anyOf":[{"items":{},"type":"array"},{"type":"null"}],"default":null,"title":"Parameter"},"event_name":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null,"title":"Event Name"},"custom_event_filter":{"anyOf":[{"items":{},"type":"array"},{"type":"null"}],"default":null,"title":"Custom Event Filter"},"filter":{"anyOf":[{"items":{},"type":"array"},{"type":"null"}],"default":null,"title":"Filter"},"auto_event_filter":{"anyOf":[{"items":{},"type":"array"},{"type":"null"}],"default":null,"title":"Auto Event Filter"}},"required":["container","name","type"],"title":"gtm_create_triggerArguments","type":"object"}
+      "description": "Create a trigger STAGED in the managed AdCopilot workspace (never published).\n\n    For a CUSTOM_EVENT trigger (type=\"customEvent\"), give the dataLayer event it\n    fires on via `event_name` (convenience — builds the required customEventFilter\n    matching {{_event}} to that name) OR pass `custom_event_filter` as the raw GTM\n    condition list. `filter` / `auto_event_filter` carry extra firing conditions\n    for other trigger types; `parameter` passes trigger-type parameters through.\n    \n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "container": {
+            "title": "Container",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "parameter": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Parameter"
+          },
+          "event_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Event Name"
+          },
+          "custom_event_filter": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Custom Event Filter"
+          },
+          "filter": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Filter"
+          },
+          "auto_event_filter": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Auto Event Filter"
+          }
+        },
+        "required": [
+          "container",
+          "name",
+          "type"
+        ],
+        "title": "gtm_create_triggerArguments",
+        "type": "object"
+      }
     },
     {
       "name": "full_audit",
-      "description": "Run the account audit across conversion tracking, wasted spend, structure, keywords, ads and settings. Quick scores three of the 74 checks in six steps; deep attempts all 74 and scores every one the account has data for, with a health score. Returns findings ranked by impact, most with the exact call that fixes them. Read-only.",
-      "inputSchema": {"properties":{"customer_id":{"title":"Customer Id","type":"string"},"depth":{"default":"quick","enum":["quick","deep"],"title":"Depth","type":"string"},"sections":{"anyOf":[{"items":{"enum":["conversion_tracking","wasted_spend","structure","keywords_qs","ads_assets","settings_targeting"],"type":"string"},"type":"array"},{"type":"null"}],"default":null,"title":"Sections"},"days":{"default":30,"title":"Days","type":"integer"},"max_findings":{"default":20,"title":"Max Findings","type":"integer"},"detail":{"default":"summary","enum":["summary","full"],"title":"Detail","type":"string"},"render":{"default":"both","enum":["json","markdown","both"],"title":"Render","type":"string"}},"required":["customer_id"],"title":"full_auditArguments","type":"object"}
+      "description": "Run the account audit across conversion tracking, wasted spend, structure, keywords, ads and settings. Quick scores three of the 74 checks in six steps; deep attempts all 74 and scores every one the account has data for, with a health score. Returns findings ranked by impact, most with the exact call that fixes them. Read-only.\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "customer_id": {
+            "title": "Customer Id",
+            "type": "string"
+          },
+          "depth": {
+            "default": "quick",
+            "enum": [
+              "quick",
+              "deep"
+            ],
+            "title": "Depth",
+            "type": "string"
+          },
+          "sections": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "conversion_tracking",
+                    "wasted_spend",
+                    "structure",
+                    "keywords_qs",
+                    "ads_assets",
+                    "settings_targeting"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sections"
+          },
+          "days": {
+            "default": 30,
+            "title": "Days",
+            "type": "integer"
+          },
+          "max_findings": {
+            "default": 20,
+            "title": "Max Findings",
+            "type": "integer"
+          },
+          "detail": {
+            "default": "summary",
+            "enum": [
+              "summary",
+              "full"
+            ],
+            "title": "Detail",
+            "type": "string"
+          },
+          "render": {
+            "default": "both",
+            "enum": [
+              "json",
+              "markdown",
+              "both"
+            ],
+            "title": "Render",
+            "type": "string"
+          }
+        },
+        "required": [
+          "customer_id"
+        ],
+        "title": "full_auditArguments",
+        "type": "object"
+      }
     },
     {
       "name": "budget_pacing",
-      "description": "Project this month's spend per campaign against its daily budget, in the account's own time zone, and flag campaigns heading past their cap or leaving budget unspent while losing impression share. Read-only.",
-      "inputSchema": {"properties":{"customer_id":{"title":"Customer Id","type":"string"},"month":{"anyOf":[{"type":"string"},{"type":"null"}],"default":null,"title":"Month"},"max_findings":{"default":12,"title":"Max Findings","type":"integer"},"detail":{"default":"summary","enum":["summary","full"],"title":"Detail","type":"string"},"render":{"default":"both","enum":["json","markdown","both"],"title":"Render","type":"string"}},"required":["customer_id"],"title":"budget_pacingArguments","type":"object"}
+      "description": "Project this month's spend per campaign against its daily budget, in the account's own time zone, and flag campaigns heading past their cap or leaving budget unspent while losing impression share. Read-only.\n\nTools revision: 0066a60e.",
+      "inputSchema": {
+        "properties": {
+          "customer_id": {
+            "title": "Customer Id",
+            "type": "string"
+          },
+          "month": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Month"
+          },
+          "max_findings": {
+            "default": 12,
+            "title": "Max Findings",
+            "type": "integer"
+          },
+          "detail": {
+            "default": "summary",
+            "enum": [
+              "summary",
+              "full"
+            ],
+            "title": "Detail",
+            "type": "string"
+          },
+          "render": {
+            "default": "both",
+            "enum": [
+              "json",
+              "markdown",
+              "both"
+            ],
+            "title": "Render",
+            "type": "string"
+          }
+        },
+        "required": [
+          "customer_id"
+        ],
+        "title": "budget_pacingArguments",
+        "type": "object"
+      }
     }
   ]
 }

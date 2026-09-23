@@ -44,6 +44,7 @@ graders:
   - name: describes-it-from-the-server
     type: llm
     focus: last_message
+    weight: 2
     criteria: |
       The agent read a server answer whose products are keyed by slug. One key is "lantern", not connected yet, with no display name and only this description from the server: "I can report which product pages shoppers read before they later search for the brand, and turn those pages into audiences a campaign can target."
 

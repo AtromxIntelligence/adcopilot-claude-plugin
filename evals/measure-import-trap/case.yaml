@@ -1,25 +1,35 @@
 schema_version: "1.1"
 name: measure-import-trap
 description: >
-  The customer has just imported their Analytics events into Google Ads and
-  asks if they are done (the tenant in evals/mocks is fictional; every value
-  is invented). The server's own answer already reports five enabled
-  conversion actions and five Primary; the audit and the conversion-action
-  read-back both show which five: the sign-up and the four events Analytics
-  collects on its own. The reply must read the account back rather than
-  assume, say no, name the four in prose, explain what a Primary conversion
-  makes Google Ads do and so what counting a page view as one costs, tell the
-  customer to change the four extras to Secondary, end with exactly one
-  Primary, and confirm it by reading the account back. Deterministic graders
-  here test only things with one spelling — the four event names, raw rows,
-  the inversion "already Secondary", the read-back call. Everything that can
-  be paraphrased is judged by the rubric from meaning.
+  A mid-arc arrival (the tenant in this case's mocks is fictional; every
+  value is invented): the customer imported their Analytics events into
+  Google Ads and published the sign-up tag in Tag Manager, and asks if they
+  are done. Two things are wrong, and the server carries only one of them.
+  The import left five conversion actions Primary — the sign-up and the four
+  events Analytics collects on its own — which the conversion audit reports
+  by name with the demotion path (this is Outcome 2, and the server carries
+  it). And the sign-up tag's trigger is Click - Just Links filtered on the
+  built-in variable Click URL, which is not enabled in the container, so the
+  filter matches nothing and the tag never fires — which no tool description
+  or audit says; only the container read-back shows it, and only someone who
+  knows that a filter on a disabled variable is silent will look. The reply
+  must read the account and the container back, say no, name the four in
+  prose with the consequence of a Primary page view, give the demotion path
+  ending with exactly one Primary, find the silent trigger by the variable's
+  name, say the fix is enabling it (after a yes) and publishing again (the
+  customer's click), and prove it with a real click before calling it done.
+  Deterministic graders test only things with one spelling — the four event
+  names, raw rows, the inversion "already Secondary", the account and
+  container reads, the write tools' names absent from a single-prompt run.
+  Meaning is two rubrics: the import trap at weight 2 and the silent trigger
+  at weight 3, so the half the skill carries fails the case on its own
+  (dead: 10/13 = 0.769) and both dead land at 0.615.
 tags: [measure]
 runs: 3
 execution:
-  prompt: "I imported my Analytics events into Google Ads. Am I done?"
-  max_turns: 8
-  timeout_seconds: 240
+  prompt: "I imported my Analytics events into Google Ads and published the sign-up tag. Am I done?"
+  max_turns: 12
+  timeout_seconds: 300
   allowed_tools: [Skill]
 graders:
   - name: names-all-four-offenders
@@ -32,7 +42,7 @@ graders:
     target: last_message
     flags: i
     match: not_contains
-    pattern: '"(name|resource_name|primary_for_goal|status|category|origin|enabled|primary|types)"\s*:|\{\s*"'
+    pattern: '"(name|resource_name|primary_for_goal|status|category|origin|enabled|primary|types|type|path|key|value|firingTriggerId|builtInVariable|check_id|reason_code)"\s*:|(?<!dataLayer\.push\()\{\s*"'
   - name: does-not-invert-the-facts
     type: regex
     target: last_message
@@ -44,17 +54,29 @@ graders:
     target: mock_calls
     pattern: 'conversion_setup_audit|\\?"resource\\?"\s*:\s*\\?"conversion_action'
     arm: with-only
+  - name: reads-the-container-back
+    type: regex
+    target: mock_calls
+    pattern: gtm_list_built_in_variables
+    arm: with-only
+  - name: never-writes-in-a-single-prompt-run
+    type: regex
+    target: mock_calls
+    match: not_contains
+    pattern: 'gtm_enable_built_in_variable|gtm_create_tag|gtm_create_trigger'
+    arm: with-only
   - name: not-done-one-primary-with-the-path
     type: llm
-    focus: trace
+    focus: last_message
+    weight: 2
     criteria: |
-      The customer imported their Analytics events into Google Ads and asked "Am I done?". The server's first answer reported one campaign running and, for the ad account, five enabled conversion actions with five Primary. The conversion audit and the conversion-action read-back both show which five, all Primary: sign_up, page_view, session_start, first_visit and user_engagement.
+      The customer imported their Analytics events into Google Ads, published a sign-up tag in Tag Manager, and asked "Am I done?". The reads showed, for the ad account, five enabled conversion actions with five Primary — sign_up, page_view, session_start, first_visit and user_engagement — and the audit's finding that the four automatic ones are Primary. Whether the account was actually read is checked separately from the calls; judge the reply's meaning only, as someone who has never opened Google Ads. The reply may also cover a problem in Tag Manager; that is judged by another rubric and neither helps nor hurts here.
 
-      Judge the whole run from its meaning, not its wording, and read the final reply as someone who has never opened Google Ads. PASS only if every one of the six holds:
+      PASS only if every one of the five holds:
 
-      1. Not done. The answer is no, and the reason given is that the import left the four automatic events (page_view, session_start, first_visit, user_engagement) marked Primary. A reply that says those four are already Secondary, or that only the sign-up is Primary, contradicts what was read back and FAILS.
+      1. Not done. The answer is no, and one reason given is that the import left the four automatic events (page_view, session_start, first_visit, user_engagement) marked Primary. A reply that says those four are already Secondary, or that only the sign-up is Primary, contradicts what was read back and FAILS.
 
-      2. The consequence. The reply explains what a Primary conversion causes Google Ads to do — a campaign that bids for conversions bids towards it — and therefore what counting a page view as one means: the campaign buys page views, or visits, or traffic, rather than sign-ups. Any wording that carries that meaning counts ("someone just visiting counts as a sign-up", "it will chase visits, not sign-ups", "you would be paying for page views"). "Best practice", "recommended" or "cleaner" with no consequence does not.
+      2. The consequence. The reply explains what a Primary conversion causes Google Ads to do — a campaign that bids for conversions bids towards it — and therefore what counting a page view as one means: the campaign buys page views, or visits, or traffic, rather than sign-ups. Any wording that carries that meaning counts. "Best practice", "recommended" or "cleaner" with no consequence does not.
 
       3. The instruction. The reply tells the customer to change the four extras to Secondary, as something they do in Google Ads' own screens (under Goals, then Conversions, each action's settings), with a path a person could follow. A reply that only reports the situation and stops, or asks whether they would like help before saying what to do, FAILS. So does a reply that claims to have demoted them itself (no tool can), or that tells them to delete or remove the actions instead.
 
@@ -62,9 +84,23 @@ graders:
 
       5. Confirmed by read-back. The reply says the result will be checked by reading the conversion actions back from Google Ads once the customer has made the change, or offers to do that, rather than declaring the fix done on trust.
 
-      6. Read, not assumed. In the run, the account was actually read — the conversion audit, or a conversion-action read — before the reply described what is Primary. A reply built from the server's summary count alone, or from memory, FAILS.
+      FAIL if any of the five is missing, if the reply names fewer than the four events, if it invents actions the server did not return, or if it reproduces the server's rows or field names instead of prose.
+  - name: the-tag-that-never-fires
+    type: llm
+    focus: last_message
+    weight: 3
+    criteria: |
+      The customer published a sign-up tag in Tag Manager and asked if they are done. Reading the container back showed: a Google tag firing on every page; a GA4 event tag for sign_up firing on a Click - Just Links trigger whose filter reads the built-in variable Click URL; and Click URL NOT among the container's enabled built-in variables — only the defaults are enabled (Page URL, Page Hostname, Page Path, Referrer, Event). In Tag Manager a trigger filter on a built-in variable that is not enabled matches nothing, so the sign-up tag never fires and nothing on any screen reports it. Whether those reads were made is checked separately from the calls; judge the reply's meaning only, as someone who has never opened Tag Manager. The reply may also cover the conversion actions in Google Ads; that is judged by another rubric and neither helps nor hurts here.
 
-      FAIL if any of the six is missing, if the reply names fewer than the four events, if it invents actions the server did not return, or if it reproduces the server's rows or field names instead of prose.
+      PASS only if all three hold:
+
+      1. The silent tag is found. The reply says the sign-up tag is not firing, or will not fire, because its trigger's filter reads Click URL and Click URL is not enabled (switched off, not turned on) in the container's built-in variables. Any wording carries this, but the variable must be named — Click URL — because that is what the customer has to find on Google's screen. A reply that says the tag looks fine, or that treats "published" as proof it fires, FAILS.
+
+      2. The fix, and whose click each part is. The reply says the variable has to be enabled — through the connector after the customer's yes, or by the customer in Tag Manager under Variables, then Built-In Variables (Configure) — and that the container has to be published again afterwards, which is the customer's click. A reply that claims to have enabled it already, in a run that could not have had a yes, FAILS; so does one that stops at "enable it" without saying the change must be published.
+
+      3. Proof before done. The reply says the sign-up will be proven by doing one on the live site and finding the event by name in Analytics' Realtime report, or offers to run that check, rather than declaring the tag fixed on trust.
+
+      FAIL if any of the three is missing.
   - name: read-the-server-first
     type: regex
     target: mock_calls

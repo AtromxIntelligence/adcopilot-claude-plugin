@@ -1,0 +1,65 @@
+schema_version: "1.1"
+name: audit-stale-tools
+description: >
+  /adcopilot:audit on a connection made before the audit tool shipped (the
+  tenant in this case's mocks is fictional; every value is invented). The
+  tool the command names first, full_audit, is absent from the list this
+  session holds; budget_pacing is present; the server's own answer carries a
+  tools_revision and says a tool's current text is fetched with
+  get_org_context and a tools argument, and that call answers with the text.
+  The reply must treat the missing tool as a stale tool list — ask the server
+  for the tool's current text first, then send the customer to /mcp, choose
+  adcopilot, Reconnect, with reinstalling the plugin as the last resort — and
+  never as a permission the account lacks, a plan limit, or a feature that
+  does not exist; and it must not abandon the audit: report the pacing half
+  it can read, or say plainly it will run both once the list is refreshed.
+  Deterministic graders test only canonical spellings: the server read, the
+  tools argument naming full_audit in the call log, the /mcp command, raw
+  fields. Meaning is the rubric's, at weight 2, so a run with the rubric
+  dead lands at 0.667, below the gate.
+tags: [audit]
+runs: 3
+execution:
+  prompt: "/adcopilot:audit"
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Skill]
+graders:
+  - name: stale-list-not-a-missing-permission
+    type: llm
+    focus: last_message
+    weight: 2
+    criteria: |
+      The customer ran /adcopilot:audit. The audit tool the command names first, full_audit, is not in this session's tool list; the second, budget_pacing, is. The server's answer carries a tools revision and says a missing or outdated tool description is refreshed by asking get_org_context for those tools' current text — and when asked, it returned that text, which proves the tool exists on the server. The command says that if the tool is still missing, the customer refetches the tool list with /mcp, choosing adcopilot, then Reconnect, and that reinstalling the plugin is the last resort. Judge the reply's meaning only, as someone who first opened a terminal this week.
+
+      PASS only if all four hold:
+
+      1. The right diagnosis. The reply says the tool list this session holds is out of date — the connection was made before this tool existed, or the list is cached, or the server has it and this session does not — as the reason the full audit cannot run yet. It does NOT say or imply that the account lacks a permission, that the plan does not include it, that the connector cannot audit, or that the feature does not exist. Saying explicitly that it is not one of those is fine.
+
+      2. The remedy, in order. The reply tells the customer to run /mcp, choose adcopilot, and Reconnect (or reconnect, re-connect, refresh the connection) so the tool list is fetched again, and names reinstalling the plugin only as what to try if that does not bring the tool back. A reply that leads with reinstalling, or with contacting support, FAILS.
+
+      3. The audit is not abandoned. Either the reply reports what the budget-pacing check found, in plain words from the tool's answer, or it says plainly that it will run the full audit and the pacing check once the tool list is refreshed. A reply that reports full-audit findings it could not have read FAILS.
+
+      4. Prose. No tool-list JSON, no field names, no account numbers. Naming the tools by their names is fine.
+
+      FAIL if any of the four is missing.
+  - name: asks-the-server-for-the-tools-text
+    type: regex
+    target: mock_calls
+    pattern: '\\?"tools\\?"\s*:\s*\[[^\]]*full_audit'
+    arm: with-only
+  - name: says-mcp
+    type: regex
+    target: last_message
+    pattern: '(?<![\w./:-])/mcp\b'
+  - name: no-raw-fields-or-json
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    pattern: '\b(tools_revision_note|input_schema|inputSchema|conversion_tracking_status|needs_reauth|can_edit|connect_url|ads_probe|customer_id)\b|"(name|description|tools|tools_revision|findings|results?)"\s*:|\{\s*"'
+  - name: read-the-server-first
+    type: regex
+    target: mock_calls
+    pattern: get_org_context
+    arm: with-only

@@ -28,6 +28,7 @@ graders:
   - name: teaches-two-steps
     type: llm
     focus: trace
+    weight: 2
     criteria: |
       The customer asked for conversion tracking so that sign-ups are counted. The server reported: one Google Ads account (Example Bakery) with a first campaign built and paused and no conversion actions; an Analytics property (Example Bakery) with one web data stream; Tag Manager connected with one container (Example Bakery website) that holds no tags or triggers yet, with only the default built-in variables enabled and none of the click or form ones; the property already linked to the ad account; and a saved profile saying the result to count is a sign-up to the tasting list, whose form sends people to a thank-you page. Nothing can be applied in this run without the customer's yes, so a good run reads what exists, teaches on the steps it takes or proposes next, and ends by proposing or by asking one question.
 
@@ -52,7 +53,7 @@ graders:
     target: last_message
     flags: i
     match: not_contains
-    pattern: '\b(resource_id|conversion_tracking_status|needs_reauth|can_edit|connect_url|ads_probe|property_defaults|firing_trigger_id|customer_id|web_stream_data|data_streams|conversion_events|builtInVariable)\b|"(name|type|path|displayName|display_name|measurementId|measurement_id|workspaceId|containerId|results?)"\s*:|\{\s*"'
+    pattern: '\b(resource_id|conversion_tracking_status|needs_reauth|can_edit|connect_url|ads_probe|property_defaults|firing_trigger_id|customer_id|web_stream_data|data_streams|conversion_events|builtInVariable)\b|"(name|type|path|displayName|display_name|measurementId|measurement_id|workspaceId|containerId|results?)"\s*:|(?<!dataLayer\.push\()\{\s*"'
   - name: read-the-server-first
     type: regex
     target: mock_calls
