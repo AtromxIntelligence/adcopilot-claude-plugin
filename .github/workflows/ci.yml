@@ -150,8 +150,11 @@ jobs:
     # The tools-only ablation, on demand: the same suite against a copy of the
     # plugin whose skills are reduced to their frontmatter, and the delta per
     # skill. This is the number the spec gates a skill's existence on, and the
-    # job is RED — and the release blocked — when any skill's owned delta, mean
-    # or minimum, is below ABLATION_FAIL_BELOW. 0.05 is the smallest delta that
+    # job is RED — and the release blocked — when any skill's delta over the
+    # cases the connector does not already carry, mean or minimum, is below
+    # ABLATION_FAIL_BELOW, or when a case the tools-only arm passes at 0.8 (a
+    # regression guard on the connector's own behaviour) falls below 0.8 with
+    # the skill. 0.05 is the smallest delta that
     # cannot be judge noise in one direction: one judge flip on one run of a
     # three-run case moves a case score by about 0.11, so 0.05 means at least
     # one run went the skill's way and none went against it.

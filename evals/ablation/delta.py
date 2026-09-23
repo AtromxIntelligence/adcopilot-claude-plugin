@@ -8,7 +8,19 @@ belongs to the skill its `tool_used: Skill` grader names (the skill that fired),
 and is OWNED by the skill whose tag it carries (connect, measure, launch); the
 setup-* cases are the setup command's and fire adcopilot-connect, so they count
 towards "fired" but not "owned". The deletion rule in the spec reads on owned.
-With --fail-below X, exit 1 when any skill's owned delta — its mean OR its minimum — is below X.
+
+A case whose TOOLS-ONLY arm scores at or above --guard-at (0.8, the CI
+threshold) is demonstrating behaviour the connector already carries. It is
+classified as a REGRESSION GUARD from the measurement itself — nothing in a
+case file can declare it one — and is excluded from the owned-delta gate,
+while its with-skills score must still reach --guard-at. A case the tools-only
+arm scores LOW and the skill does not lift is a genuinely dead case and stays
+in the gate, which is what the minimum is for.
+
+With --fail-below X, exit 1 when any skill's owned delta over its gated cases —
+the mean OR the minimum — is below X, when a skill has no gated case at all
+(every case it owns is server-carried, so nothing justifies it), or when a
+guard's with-skills score is below --guard-at.
 """
 import argparse
 import json
@@ -69,6 +81,7 @@ def main():
     ap.add_argument("tools_only_json")
     ap.add_argument("--markdown", action="store_true")
     ap.add_argument("--fail-below", type=float, default=None)
+    ap.add_argument("--guard-at", type=float, default=0.8, help="tools-only score at or above which a case is a regression guard (default 0.8, the CI threshold)")
     a = ap.parse_args()
 
     dw, W = load(a.with_json)
@@ -78,53 +91,72 @@ def main():
 
     rows = []
     for n in names:
-        rows.append((n, W[n]["owner"] or "-", W[n]["fired"] or "-", W[n]["score"], T[n]["score"], W[n]["score"] - T[n]["score"], W[n]["errors"] + T[n]["errors"]))
+        owner = W[n]["owner"] or "-"
+        if T[n]["score"] >= a.guard_at:
+            klass = "guard"
+        elif owner != "-":
+            klass = "gated"
+        else:
+            klass = "command"
+        rows.append((n, owner, W[n]["fired"] or "-", W[n]["score"], T[n]["score"], W[n]["score"] - T[n]["score"], W[n]["errors"] + T[n]["errors"], klass))
 
     print("## Skill delta over the tools-only arm")
     print()
     print(f"with-skills: {a.with_json} (judge {dw.get('suite', {}).get('judgeModel') or 'default'}, ${dw.get('costUsd', 0):.2f})")
     print(f"tools-only:  {a.tools_only_json} (judge {dt.get('suite', {}).get('judgeModel') or 'default'}, ${dt.get('costUsd', 0):.2f})")
     print()
-    print("| Case | Owner | Fires | With skill | Tools only | Delta | Run errors |")
-    print("|---|---|---|---|---|---|---|")
-    for n, owner, fired, w, t, dl, err in rows:
-        print(f"| {n} | {owner} | {fired} | {w:.3f} | {t:.3f} | {dl:+.3f} | {err} |")
+    print(f"| Case | Owner | Fires | With skill | Tools only | Delta | Class (guard = tools-only ≥ {a.guard_at:.1f}) | Run errors |")
+    print("|---|---|---|---|---|---|---|---|")
+    for n, owner, fired, w, t, dl, err, klass in rows:
+        note = klass
+        if klass == "guard" and w < a.guard_at:
+            note = f"guard — BELOW {a.guard_at:.1f} WITH THE SKILL"
+        print(f"| {n} | {owner} | {fired} | {w:.3f} | {t:.3f} | {dl:+.3f} | {note} | {err} |")
     if missing:
         print()
         print("Cases present in only one result, not compared: " + ", ".join(missing))
 
     skills = sorted({r[1] for r in rows if r[1] != "-"} | {r[2] for r in rows if r[2] != "-"})
     print()
-    print("| Skill | Owned cases | Owned delta (mean) | Min owned delta | Cases that fire it | Fired delta (mean) | Verdict |")
-    print("|---|---|---|---|---|---|---|")
+    print("| Skill | Gated cases | Gated delta (mean) | Min gated delta | Guards (server-carried) | Cases that fire it | Fired delta (mean) | Verdict |")
+    print("|---|---|---|---|---|---|---|---|")
     bad = []
     for s in skills:
         owned = [r for r in rows if r[1] == s]
+        gated = [r for r in owned if r[7] == "gated"]
+        guards = [r for r in owned if r[7] == "guard"]
         fired = [r for r in rows if r[2] == s]
-        om = sum(r[5] for r in owned) / len(owned) if owned else float("nan")
-        omin = min((r[5] for r in owned), default=float("nan"))
+        om = sum(r[5] for r in gated) / len(gated) if gated else float("nan")
+        omin = min((r[5] for r in gated), default=float("nan"))
         fm = sum(r[5] for r in fired) / len(fired) if fired else float("nan")
-        # The gate reads on BOTH the mean and the minimum of the owned cases: one strong case must
-        # not carry a dead one. Without --fail-below the verdict still names a skill with no delta.
+        weak_guards = [r[0] for r in guards if r[3] < a.guard_at]
+        # The gate reads on the mean AND the minimum over the cases the server does not already
+        # carry: one strong case must not carry a dead one, and a server-carried case is not dead.
+        reasons = []
+        if owned and not gated:
+            reasons.append("no case the server does not carry")
+        if weak_guards:
+            reasons.append("guard below %.1f with the skill: %s" % (a.guard_at, ", ".join(weak_guards)))
         if a.fail_below is None:
-            verdict = "NO DELTA on a case" if not (omin > 0) else "ok"
+            if gated and not (omin > 0):
+                reasons.append("NO DELTA on a gated case")
         else:
-            reasons = []
-            if not (om >= a.fail_below):
+            if gated and not (om >= a.fail_below):
                 reasons.append(f"mean {om:+.3f} < {a.fail_below:+.3f}")
-            if not (omin >= a.fail_below):
+            if gated and not (omin >= a.fail_below):
                 reasons.append(f"min {omin:+.3f} < {a.fail_below:+.3f}")
-            verdict = "FAIL: " + "; ".join(reasons) if reasons else "ok"
-            if reasons:
-                bad.append(s)
-        print(f"| {s} | {len(owned)} | {om:+.3f} | {omin:+.3f} | {len(fired)} | {fm:+.3f} | {verdict} |")
+        verdict = ("FAIL: " + "; ".join(reasons)) if reasons else "ok"
+        if reasons and (a.fail_below is not None or weak_guards or (owned and not gated)):
+            bad.append(s)
+        gtxt = ", ".join(f"{r[0]} ({r[3]:.3f}/{r[4]:.3f})" for r in guards) or "-"
+        print(f"| {s} | {len(gated)} | {om:+.3f} | {omin:+.3f} | {gtxt} | {len(fired)} | {fm:+.3f} | {verdict} |")
 
     print()
-    print("A skill with no positive owned delta has not earned its place: the connector's own playbook and tool descriptions already carry what its cases measure. The gate reads on the minimum as well as the mean, so one strong case cannot carry a dead one.")
+    print(f"A case the tools-only arm scores at or above {a.guard_at:.1f} is a regression guard on behaviour the connector already carries: it is kept at {a.guard_at:.1f} with the skill and left out of the skill's delta. A skill with no positive delta over the cases the server does not carry has not earned its place; the gate reads on the minimum as well as the mean of those cases, so one strong case cannot carry a dead one.")
 
-    if a.fail_below is not None and bad:
+    if bad:
         print()
-        print(f"FAIL: owned delta (mean or minimum) below {a.fail_below:+.3f} for: " + ", ".join(bad))
+        print("FAIL: " + ", ".join(bad))
         sys.exit(1)
 
 

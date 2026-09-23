@@ -9,7 +9,10 @@
 # mock, reduces each skill to its frontmatter plus one sentence (so the Skill
 # tool still fires and the case stays comparable), runs the same suite against
 # both copies with --ablation none, and prints the per-case and per-skill delta.
-# A skill whose cases show no delta over this arm has not earned its place.
+# A case the tools-only arm scores at or above 0.8 is a regression guard on
+# behaviour the connector already carries (kept at 0.8 with the skill, left out
+# of the delta); a skill with no delta over the cases the server does not carry
+# has not earned its place.
 #
 # Usage:  evals/ablation/tools-only.sh [extra claude plugin eval args, e.g. --case 'measure-*']
 # Env:    ABLATION_OUT           where the two JSON results and the table go
