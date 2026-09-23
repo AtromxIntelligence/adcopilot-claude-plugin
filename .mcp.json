@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "adcopilot": {
+      "type": "http",
+      "url": "https://mcp.adcopilot.cloud/mcp"
+    }
+  }
+}

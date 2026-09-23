@@ -1,0 +1,66 @@
+schema_version: "1.1"
+name: connect-unknown-product
+description: >
+  The server reports a product under a key the skill never names ("lantern",
+  which does not exist; the tenant in evals/mocks is fictional and every value
+  in it is invented). The key has no display name, only the server's own
+  description. The reply must be prose for someone who has never opened Google
+  Ads: the product named in a sentence, what it would do for them, offered in
+  the same shape as the known products, described from the server's text, and
+  never called unsupported. A reply that reproduces the server's field names or
+  JSON structure fails even when every fact in it is right; so do products or
+  connect addresses stated from memory.
+tags: [connect]
+runs: 3
+execution:
+  prompt: "What can AdCopilot connect for me?"
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Skill]
+graders:
+  - name: names-the-unknown-product-in-prose
+    type: regex
+    target: last_message
+    flags: i
+    pattern: '(?<!/)lantern(?!"\s*:)'
+  - name: does-not-disown-it
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    pattern: 'Lantern[^.\n]{0,80}\b(unsupported|not supported|isn.t supported|not recogni[sz]ed?|don.t recogni[sz]e|do not recogni[sz]e|unfamiliar|unknown|never heard)\b|\b(unsupported|not supported|isn.t supported|not recogni[sz]ed?|don.t recogni[sz]e|do not recogni[sz]e|unfamiliar|unknown|never heard)\b[^.\n]{0,80}Lantern'
+  - name: no-raw-fields-or-json
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    pattern: '\b(connect_url|needs_reauth|can_edit|property_defaults|tools_revision|app_urls|cross_reads|search_console|google_ads)\b|"(connected|unlocks|lantern|gtm|ga4|products|overlays|situation|next_step|playbook)"\s*:|\{\s*"'
+  - name: no-remembered-addresses
+    type: regex
+    target: last_message
+    match: not_contains
+    weight: 0.5
+    pattern: 'https?://(?!app\.example\.invalid/|adcopilot\.cloud/|mcp\.adcopilot\.cloud/)[^\s)>\]]+'
+  - name: describes-it-from-the-server
+    type: llm
+    focus: last_message
+    criteria: |
+      The agent read a server answer whose products are keyed by slug. One key is "lantern", not connected yet, with no display name and only this description from the server: "I can report which product pages shoppers read before they later search for the brand, and turn those pages into audiences a campaign can target."
+
+      Read the reply as someone who has never opened Google Ads. PASS only if all five hold:
+      1. The reply offers Lantern as one of the things AdCopilot can connect, in the same shape as the other products it lists — not as an aside, a footnote, or a question about what it is.
+      2. The reply says what it would do for this customer using the substance of the server's description (pages shoppers read before searching for the brand; audiences built from those pages). Paraphrase is fine. Capabilities the server did not state are not.
+      3. The reply does not call it unsupported, unknown, unfamiliar, or new, does not apologise for it, and does not say it cannot help with it.
+      4. Any address the reply gives for connecting a product is one the server returned; a remembered or invented address fails.
+      5. The reply is prose: each product is named in a sentence with what it does for the customer. A reply that reproduces the server's field names or structure — keys such as connect_url or search_console, braces, quoted values, a table or list of raw fields — FAILS even if every fact in it is right.
+
+      FAIL if Lantern is missing, if it is described from anything other than the server's text, if the reply lists a product the server did not report, or if the reply is a paste or near-paste of the server's answer.
+  - name: read-the-server-first
+    type: regex
+    target: mock_calls
+    pattern: get_org_context
+    arm: with-only
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-connect"'

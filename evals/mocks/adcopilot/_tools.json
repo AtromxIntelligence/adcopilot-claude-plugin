@@ -1,0 +1,195 @@
+{
+  "tools": [
+    {
+      "name": "get_org_context",
+      "description": "Returns this workspace's AdCopilot context: which Google products are connected, the enabled Google Ads accounts (name, currency, time zone), whether campaigns and conversion tracking exist, the saved business profile, the onboarding stage, plan limits, and a `situation` code with a suggested `next_step`, a `playbook`, and `cross_reads` — reads outside Google Ads with their arguments. Read-only; changes nothing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "refresh": { "type": "boolean", "default": false, "title": "Refresh" }
+        },
+        "title": "get_org_contextArguments"
+      }
+    },
+    {
+      "name": "ga4_list_account_summaries",
+      "description": "List GA4 accounts and their properties this Google login can reach.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page_size": { "type": "integer", "default": 200, "title": "Page Size" }
+        },
+        "title": "ga4_list_account_summariesArguments"
+      }
+    },
+    {
+      "name": "ga4_list_properties",
+      "description": "List GA4 properties under an account (accounts/<id>).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "account": { "type": "string", "title": "Account" }
+        },
+        "required": ["account"],
+        "title": "ga4_list_propertiesArguments"
+      }
+    },
+    {
+      "name": "ga4_create_property",
+      "description": "Create a GA4 property under an Analytics account (accounts/<id>).\n\n    Use the Google Ads account's time zone and currency — get_org_context\n    carries them as the Analytics card's property_defaults; if it has none,\n    ask the user. time_zone is an IANA name (e.g. \"Asia/Kolkata\"),\n    currency_code ISO 4217 (e.g. \"INR\"). Next: ga4_create_data_stream on the\n    returned property for the website, which gives the measurement ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "account": { "type": "string", "title": "Account" },
+          "display_name": { "type": "string", "title": "Display Name" },
+          "time_zone": { "type": "string", "title": "Time Zone" },
+          "currency_code": { "type": "string", "title": "Currency Code" },
+          "industry_category": { "anyOf": [{ "type": "string" }, { "type": "null" }], "default": null, "title": "Industry Category" }
+        },
+        "required": ["account", "display_name", "time_zone", "currency_code"],
+        "title": "ga4_create_propertyArguments"
+      }
+    },
+    {
+      "name": "ga4_create_google_ads_link",
+      "description": "Link a GA4 property (properties/<id>) to a Google Ads account, so its key\n    events can be imported into Google Ads as conversions and paid visits join\n    the organic ones. customer_id is the Google Ads account (digits; hyphens are\n    stripped). ads_personalization_enabled shares Analytics audiences and\n    remarketing events with Google Ads — off unless the user asks for it.\n    Read ga4_list_google_ads_links first: a property already linked to this\n    account needs no second link. There is no unlink tool.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "property": { "type": "string", "title": "Property" },
+          "customer_id": { "type": "string", "title": "Customer Id" },
+          "ads_personalization_enabled": { "type": "boolean", "default": false, "title": "Ads Personalization Enabled" }
+        },
+        "required": ["property", "customer_id"],
+        "title": "ga4_create_google_ads_linkArguments"
+      }
+    },
+    {
+      "name": "ga4_list_google_ads_links",
+      "description": "List the Google Ads links of a GA4 property (the paid+organic join).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "property": { "type": "string", "title": "Property" }
+        },
+        "required": ["property"],
+        "title": "ga4_list_google_ads_linksArguments"
+      }
+    },
+    {
+      "name": "search",
+      "description": "\nFetches data from the Google Ads API using the search method\n\n    Args:\n        customer_id: The id of the customer\n        fields: The fields to fetch\n        resource: The resource to return fields from\n        conditions: List of conditions to filter the data, combined using AND clauses\n        orderings: How the data is ordered\n        limit: The maximum number of rows to return\n        start_date: Report start date (YYYY-MM-DD). Adds a quoted `segments.date`\n            filter — use this instead of hand-writing dates into `conditions`.\n        end_date: Report end date (YYYY-MM-DD). Combined with start_date this\n            produces a finite `segments.date BETWEEN 'start' AND 'end'` filter.\n\n    \n\nRuns a Google Ads Query Language (GAQL) query against the Google Ads API\n(https://developers.google.com/google-ads/api/docs/query/overview).\n\n### Hints\n    Language Grammar can be found at https://developers.google.com/google-ads/api/docs/query/grammar\n    All resources and descriptions are found at https://developers.google.com/google-ads/api/fields/v23/overview\n\n    For Conversion issues try looking in offline_conversion_upload_conversion_action_summary\n\n### Hint for customer_id\n    should be a string of numbers without punctuation\n    if presented in the form 123-456-7890 remove the hyphens and use 1234567890\n\n### Hints for Dates\n    For a date range, PREFER the `start_date` and `end_date` parameters\n    (YYYY-MM-DD). The tool adds a correctly-quoted `segments.date` filter for you,\n    which avoids the most common query error.\n    If you instead put a date inside `conditions`, it MUST be a quoted string —\n    e.g. segments.date BETWEEN '2026-08-01' AND '2026-08-28' (an unquoted date is\n    a GAQL syntax error). All dates are YYYY-MM-DD with the dashes.\n    Date literals from the Grammar (e.g. DURING LAST_7_DAYS) are not supported here;\n    use start_date/end_date or a quoted range instead.\n",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customer_id": { "type": "string", "title": "Customer Id" },
+          "fields": { "type": "array", "items": { "type": "string" }, "title": "Fields" },
+          "resource": { "type": "string", "title": "Resource" },
+          "conditions": { "type": "array", "items": { "type": "string" }, "default": null, "title": "Conditions" },
+          "orderings": { "type": "array", "items": { "type": "string" }, "default": null, "title": "Orderings" },
+          "limit": { "anyOf": [{ "type": "integer" }, { "type": "string" }], "default": null, "title": "Limit" },
+          "start_date": { "type": "string", "default": null, "title": "Start Date" },
+          "end_date": { "type": "string", "default": null, "title": "End Date" }
+        },
+        "required": ["customer_id", "fields", "resource"],
+        "title": "searchArguments"
+      }
+    },
+    {
+      "name": "conversion_setup_audit",
+      "description": "Check whether conversion tracking can be trusted: primary actions, enhanced conversions, attribution model, conversion values, duplicate counting, GA4 link, consent mode, and whether the tag is actually firing — the measurement every other number in the account rests on. Read-only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customer_id": { "type": "string", "title": "Customer Id" },
+          "days": { "type": "integer", "default": 30, "title": "Days" },
+          "detail": { "type": "string", "enum": ["summary", "full"], "default": "summary", "title": "Detail" },
+          "max_findings": { "type": "integer", "default": 12, "title": "Max Findings" },
+          "render": { "type": "string", "enum": ["json", "markdown", "both"], "default": "both", "title": "Render" }
+        },
+        "required": ["customer_id"],
+        "title": "conversion_setup_auditArguments"
+      }
+    },
+    {
+      "name": "create_campaign",
+      "description": "Creates a new Google Ads campaign with a budget.\n\n    SEARCH campaigns are built conservatively on purpose: Google search on,\n    Search partners OFF, Display Network OFF, location targeting PRESENCE.\n    The last three are the opposite of the Google Ads API's own defaults, and\n    that is deliberate. Search budget leaking into partner sites and banner\n    placements is the single most common way a small advertiser wastes money,\n    and PRESENCE — people actually in the targeted places — is what a user\n    means when they name a country. Pass search_partners, display_network or\n    geo_target_type to get the looser values instead. Those three arguments\n    are also the only thing that touches these settings on a non-SEARCH\n    campaign: left unset, every other channel type behaves exactly as before.\n\n    Args:\n        customer_id: The Google Ads customer ID (numbers only, no hyphens).\n        name: The name for the new campaign.\n        budget_amount_micros: Daily budget in micros of the account's currency (10000000 = 10.00: ₹10 on an INR account, $10 on a USD one).\n        advertising_channel_type: Channel type. One of: SEARCH, DISPLAY, SHOPPING, VIDEO, MULTI_CHANNEL. Default: SEARCH.\n        status: Initial campaign status. One of: ENABLED, PAUSED. Default: PAUSED.\n        bidding_strategy_type: Bidding strategy. One of: MANUAL_CPC, MAXIMIZE_CONVERSIONS, MAXIMIZE_CONVERSION_VALUE, TARGET_CPA, TARGET_ROAS, TARGET_SPEND. Default: MANUAL_CPC.\n        target_cpa_micros: Target CPA in micros of the account's currency, required when bidding_strategy_type is TARGET_CPA.\n        target_roas: Target ROAS (e.g., 2.0 for 200%), required when bidding_strategy_type is TARGET_ROAS.\n        cpc_bid_ceiling_micros: Maximize Clicks' max CPC cap — the most\n            Google may bid for one click — in micros of the account's currency\n            (10000000 = 10.00: ₹10 on an INR account, $10 on a USD one). Only\n            with bidding_strategy_type TARGET_SPEND. Optional.\n        start_date: Campaign start date in YYYY-MM-DD format. Optional.\n        end_date: Campaign end date in YYYY-MM-DD format. Optional.\n        search_partners: Whether ads may serve on the Google Search Partners\n            network. SEARCH default: False. Optional.\n        display_network: Whether ads may serve on the Google Display Network.\n            SEARCH default: False. Optional.\n        geo_target_type: Positive location targeting. One of: PRESENCE (only\n            people in the targeted locations), PRESENCE_OR_INTEREST (also\n            people elsewhere who show interest in them), SEARCH_INTEREST.\n            SEARCH default: PRESENCE. Optional.\n        login_customer_id: The Manager Account ID for accessing client accounts via a manager. Optional.\n\n    Returns:\n        Dictionary with created campaign and budget resource names.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customer_id": { "type": "string", "title": "Customer Id" },
+          "name": { "type": "string", "title": "Name" },
+          "budget_amount_micros": { "type": "integer", "title": "Budget Amount Micros" },
+          "advertising_channel_type": { "type": "string", "default": "SEARCH", "title": "Advertising Channel Type" },
+          "status": { "type": "string", "default": "PAUSED", "title": "Status" },
+          "bidding_strategy_type": { "type": "string", "default": "MANUAL_CPC", "title": "Bidding Strategy Type" },
+          "target_cpa_micros": { "anyOf": [{ "type": "integer" }, { "type": "null" }], "default": null, "title": "Target Cpa Micros" },
+          "target_roas": { "anyOf": [{ "type": "number" }, { "type": "null" }], "default": null, "title": "Target Roas" },
+          "cpc_bid_ceiling_micros": { "anyOf": [{ "type": "integer" }, { "type": "null" }], "default": null, "title": "Cpc Bid Ceiling Micros" },
+          "start_date": { "anyOf": [{ "type": "string" }, { "type": "null" }], "default": null, "title": "Start Date" },
+          "end_date": { "anyOf": [{ "type": "string" }, { "type": "null" }], "default": null, "title": "End Date" },
+          "search_partners": { "anyOf": [{ "type": "boolean" }, { "type": "null" }], "default": null, "title": "Search Partners" },
+          "display_network": { "anyOf": [{ "type": "boolean" }, { "type": "null" }], "default": null, "title": "Display Network" },
+          "geo_target_type": { "anyOf": [{ "type": "string" }, { "type": "null" }], "default": null, "title": "Geo Target Type" },
+          "login_customer_id": { "anyOf": [{ "type": "string" }, { "type": "null" }], "default": null, "title": "Login Customer Id" }
+        },
+        "required": ["customer_id", "name", "budget_amount_micros"],
+        "title": "create_campaignArguments"
+      }
+    },
+    {
+      "name": "set_campaign_status",
+      "description": "Enables, pauses, or removes a Google Ads campaign.\n\n    This is a convenience tool for quickly changing campaign status.\n\n    Args:\n        customer_id: The Google Ads customer ID (numbers only, no hyphens).\n        campaign_id: The ID of the campaign.\n        status: The new status. One of: ENABLED, PAUSED, REMOVED.\n        login_customer_id: The Manager Account ID for accessing client accounts via a manager. Optional.\n\n    Returns:\n        Dictionary with the updated resource name and confirmation message.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customer_id": { "type": "string", "title": "Customer Id" },
+          "campaign_id": { "type": "string", "title": "Campaign Id" },
+          "status": { "type": "string", "title": "Status" },
+          "login_customer_id": { "anyOf": [{ "type": "string" }, { "type": "null" }], "default": null, "title": "Login Customer Id" }
+        },
+        "required": ["customer_id", "campaign_id", "status"],
+        "title": "set_campaign_statusArguments"
+      }
+    },
+    {
+      "name": "list_auto_apply_subscriptions",
+      "description": "Lists the account's auto-apply recommendation subscriptions.\n\n    An ENABLED subscription lets Google apply that type of recommendation to\n    the account without asking. The Google Ads API covers only some of the\n    types the Google Ads UI can auto-apply: the answer names the rest in\n    ui_only_types, and only the Google Ads UI can see or change those. Never\n    tell the user auto-apply is fully off on the strength of this list alone.\n\n    Args:\n        customer_id: The Google Ads customer ID (numbers only, no hyphens).\n        login_customer_id: The Manager Account ID for accessing client\n            accounts via a manager. Optional.\n\n    Returns:\n        Dictionary with subscriptions (type, ui_label, status, dates),\n        enabled_types, api_subscribable_types, ui_only_types and\n        coverage_note.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customer_id": { "type": "string", "title": "Customer Id" },
+          "login_customer_id": { "anyOf": [{ "type": "string" }, { "type": "null" }], "default": null, "title": "Login Customer Id" }
+        },
+        "required": ["customer_id"],
+        "title": "list_auto_apply_subscriptionsArguments"
+      }
+    },
+    {
+      "name": "pause_auto_apply_subscription",
+      "description": "Pauses one auto-apply recommendation subscription.\n\n    Stops Google applying that type of recommendation to the account\n    unattended. It only pauses: it cannot enable, create or remove a\n    subscription. Pausing an already-paused subscription changes nothing. A\n    type the account has no subscription for is reported, not created. Only\n    the types in list_auto_apply_subscriptions' api_subscribable_types can be\n    paused here; the ui_only_types can only be changed in the Google Ads UI.\n\n    Args:\n        customer_id: The Google Ads customer ID (numbers only, no hyphens).\n        recommendation_type: The subscription's type, as listed by\n            list_auto_apply_subscriptions, e.g. SEARCH_PARTNERS_OPT_IN or\n            USE_BROAD_MATCH_KEYWORD.\n        login_customer_id: The Manager Account ID for accessing client\n            accounts via a manager. Optional.\n\n    Returns:\n        Dictionary with recommendation_type, previous_status, status,\n        changed, message and the subscription's resource_name when one\n        exists.\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customer_id": { "type": "string", "title": "Customer Id" },
+          "recommendation_type": { "type": "string", "title": "Recommendation Type" },
+          "login_customer_id": { "anyOf": [{ "type": "string" }, { "type": "null" }], "default": null, "title": "Login Customer Id" }
+        },
+        "required": ["customer_id", "recommendation_type"],
+        "title": "pause_auto_apply_subscriptionArguments"
+      }
+    },
+    {
+      "name": "get_resource_metadata",
+      "description": "Retrieves the selectable, filterable, and sortable fields for a specific Google Ads resource.\n\n    Use this tool to find out which fields you can select, filter by, or sort by\n    when querying a specific resource (e.g., 'campaign', 'ad_group').\n    Do not guess fields, you MUST use this tool to discover them.\n\n    The responses of this tool should be cached, as they don't change frequently.\n\n    Args:\n        resource_name: The name of the Google Ads resource (e.g., 'campaign', 'ad_group').\n    ",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "resource_name": { "type": "string", "title": "Resource Name" }
+        },
+        "required": ["resource_name"],
+        "title": "get_resource_metadataArguments"
+      }
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+schema_version: "1.1"
+name: connect-teaches
+description: >
+  A customer with nothing set up asks to be set up (the tenant in evals/mocks
+  is fictional; every value is invented). Across the run, for at least two
+  steps actually taken or proposed next, the assistant must name the thing the
+  way Google's screens name it, say what breaks if it is wrong, and say what the
+  step unlocked. A run that completes or plans the setup silently fails; so does
+  a lecture delivered before any step is taken.
+tags: [connect]
+runs: 3
+execution:
+  prompt: "Set up AdCopilot for me."
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Skill]
+graders:
+  - name: teaches-two-steps
+    type: llm
+    focus: trace
+    criteria: |
+      The customer asked to be set up. Read the whole run — every assistant message, in order — as someone who has never opened Google Ads or Analytics.
+
+      PASS only if, for at least two distinct steps the run actually takes or proposes next (for example: reading what is connected, sending the customer to sign in again for a product that needs it, creating the Analytics property, linking Analytics to Google Ads, connecting a product that is not connected yet), the assistant does all three of:
+      (a) names the thing the way Google's own screens name it — a screen, setting, or object such as "property", "Google Ads links", "Admin", or the consent screen — so the customer could find it without help;
+      (b) says what breaks if it is wrong, as one concrete consequence (for example: a link pointed at the wrong property sends key events nowhere Google Ads can see), not as "best practice" or "recommended";
+      (c) says what the step unlocked, or will unlock once it is done.
+
+      Teaching attached to the step being taken or proposed right now counts. A lecture covering the whole setup before anything has happened does not, and neither does teaching about a step this workspace does not need as the server reported it.
+
+      FAIL if the run completes or plans the setup without teaching — a bare checklist, a list of tool calls made, or "done" with no explanation — or if fewer than two steps carry all three of (a), (b) and (c). Ending by asking the customer one question is fine.
+  - name: read-the-server-first
+    type: regex
+    target: mock_calls
+    pattern: get_org_context
+    arm: with-only
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-connect"'

@@ -1,0 +1,50 @@
+schema_version: "1.1"
+name: connect-no-analytics-account
+description: >
+  Analytics is connected but the Google login has no Analytics account behind
+  it (the tenant in evals/mocks is fictional; every value is invented). The
+  account list comes back empty and the property-create tool refuses. Only the
+  customer can create the account by accepting Google's terms; the skill must
+  say so, give the route the server names, and neither retry the create nor
+  proceed to the Google Ads link.
+tags: [connect]
+runs: 3
+execution:
+  prompt: "Connect Analytics and link it to my ads account."
+  max_turns: 10
+  timeout_seconds: 300
+  allowed_tools: [Skill]
+graders:
+  - name: names-the-human-step
+    type: llm
+    focus: trace
+    criteria: |
+      Judge the whole run: the tool calls and the final reply. The server reported Analytics connected with no property. Listing Analytics accounts returns none, and the property-create tool refuses because no Analytics account exists for this login.
+
+      PASS only if all three hold:
+      1. The reply tells the customer that an Analytics account has to be created by them, by accepting Google's terms, and that it cannot be created from here.
+      2. The reply gives them the route the server or the tool's refusal names for doing that, and says what comes after once the account exists (the property, then the link) without pretending any of it can happen now.
+      3. The run does not retry the property-create after the refusal, and does not attempt or propose the Google Ads link as if a property existed.
+
+      FAIL if the run loops on the create, invents an account or a property, proposes the link anyway, or gives a route the server did not name.
+  - name: does-not-loop-on-create
+    type: regex
+    target: mock_calls
+    match: not_contains
+    pattern: 'ga4_create_property[\s\S]*ga4_create_property'
+    arm: with-only
+  - name: never-links
+    type: regex
+    target: mock_calls
+    match: not_contains
+    pattern: ga4_create_google_ads_link
+    arm: with-only
+  - name: read-the-server-first
+    type: regex
+    target: mock_calls
+    pattern: get_org_context
+    arm: with-only
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-connect"'

@@ -1,0 +1,73 @@
+schema_version: "1.1"
+name: launch-unserved-campaign
+description: >
+  Day two of the first campaign (the tenant in evals/mocks is fictional; every
+  value is invented). The customer asks how it is doing, not whether it is
+  serving. Everything an approval read returns says fine: switched on,
+  serving, four ads approved, billing approved, the account itself enabled,
+  no spending limit and no pending proposal. The campaign's own numbers say
+  otherwise: ninety impressions on day one, none on day two, no clicks, no
+  spend, most impressions lost to budget while spending nothing, the Status
+  column reading Learning, and an empty search terms report. The reply must
+  notice unprompted, read the disagreement — the impression-share numbers
+  against spend, the account's status, its budget and billing — and say what
+  each ruled in and out, rather than sending the customer to Billing for a
+  payment problem the reads exclude; the only screens left for the customer
+  are the ones whose wording the connector cannot read. A fixed responder
+  answers every search with the account's whole tree, so a call is judged by
+  what it asked for; and because the first campaign read already returns the
+  account, budget and billing rows, separate reads of those cannot be
+  required — the rubric requires the rule-outs they support instead.
+  Deterministic graders test only things with one spelling: the
+  impression-share field strings a delivery read requests, the number ninety,
+  Google's words, raw fields. Meaning is the rubric's.
+tags: [launch]
+runs: 3
+execution:
+  prompt: "It's day two. How's the campaign doing?"
+  max_turns: 12
+  timeout_seconds: 300
+  allowed_tools: [Skill]
+graders:
+  - name: reads-the-delivery-numbers
+    type: regex
+    target: mock_calls
+    pattern: lost_impression_share
+    arm: with-only
+  - name: says-it-in-googles-words
+    type: regex
+    target: last_message
+    flags: i
+    pattern: '^(?=[\s\S]*(?:\b90\b|ninety))(?=[\s\S]*impression)(?=[\s\S]*learning)'
+  - name: no-raw-fields-or-json
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    pattern: '\b(search_budget_lost_impression_share|search_rank_lost_impression_share|search_impression_share|primary_status_reasons|primary_status|serving_status|cost_micros|amount_served_micros|approved_spending_limit_type|pending_proposal|billing_setup|customer_id|campaign_id)\b|"(status|name|type|resource_name|results?)"\s*:|\{\s*"'
+  - name: not-fine-read-not-guessed
+    type: llm
+    focus: last_message
+    criteria: |
+      It is day two of the customer's first Search campaign and they asked how it is doing. The reads available said: the campaign is switched on and serving, its Status reads Learning, all four ads are approved, billing is approved, the account itself is enabled, there is no spending limit and no pending proposal; and its numbers are ninety impressions on day one, none on day two, no clicks, no spend, about seventy percent of impressions lost to budget and about a quarter lost to rank, with an empty search terms report. Whether those reads were made is checked separately from the calls; judge the reply's meaning only, as someone who has never opened Google Ads.
+
+      PASS only if all four hold:
+
+      1. Not fine, and said first. The reply tells the customer the campaign is not delivering — impressions on day one, none on day two, no clicks, nothing spent — as its finding, without being asked whether it is serving. A reply whose message is that everything looks fine, or that it is simply still learning and to wait, FAILS.
+
+      2. Ruled out, not guessed. The reply says what was read and what it ruled out: the ads are approved, the account is not on hold, billing is approved, and there is no spending limit or pending proposal capping it — so this is not a payment problem. A reply that sends the customer to Billing, or to check their payment, as the likely cause FAILS.
+
+      3. Where the numbers point. The reply says, in plain words, that the impressions lost to budget while nothing was spent mean Google is holding the campaign out of most auctions against its budget and bid — a problem on the campaign, such as the per-click cap or the budget against the demand — and names what to look at or decide next. If it sends the customer to a Google Ads screen, it says what that screen can show that the reads could not (the alert banner's wording, Google's own messages under Billing), not that the cause is there.
+
+      4. Google's words, in prose. The Status column's word — Learning — is used and explained in one sentence, and the reply reads as plain language: no API field names, no account numbers, no rows pasted as the server returned them. A short table or list of the days' impressions, clicks and cost in plain words is fine; it is not a paste.
+
+      FAIL if any of the four is missing.
+  - name: read-the-server-first
+    type: regex
+    target: mock_calls
+    pattern: get_org_context
+    arm: with-only
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-launch"'

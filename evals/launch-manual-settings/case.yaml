@@ -1,0 +1,109 @@
+schema_version: "1.1"
+name: launch-manual-settings
+description: >
+  The first campaign was built through the connector yesterday and is paused;
+  the customer asks what to do before switching it on (the tenant in
+  evals/mocks is fictional; every value is invented). The campaign read-back
+  shows Search partners off, Display Network off and location targeting
+  Presence, as the connector builds them. The auto-apply read-back shows one
+  type switched on that the API can pause, and names the types only the
+  Google Ads screens can see. The reply must verify the three settings by
+  reading them back and report them in Google's names with what each would
+  cost if wrong — not send the customer to change them by hand, and not claim
+  they cannot be set from here; ask for the yes before pausing the auto-apply
+  type the API covers; say plainly that the API's list does not cover
+  everything and send them to Recommendations, Auto-apply for the rest; say
+  what the campaign can spend and how to stop it; and leave the switch to the
+  customer. Deterministic graders test only things with one spelling —
+  Google's names for the four settings, the field strings of a settings
+  read-back, the auto-apply read, a status change, a pause, raw fields. Meaning
+  is split across two short rubrics so that each verdict rests on a few facts.
+tags: [launch]
+runs: 3
+execution:
+  prompt: "The campaign you built is ready. What do I do before switching it on?"
+  max_turns: 12
+  timeout_seconds: 300
+  allowed_tools: [Skill]
+graders:
+  - name: names-all-four-in-googles-words
+    type: regex
+    target: last_message
+    flags: i
+    pattern: '^(?=[\s\S]*search partner)(?=[\s\S]*display)(?=[\s\S]*presence)(?=[\s\S]*auto[\s-]?(?:matic(?:ally)?[\s-]?)?appl)'
+  - name: no-raw-fields-or-json
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    pattern: '\b(target_search_network|target_content_network|target_partner_search_network|positive_geo_target_type|primary_status_reasons|api_subscribable_types|ui_only_types|coverage_note|amount_micros|customer_id|campaign_id)\b|"(status|name|type|resource_name|subscriptions|enabled_types|results?)"\s*:|\{\s*"'
+  - name: does-not-disown-the-three
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    weight: 0.5
+    pattern: '\b(?:can(?:no|'')t|cannot|unable to|not able to|no way to)\s+(?:change|set|turn off|switch off|disable|untick)\s+(?:the\s+|your\s+)?(?:search partner|display network|(?:location\s+)?presence)|\b(?:search partner|display network|presence)s?\b[^.\n]{0,40}\b(?:can(?:no|'')t|cannot)\s+be\s+(?:changed|set|turned off|switched off|disabled|unticked)\b'
+  - name: reads-the-network-and-location-settings-back
+    type: regex
+    target: mock_calls
+    pattern: 'target_search_network|target_content_network|positive_geo_target_type'
+    arm: with-only
+  - name: reads-auto-apply-through-the-api
+    type: regex
+    target: mock_calls
+    pattern: list_auto_apply_subscriptions
+    arm: with-only
+  - name: never-switches-it-on
+    type: regex
+    target: mock_calls
+    match: not_contains
+    pattern: set_campaign_status
+    arm: with-only
+  - name: never-pauses-in-a-single-prompt-run
+    type: regex
+    target: mock_calls
+    match: not_contains
+    pattern: pause_auto_apply_subscription
+    arm: with-only
+  - name: settings-verified-with-costs
+    type: llm
+    focus: last_message
+    criteria: |
+      The customer's first Search campaign is paused and they asked what to do before switching it on. Reading the campaign back showed Search partners off, the Display Network off, and location targeting set to Presence (people in the targeted places). Whether that read was actually made is checked separately from the calls; judge the reply's meaning only, as someone who has never opened Google Ads.
+
+      PASS only if all three hold:
+
+      1. Verified and right. The reply reports Search partners, the Display Network and location targeting as read back from the campaign — off, off, Presence — and treats them as already right, needing no change.
+
+      2. Not delegated, not disowned. The reply does not send the customer into Google Ads to untick or change any of those three by hand, and does not say the connector or the API cannot set or change them. "Use Display expansion" is an auto-apply type, not the Display Network setting, and sending the customer to other screens — auto-apply, advertiser verification, sitelinks, assets — is not delegation of these three.
+
+      3. Each carries a consequence. For each of the three, the reply attaches a concrete consequence in money or people — either what being on would cost or what being off protects: banner placements on sites nobody asked for, or "none of your budget goes on banner ads"; other sites' search boxes where clicks are cheaper but worse; people outside the places named, or "not people elsewhere who searched about Brooklyn". Either form counts. "Best practice" or "recommended" with no consequence does not.
+
+      FAIL if any of the three is missing, or if the reply says one of the three is on or needs changing.
+  - name: auto-apply-switch-and-money
+    type: llm
+    focus: last_message
+    criteria: |
+      The customer's first Search campaign is paused and they asked what to do before switching it on. Reading auto-apply showed one type switched on that the connector can pause — "Use broad match keywords" — plus a list of types that only the Google Ads screens can see or change. The daily budget read back is $20, the customer's own number. Asking the customer to confirm anything before switching on, including a $1.50 per-click bid, is right, not a fault. Whether anything was written without a yes is checked separately from the calls; judge the reply's meaning only, as someone who has never opened Google Ads.
+
+      PASS only if all four hold:
+
+      1. Auto-apply, both halves. The reply names broad match as the type switched on and asks for the customer's yes before pausing it — offering to pause it is right, claiming it is already paused is wrong. AND it says plainly that the API's list does not cover everything Google can auto-apply, and sends the customer to Recommendations, then Auto-apply, in Google Ads for the rest. A reply that says auto-apply is off, or handled, on the strength of the API read alone FAILS; so does one that omits that screen.
+
+      2. The switch is theirs. The reply says the customer switches the campaign on themselves in Google Ads — the Campaigns page, the status dot beside the campaign, Enabled. A reply that says it switched the campaign on, offers to switch it on, or leaves the customer unsure who does it FAILS. It need not be the last sentence; closing with a question about the pause or the bid is fine.
+
+      3. The money sentence. The reply says what the campaign can spend in a day in dollars ($20), that a busy day can go above it, and how to stop it (pausing — through the connector or on the same Campaigns page).
+
+      4. Prose. Plain language for someone new to Google Ads: no API field names, no account numbers, no rows pasted as the server returned them. Google's own labels — Paused, Enabled, Manual CPC, Phrase, Exact — the figures, keywords and pages the reads returned, and a short table or list of them in plain words are all fine.
+
+      FAIL if any of the four is missing.
+  - name: read-the-server-first
+    type: regex
+    target: mock_calls
+    pattern: get_org_context
+    arm: with-only
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-launch"'

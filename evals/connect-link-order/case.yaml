@@ -1,0 +1,45 @@
+schema_version: "1.1"
+name: connect-link-order
+description: >
+  Analytics is connected with no property (the tenant in evals/mocks is
+  fictional; every value is invented). The server's answer states the situation
+  but not the order, the reason or the read-back: those have to come from the
+  skill. The property must be established before the Google Ads link, the reason
+  for that order must be said, and the link must be verified by reading it back
+  rather than assumed. The Analytics tools here are played by an agent mock so
+  that state holds across calls within a run.
+tags: [connect]
+runs: 3
+execution:
+  prompt: "Connect Analytics and link it to my ads account."
+  max_turns: 12
+  timeout_seconds: 300
+  allowed_tools: [Skill]
+graders:
+  - name: property-before-link-with-reason-and-readback
+    type: llm
+    focus: trace
+    criteria: |
+      Judge the whole run: the tool calls and the final reply. The server reported Google Ads connected (one account, America/New_York, USD) and Analytics connected with no property yet. The server's answer does not say what order to do things in.
+
+      PASS only if all three hold:
+      1. Order: a property is created or confirmed to exist before any Google Ads link is created or proposed. Reading the current state from the server first (get_org_context, listing accounts and properties) counts; assuming a property exists does not. If writes were not applied because the agent asked for the customer's yes first, judge the proposed sequence.
+      2. Reason: the reply says why that order, in substance: a Google Ads link points at a property, so the property has to exist before the link can.
+      3. Verification: the link is confirmed by reading it back from the server (listing the property's Google Ads links) rather than assumed from the create call. If the writes were only proposed, the plan must say the link will be read back to confirm it.
+
+      FAIL if a link is attempted or proposed before a property exists, if the order is stated without a reason, or if success is assumed from the create call alone. Telling the customer where to check in Google's own screens is fine as an extra, but it does not replace reading the link back through the connector.
+  - name: first-link-never-precedes-first-property
+    type: regex
+    target: mock_calls
+    match: not_contains
+    pattern: '^(?:(?!ga4_create_property)[\s\S])*ga4_create_google_ads_link'
+    arm: with-only
+  - name: read-the-server-first
+    type: regex
+    target: mock_calls
+    pattern: get_org_context
+    arm: with-only
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-connect"'

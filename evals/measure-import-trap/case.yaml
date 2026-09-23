@@ -1,0 +1,76 @@
+schema_version: "1.1"
+name: measure-import-trap
+description: >
+  The customer has just imported their Analytics events into Google Ads and
+  asks if they are done (the tenant in evals/mocks is fictional; every value
+  is invented). The server's own answer already reports five enabled
+  conversion actions and five Primary; the audit and the conversion-action
+  read-back both show which five: the sign-up and the four events Analytics
+  collects on its own. The reply must read the account back rather than
+  assume, say no, name the four in prose, explain what a Primary conversion
+  makes Google Ads do and so what counting a page view as one costs, tell the
+  customer to change the four extras to Secondary, end with exactly one
+  Primary, and confirm it by reading the account back. Deterministic graders
+  here test only things with one spelling — the four event names, raw rows,
+  the inversion "already Secondary", the read-back call. Everything that can
+  be paraphrased is judged by the rubric from meaning.
+tags: [measure]
+runs: 3
+execution:
+  prompt: "I imported my Analytics events into Google Ads. Am I done?"
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Skill]
+graders:
+  - name: names-all-four-offenders
+    type: regex
+    target: last_message
+    flags: i
+    pattern: '^(?=[\s\S]*\bpage[_ ]?view)(?=[\s\S]*\bsession[_ ]?start)(?=[\s\S]*\bfirst[_ ]?visit)(?=[\s\S]*\buser[_ ]?engagement)'
+  - name: no-raw-rows-or-json
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    pattern: '"(name|resource_name|primary_for_goal|status|category|origin|enabled|primary|types)"\s*:|\{\s*"'
+  - name: does-not-invert-the-facts
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    pattern: '\balready (?:set to |marked (?:as )?|switched to |been (?:set to |made |marked (?:as )?)?)?(?:secondary|demoted)\b'
+  - name: read-the-account-back
+    type: regex
+    target: mock_calls
+    pattern: 'conversion_setup_audit|\\?"resource\\?"\s*:\s*\\?"conversion_action'
+    arm: with-only
+  - name: not-done-one-primary-with-the-path
+    type: llm
+    focus: trace
+    criteria: |
+      The customer imported their Analytics events into Google Ads and asked "Am I done?". The server's first answer reported one campaign running and, for the ad account, five enabled conversion actions with five Primary. The conversion audit and the conversion-action read-back both show which five, all Primary: sign_up, page_view, session_start, first_visit and user_engagement.
+
+      Judge the whole run from its meaning, not its wording, and read the final reply as someone who has never opened Google Ads. PASS only if every one of the six holds:
+
+      1. Not done. The answer is no, and the reason given is that the import left the four automatic events (page_view, session_start, first_visit, user_engagement) marked Primary. A reply that says those four are already Secondary, or that only the sign-up is Primary, contradicts what was read back and FAILS.
+
+      2. The consequence. The reply explains what a Primary conversion causes Google Ads to do — a campaign that bids for conversions bids towards it — and therefore what counting a page view as one means: the campaign buys page views, or visits, or traffic, rather than sign-ups. Any wording that carries that meaning counts ("someone just visiting counts as a sign-up", "it will chase visits, not sign-ups", "you would be paying for page views"). "Best practice", "recommended" or "cleaner" with no consequence does not.
+
+      3. The instruction. The reply tells the customer to change the four extras to Secondary, as something they do in Google Ads' own screens (under Goals, then Conversions, each action's settings), with a path a person could follow. A reply that only reports the situation and stops, or asks whether they would like help before saying what to do, FAILS. So does a reply that claims to have demoted them itself (no tool can), or that tells them to delete or remove the actions instead.
+
+      4. Exactly one. The reply ends with exactly one Primary conversion action, the sign-up, and says so in any words ("the only Primary", "the sole Primary action", "the single action marked Primary", "exactly one"). It does not leave two, and it does not demote the sign-up.
+
+      5. Confirmed by read-back. The reply says the result will be checked by reading the conversion actions back from Google Ads once the customer has made the change, or offers to do that, rather than declaring the fix done on trust.
+
+      6. Read, not assumed. In the run, the account was actually read — the conversion audit, or a conversion-action read — before the reply described what is Primary. A reply built from the server's summary count alone, or from memory, FAILS.
+
+      FAIL if any of the six is missing, if the reply names fewer than the four events, if it invents actions the server did not return, or if it reproduces the server's rows or field names instead of prose.
+  - name: read-the-server-first
+    type: regex
+    target: mock_calls
+    pattern: get_org_context
+    arm: with-only
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-measure"'

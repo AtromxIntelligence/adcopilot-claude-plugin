@@ -1,0 +1,9 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Local Claude Code state — never part of the plugin
+.claude/settings.local.json
+
+# Written by every `claude plugin eval` run — never part of the plugin
+evals/results/
