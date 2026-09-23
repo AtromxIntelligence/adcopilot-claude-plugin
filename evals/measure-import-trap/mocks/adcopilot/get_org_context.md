@@ -204,7 +204,7 @@ type: fixed
   "playbook": "[RAILS] Reads are free. Propose every change and apply it only after a yes. Say nothing you did not read. No account numbers in what you say.\n\nReport the situation in plain language before proposing anything.",
   "cross_reads": {
     "mode": "situational",
-    "say": "Analytics and Tag Manager are the products this situation reads.",
+    "say": "Analytics and Tag Manager are connected; reads there are free.",
     "reads": [],
     "connect": [],
     "skipped": [],
@@ -217,9 +217,7 @@ type: fixed
     },
     "cost_today": 0
   },
-  "hints": [
-    "Five conversion actions are Primary; read which before proposing anything."
-  ],
+  "hints": [],
   "tools_revision": "fixture-1",
   "tools_revision_note": "Every AdCopilot tool description ends with \"Tools revision: <this value>.\" A description that shows a different revision or none is out of date: get_org_context with tools=[those tool names] returns the current text, to read before relying on those tools."
 }

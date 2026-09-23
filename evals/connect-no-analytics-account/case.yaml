@@ -32,13 +32,15 @@ graders:
     type: regex
     target: mock_calls
     match: not_contains
-    pattern: 'ga4_create_property[\s\S]*ga4_create_property'
+    # A tool's NAME can also appear in the call log as an argument of get_org_context
+    # (tools: [...] asks for its text). That is a read, not a call; the lookbehind skips it.
+    pattern: '(?<!\\?"tools\\?"[^\n]{0,200})ga4_create_property[\s\S]*(?<!\\?"tools\\?"[^\n]{0,200})ga4_create_property'
     arm: with-only
   - name: never-links
     type: regex
     target: mock_calls
     match: not_contains
-    pattern: ga4_create_google_ads_link
+    pattern: '(?<!\\?"tools\\?"[^\n]{0,200})ga4_create_google_ads_link'
     arm: with-only
   - name: read-the-server-first
     type: regex

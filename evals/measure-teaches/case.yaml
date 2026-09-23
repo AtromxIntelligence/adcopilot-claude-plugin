@@ -21,7 +21,7 @@ tags: [measure]
 runs: 3
 execution:
   prompt: "Set up conversion tracking so I can see sign-ups."
-  max_turns: 10
+  max_turns: 14
   timeout_seconds: 300
   allowed_tools: [Skill]
 graders:
@@ -46,7 +46,9 @@ graders:
     type: regex
     target: mock_calls
     match: not_contains
-    pattern: 'gtm_create_tag|gtm_create_trigger|gtm_enable_built_in_variable|ga4_create_conversion_event|ga4_create_data_stream|ga4_create_property|ga4_create_google_ads_link|create_conversion_action'
+    # A tool's NAME can also appear in the call log as an argument of get_org_context
+    # (tools: [...] asks for its text). That is a read, not a call; the lookbehind skips it.
+    pattern: '(?<!\\?"tools\\?"[^\n]{0,200})(?:gtm_create_tag|gtm_create_trigger|gtm_enable_built_in_variable|ga4_create_conversion_event|ga4_create_data_stream|ga4_create_property|ga4_create_google_ads_link|create_conversion_action)'
     arm: with-only
   - name: no-raw-fields-or-json
     type: regex

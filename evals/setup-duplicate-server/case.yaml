@@ -57,7 +57,7 @@ graders:
 
       3. Setup's job still done. The reply says what the server reported as connected and what is not — in the customer's words, from the server's answer and not from a list of its own — and calls nothing unsupported. A short list or table in plain words is fine; the server's field names or JSON are not.
 
-      4. A next step. The reply ends by pointing the customer at what to do next — /adcopilot:launch, since there are no campaigns, or re-running setup once the duplicate is removed. Saying that re-approving Search Console or creating the Analytics property comes before it is fine, since the server reported both.
+      4. A next step. The reply ends by pointing the customer at one next step with a reason — /adcopilot:launch (no campaigns yet) or /adcopilot:measure (nothing counted yet; the account has neither, and the skill's rule is one, not both) — or at re-running setup once the duplicate is removed. Either command is right here as long as it is one and the reason is given. Saying that re-approving Search Console or creating the Analytics property comes before it is fine, since the server reported both.
 
       FAIL if any of the four is missing.
   - name: read-the-server-first

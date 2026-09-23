@@ -50,18 +50,20 @@ graders:
   - name: read-the-account-back
     type: regex
     target: mock_calls
-    pattern: 'conversion_setup_audit|\\?"resource\\?"\s*:\s*\\?"conversion_action'
+    # A tool's NAME can also appear in the call log as an argument of get_org_context
+    # (tools: [...] asks for its text). That is a read, not a call; the lookbehind skips it.
+    pattern: '(?<!\\?"tools\\?"[^\n]{0,200})conversion_setup_audit|\\?"resource\\?"\s*:\s*\\?"conversion_action'
     arm: with-only
   - name: reads-the-container-back
     type: regex
     target: mock_calls
-    pattern: gtm_list_built_in_variables
+    pattern: '(?<!\\?"tools\\?"[^\n]{0,200})gtm_list_built_in_variables'
     arm: with-only
   - name: never-writes-in-a-single-prompt-run
     type: regex
     target: mock_calls
     match: not_contains
-    pattern: 'gtm_enable_built_in_variable|gtm_create_tag|gtm_create_trigger'
+    pattern: '(?<!\\?"tools\\?"[^\n]{0,200})(?:gtm_enable_built_in_variable|gtm_create_tag|gtm_create_trigger)'
     arm: with-only
   - name: not-done-one-primary-with-the-path
     type: llm
