@@ -1,0 +1,58 @@
+schema_version: "1.1"
+name: setup-signed-out
+description: >
+  /adcopilot:setup when the connector's sign-in has lapsed (the tenant in
+  evals/mocks is fictional; every value is invented). The only tool that
+  exists answers every call with the same error: the server needs the user to
+  sign in again. The reply must say how to sign back in — /mcp, choose
+  adcopilot, sign in with Google — and stop: not call the failing tool again
+  and again, not blame a permission, a scope, an outage or a bug, and not
+  report anything as connected, since nothing was read. Deterministic graders
+  test only strings with one spelling and a call count: the /mcp command (not
+  the same four characters at the end of the connector's address), the number
+  of calls to the failing tool, raw fields. Meaning is the rubric's.
+tags: [setup]
+runs: 3
+execution:
+  prompt: "/adcopilot:setup"
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Skill]
+graders:
+  - name: says-mcp
+    type: regex
+    target: last_message
+    pattern: '(?<![\w./:-])/mcp\b'
+  - name: tries-once-or-twice-not-in-a-loop
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    min: 1
+    max: 2
+    arm: with-only
+  - name: no-raw-fields-or-json
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    pattern: '\b(connect_url|needs_reauth|can_edit|tools_revision|app_urls|cross_reads)\b|"(connected|unlocks|products|overlays|situation|next_step|playbook|error|result)"\s*:|\{\s*"'
+  - name: sign-in-once-and-stop
+    type: llm
+    focus: last_message
+    criteria: |
+      The customer ran /adcopilot:setup. The only connector tool available answered its call with an error saying the server needs the user to sign in again. Nothing about the account was read. Judge the reply's meaning only, as someone who first opened a terminal this week.
+
+      PASS if all four hold:
+
+      1. The way back in. The reply tells them to run /mcp, choose the adcopilot connector, and sign in with Google. Extra help with that same sign-in — which Google account to pick, for example — is fine. A closing line that says to run setup again afterwards is fine.
+
+      2. The right diagnosis. The reply says they are signed out, or that the sign-in has lapsed or expired. It does not blame a permission they lack, a missing scope, an outage, a bug, or the connector being unsupported or not installed. Saying explicitly that it is NOT one of those is fine.
+
+      3. Nothing reported that was not read. The reply does not say which products are connected or report anything about their account. Saying what it will report once they are signed in is fine; saying it saw no sign of a duplicate connector is fine.
+
+      4. Stops there. The reply does not tell them to keep retrying and does not say it will keep retrying itself.
+
+      FAIL if any of the four does not hold, or if the reply is a paste of tool output rather than prose.
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-connect"'

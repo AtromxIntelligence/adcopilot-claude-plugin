@@ -1,0 +1,66 @@
+schema_version: "1.1"
+name: setup-duplicate-server
+description: >
+  /adcopilot:setup on a machine where the customer had already added the
+  connector by hand, from the website's instructions, before installing the
+  plugin (the tenant in evals/mocks is fictional; every value is invented).
+  Outside this harness Claude Code keeps the hand-added server and silently
+  drops the plugin's, so the connector answers normally and nothing in any
+  tool result says there are two. The prompt carries the one fact the
+  customer can see: `claude mcp list` shows an `adcopilot` HTTP server they
+  added. The reply must notice the duplicate, send them the bare
+  `claude mcp remove adcopilot` — no scope flag, because the website's
+  instructions add it at local scope — keep the plugin's, never tell them to
+  remove the plugin, and still do setup's job: what the server reports as
+  connected, in prose, and a next step. The harness registers the mock under
+  the plugin's own server name, so a reply may observe that the plugin's copy
+  answered this time; which copy answered is not judged. Deterministic graders
+  test only strings with one spelling: the remedy command, raw field names
+  (not the same words inside a connect address the server returned). Meaning
+  is the rubric's.
+tags: [setup]
+runs: 3
+execution:
+  prompt: |
+    /adcopilot:setup
+    (context: `claude mcp list` shows an `adcopilot` HTTP server added by the user)
+  max_turns: 8
+  timeout_seconds: 240
+  allowed_tools: [Skill]
+graders:
+  - name: names-the-bare-remedy
+    type: regex
+    target: last_message
+    pattern: 'claude mcp remove adcopilot(?![ \t]+(?:-s|--scope)\b)'
+  - name: no-raw-fields-or-json
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    pattern: '(?<!/)\b(connect_url|needs_reauth|can_edit|property_defaults|tools_revision|app_urls|cross_reads|search_console|google_ads)\b|"(connected|unlocks|lantern|gtm|ga4|products|overlays|situation|next_step|playbook)"\s*:|\{\s*"'
+  - name: keeps-the-plugin-removes-theirs
+    type: llm
+    focus: last_message
+    criteria: |
+      The customer ran /adcopilot:setup. The connector answered normally: Google Ads connected (one account, Example Bakery, no campaigns yet), Analytics connected with no property, Search Console connected but needing to be signed in again, Tag Manager not connected, and a fifth product the server calls lantern, not connected. The prompt also said that `claude mcp list` shows an `adcopilot` HTTP server the customer added by hand. This plugin registers a connector of the same name. The reply may say which of the two answered this call; that is not judged.
+
+      Judge the reply's meaning only, as someone who first opened a terminal this week. PASS only if all four hold:
+
+      1. The duplicate is noticed. The reply says there are two registrations of the same connector — one the customer added by hand and the plugin's — and treats the hand-added one as the duplicate to remove. It does not treat the plugin as broken, missing or not installed, and it does not say it cannot tell whether there is a duplicate.
+
+      2. Remove theirs, keep the plugin's. The reply tells them to remove the hand-added one with `claude mcp remove adcopilot` and to keep the plugin's. A reply that tells them to uninstall or remove the plugin, to remove both, or that gives the command with a scope flag such as `-s user` as the thing to run, FAILS.
+
+      3. Setup's job still done. The reply says what the server reported as connected and what is not — in the customer's words, from the server's answer and not from a list of its own — and calls nothing unsupported. A short list or table in plain words is fine; the server's field names or JSON are not.
+
+      4. A next step. The reply ends by pointing the customer at what to do next — /adcopilot:launch, since there are no campaigns, or re-running setup once the duplicate is removed. Saying that re-approving Search Console or creating the Analytics property comes before it is fine, since the server reported both.
+
+      FAIL if any of the four is missing.
+  - name: read-the-server-first
+    type: regex
+    target: mock_calls
+    pattern: get_org_context
+    arm: with-only
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-connect"'

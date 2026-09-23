@@ -20,13 +20,21 @@ If you had already added the connector by hand before installing, Claude Code ke
 
 ## What you get
 
-Skills, which Claude draws on when the conversation calls for them:
+Five commands, which you type:
+
+- `/adcopilot:setup` — checks the connector is connected and signed in, says what each connected product unlocks, and catches the two ways a fresh install goes wrong: a lapsed sign-in, and a copy of the connector you added by hand before installing.
+- `/adcopilot:launch` — a first Search campaign, through the `adcopilot-launch` skill below.
+- `/adcopilot:measure` — conversion tracking, through the `adcopilot-measure` skill below.
+- `/adcopilot:daily` — the daily check-in: what was spent since yesterday, the searches the ads showed for, and what changed in the account, with the wrong searches turned into never-show-for words.
+- `/adcopilot:audit` — the connector's full audit and this month's budget pacing, with what is only newness kept out of the findings.
+
+Three skills, which Claude draws on when the conversation calls for them:
 
 - **adcopilot-connect** — sets up AdCopilot, connects your Google products and links them to each other in the order that works, saying what each step bought you as it happens.
 - **adcopilot-measure** — sets up conversion tracking end to end: the Analytics property and data stream, the Tag Manager tags, the key event, the Analytics-to-Ads link and the import, and ends with exactly one Primary conversion, proven by a real click.
 - **adcopilot-launch** — builds a first Search campaign switched off, on the budget and bid you name: locations, never-show-for words, ad groups, keywords with their match types, ads and assets; verifies the settings that leak money by reading the campaign back; hands you the go-live switch; and runs the first week's checks, reading why a switched-on campaign is not delivering before it sends you to any screen.
 
-Together with the connector registration above, the list above is what the plugin ships at this version.
+Together with the connector registration above, the commands and skills above are what the plugin ships at this version.
 
 ## What it will not do
 
@@ -41,7 +49,7 @@ Together with the connector registration above, the list above is what the plugi
 
 ## AdCopilot version
 
-Written against AdCopilot **v2.13.x**.
+Written against AdCopilot **v2.14.x**. `/adcopilot:audit` relies on the `tools_revision` that `get_org_context` reports from v2.14.1 on, to refresh a stale tool description in-conversation.
 
 ## Licence
 
