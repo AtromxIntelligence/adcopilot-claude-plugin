@@ -9,8 +9,10 @@ and is OWNED by the skill whose tag it carries (connect, measure, launch); the
 setup-* cases are the setup command's and fire adcopilot-connect, so they count
 towards "fired" but not "owned". The deletion rule in the spec reads on owned.
 
-A case whose TOOLS-ONLY arm scores at or above --guard-at (0.8, the CI
-threshold) is demonstrating behaviour the connector already carries. It is
+The tools-only arm is the connector PLUS each skill's frontmatter description
+(the stub keeps the description so the Skill tool still fires), so every delta
+here is conservative. A case whose TOOLS-ONLY arm scores at or above --guard-at
+(0.8, the CI threshold) is demonstrating behaviour that baseline already carries. It is
 classified as a REGRESSION GUARD from the measurement itself — nothing in a
 case file can declare it one — and is excluded from the owned-delta gate,
 while its with-skills score must still reach --guard-at. A case the tools-only
@@ -31,21 +33,58 @@ import sys
 TAG_TO_SKILL = {"connect": "adcopilot-connect", "measure": "adcopilot-measure", "launch": "adcopilot-launch"}
 
 
+UNREADABLE = []
+
+
+REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+
+
 def case_tags(root, case_dir):
-    """Tags from the case.yaml, read without a YAML library (tags: [a, b] on one line)."""
-    path = os.path.join(root or "", case_dir, "case.yaml")
+    """Tags from the case.yaml: PyYAML when present, else a reader for both `tags: [a, b]` and
+    the block form `tags:` / `  - a`. The file is looked for under the result's suite.root and
+    then under the repository this script lives in (a result downloaded from another job, or
+    produced in the harness's temporary copy, names a root that no longer exists). A case file
+    readable in neither place is recorded and fails the gate, because a case with no readable
+    tags silently loses its owner and leaves the gate."""
+    text = None
+    tried = []
+    for base in (root, REPO_ROOT):
+        if not base:
+            continue
+        path = os.path.join(base, case_dir, "case.yaml")
+        tried.append(path)
+        try:
+            text = open(path).read()
+            break
+        except OSError:
+            continue
+    if text is None:
+        UNREADABLE.append(" / ".join(tried))
+        return []
     try:
-        with open(path) as f:
-            for line in f:
-                m = re.match(r"^tags:\s*\[(.*)\]\s*$", line)
-                if m:
-                    return [t.strip().strip("'\"") for t in m.group(1).split(",") if t.strip()]
-    except OSError:
+        import yaml  # type: ignore
+        d = yaml.safe_load(text)
+        return [str(t) for t in (d.get("tags") or [])]
+    except ImportError:
         pass
+    m = re.search(r"^tags:\s*\[(.*)\]\s*$", text, re.M)
+    if m:
+        return [t.strip().strip("'\"") for t in m.group(1).split(",") if t.strip()]
+    m = re.search(r"^tags:\s*\n((?:[ \t]+-[^\n]*\n)+)", text, re.M)
+    if m:
+        return [l.strip().lstrip("-").strip().strip("'\"") for l in m.group(1).splitlines() if l.strip()]
     return []
 
 
-def load(path):
+def skills_on_disk(skills_dir):
+    """Every skill the plugin ships, from skills/*/SKILL.md — the gate must see all of them."""
+    try:
+        return sorted(n for n in os.listdir(skills_dir) if os.path.isfile(os.path.join(skills_dir, n, "SKILL.md")))
+    except OSError:
+        return None
+
+
+def load(path, read_tags=True):
     with open(path) as f:
         d = json.load(f)
     root = d.get("suite", {}).get("root")
@@ -59,7 +98,7 @@ def load(path):
                 m = re.search(r"adcopilot-(\w+)", cfg.get("input_match") or cfg.get("inputMatch") or "")
                 if m and int(cfg.get("max", 10**9) or 10**9) > 0:
                     fired = "adcopilot-" + m.group(1)
-        tags = case_tags(root, c.get("dir", ""))
+        tags = case_tags(root, c.get("dir", "")) if read_tags else []
         owner = next((TAG_TO_SKILL[t] for t in tags if t in TAG_TO_SKILL), None)
         if owner is None:
             prefix = c["name"].split("-", 1)[0]
@@ -82,10 +121,11 @@ def main():
     ap.add_argument("--markdown", action="store_true")
     ap.add_argument("--fail-below", type=float, default=None)
     ap.add_argument("--guard-at", type=float, default=0.8, help="tools-only score at or above which a case is a regression guard (default 0.8, the CI threshold)")
+    ap.add_argument("--skills-dir", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "skills"), help="the plugin's skills/ directory; every skill in it must have a gated case")
     a = ap.parse_args()
 
     dw, W = load(a.with_json)
-    dt, T = load(a.tools_only_json)
+    dt, T = load(a.tools_only_json, read_tags=False)
     names = [n for n in W if n in T]
     missing = sorted((set(W) | set(T)) - set(names))
 
@@ -116,7 +156,15 @@ def main():
         print()
         print("Cases present in only one result, not compared: " + ", ".join(missing))
 
-    skills = sorted({r[1] for r in rows if r[1] != "-"} | {r[2] for r in rows if r[2] != "-"})
+    on_disk = skills_on_disk(a.skills_dir)
+    skills = sorted({r[1] for r in rows if r[1] != "-"} | {r[2] for r in rows if r[2] != "-"} | set(on_disk or []))
+    print()
+    if on_disk is None:
+        print(f"WARNING: could not list {a.skills_dir}; a skill with no case would not be seen here.")
+    if UNREADABLE:
+        print("WARNING: case files not readable, so these cases have no tags and no owner (the gate cannot classify them): " + "; ".join(UNREADABLE))
+    if not on_disk and not UNREADABLE:
+        pass
     print()
     print("| Skill | Gated cases | Gated delta (mean) | Min gated delta | Guards (server-carried) | Cases that fire it | Fired delta (mean) | Verdict |")
     print("|---|---|---|---|---|---|---|---|")
@@ -133,8 +181,8 @@ def main():
         # The gate reads on the mean AND the minimum over the cases the server does not already
         # carry: one strong case must not carry a dead one, and a server-carried case is not dead.
         reasons = []
-        if owned and not gated:
-            reasons.append("no case the server does not carry")
+        if not gated:
+            reasons.append("no gated case" if not owned else "no case the baseline does not carry")
         if weak_guards:
             reasons.append("guard below %.1f with the skill: %s" % (a.guard_at, ", ".join(weak_guards)))
         if a.fail_below is None:
@@ -146,14 +194,16 @@ def main():
             if gated and not (omin >= a.fail_below):
                 reasons.append(f"min {omin:+.3f} < {a.fail_below:+.3f}")
         verdict = ("FAIL: " + "; ".join(reasons)) if reasons else "ok"
-        if reasons and (a.fail_below is not None or weak_guards or (owned and not gated)):
+        if reasons and (a.fail_below is not None or weak_guards or not gated):
             bad.append(s)
         gtxt = ", ".join(f"{r[0]} ({r[3]:.3f}/{r[4]:.3f})" for r in guards) or "-"
         print(f"| {s} | {len(gated)} | {om:+.3f} | {omin:+.3f} | {gtxt} | {len(fired)} | {fm:+.3f} | {verdict} |")
 
     print()
-    print(f"A case the tools-only arm scores at or above {a.guard_at:.1f} is a regression guard on behaviour the connector already carries: it is kept at {a.guard_at:.1f} with the skill and left out of the skill's delta. A skill with no positive delta over the cases the server does not carry has not earned its place; the gate reads on the minimum as well as the mean of those cases, so one strong case cannot carry a dead one.")
+    print(f"The tools-only arm is the connector plus each skill's frontmatter description. A case it scores at or above {a.guard_at:.1f} is a regression guard on behaviour that baseline already carries: it is kept at {a.guard_at:.1f} with the skill and left out of the skill's delta. A skill with no positive delta over the cases the server does not carry has not earned its place; the gate reads on the minimum as well as the mean of those cases, so one strong case cannot carry a dead one.")
 
+    if UNREADABLE or on_disk is None:
+        bad.append("(unreadable case files or skills directory — see WARNING)")
     if bad:
         print()
         print("FAIL: " + ", ".join(bad))

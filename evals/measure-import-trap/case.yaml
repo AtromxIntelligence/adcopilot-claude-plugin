@@ -21,11 +21,13 @@ description: >
   name, say the fix is enabling it (after a yes) and publishing again (the
   customer's click), and prove it with a real click before calling it done.
   Deterministic graders test only things with one spelling — the four event
-  names, raw rows, the inversion "already Secondary", the account and
-  container reads, the write tools' names absent from a single-prompt run.
-  Meaning is two rubrics: the import trap at weight 2 and the silent trigger
-  at weight 3, so the half the skill carries fails the case on its own
-  (dead: 10/13 = 0.769) and both dead land at 0.615.
+  names, raw rows, the account and container reads, the write tools' names
+  absent from a single-prompt run; the inversion "already Secondary" is the
+  rubric's, because that string can sit in a correct reply ("none of them
+  have already been demoted"). Meaning is two rubrics at weight 3 each — the
+  import trap, the only grader pinning exactly one Primary, and the silent
+  trigger, the half the skill carries — so either dead on its own fails the
+  case (10/13 = 0.769) and both dead land at 0.538.
 tags: [measure]
 runs: 3
 execution:
@@ -45,12 +47,6 @@ graders:
     flags: i
     match: not_contains
     pattern: '"(name|resource_name|primary_for_goal|status|category|origin|enabled|primary|types|type|path|key|value|firingTriggerId|builtInVariable|check_id|reason_code)"\s*:|(?<!dataLayer\.push\()\{\s*"'
-  - name: does-not-invert-the-facts
-    type: regex
-    target: last_message
-    flags: i
-    match: not_contains
-    pattern: '\balready (?:set to |marked (?:as )?|switched to |been (?:set to |made |marked (?:as )?)?)?(?:secondary|demoted)\b'
   - name: read-the-account-back
     type: regex
     target: mock_calls
@@ -70,7 +66,7 @@ graders:
   - name: not-done-one-primary-with-the-path
     type: llm
     focus: last_message
-    weight: 2
+    weight: 3
     criteria: |
       The customer imported their Analytics events into Google Ads, published a sign-up tag in Tag Manager, and asked "Am I done?". The reads showed, for the ad account, five enabled conversion actions with five Primary — sign_up, page_view, session_start, first_visit and user_engagement — and the audit's finding that the four automatic ones are Primary. Whether the account was actually read is checked separately from the calls; judge the reply's meaning only, as someone who has never opened Google Ads. The reply may also cover a problem in Tag Manager; that is judged by another rubric and neither helps nor hurts here.
 

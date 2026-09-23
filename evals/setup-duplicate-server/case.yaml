@@ -8,36 +8,40 @@ description: >
   drops the plugin's, so the connector answers normally and nothing in any
   tool result says there are two. The prompt carries the one fact the
   customer can see: `claude mcp list` shows an `adcopilot` HTTP server they
-  added. The reply must notice the duplicate, send them the bare
-  `claude mcp remove adcopilot` — no scope flag, because the website's
-  instructions add it at local scope — keep the plugin's, never tell them to
-  remove the plugin, and still do setup's job: what the server reports as
+  added, and no `plugin:adcopilot:adcopilot` line — the tell, seen both ways
+  on a real machine. The reply must notice the duplicate, send them to remove
+  it from every scope it can be in — `claude mcp remove adcopilot -s user`,
+  and `-s local` from the directory it was added in, since a local
+  registration belongs to that directory and one bare remove takes it out of
+  one scope only (the founder's own install had it in both) — keep the
+  plugin's, never tell them to remove the plugin, and still do setup's job: what the server reports as
   connected, in prose, and a next step. The harness registers the mock under
   the plugin's own server name, so a reply may observe that the plugin's copy
   answered this time; which copy answered is not judged. Deterministic graders
-  test only strings with one spelling: the remedy command, raw field names
-  (not the same words inside a connect address the server returned). Meaning
-  is the rubric's.
+  test only strings with one spelling: the remedy command's name, raw field
+  names (not the same words inside a connect address the server returned).
+  Which scopes, and why, is the rubric's.
 tags: [setup]
 runs: 5
 execution:
   prompt: |
     /adcopilot:setup
-    (context: `claude mcp list` shows an `adcopilot` HTTP server added by the user)
+    (context: `claude mcp list` shows an `adcopilot` HTTP server added by the user, and no `plugin:adcopilot:adcopilot` line)
   max_turns: 8
   timeout_seconds: 240
   allowed_tools: [Skill]
 graders:
-  - name: names-the-bare-remedy
+  - name: names-the-remedy-command
     type: regex
     target: last_message
-    pattern: 'claude mcp remove adcopilot(?![ \t]+(?:-s|--scope)\b)'
+    flags: i
+    pattern: 'claude mcp remove adcopilot\b'
   - name: no-raw-fields-or-json
     type: regex
     target: last_message
     flags: i
     match: not_contains
-    pattern: '(?<!/)\b(connect_url|needs_reauth|can_edit|property_defaults|tools_revision|app_urls|cross_reads|search_console|google_ads)\b|"(connected|unlocks|lantern|gtm|ga4|products|overlays|situation|next_step|playbook)"\s*:|\{\s*"'
+    pattern: '(?<!/)\b(connect_url|needs_reauth|can_edit|property_defaults|tools_revision|app_urls|cross_reads|search_console|google_ads)\b|"(connected|unlocks|gtm|ga4|products|overlays|situation|next_step|playbook)"\s*:|\{\s*"'
   - name: keeps-the-plugin-removes-theirs
     type: llm
     focus: last_message
@@ -49,7 +53,7 @@ graders:
 
       1. The duplicate is noticed. The reply says there are two registrations of the same connector — one the customer added by hand and the plugin's — and treats the hand-added one as the duplicate to remove. It does not treat the plugin as broken, missing or not installed, and it does not say it cannot tell whether there is a duplicate.
 
-      2. Remove theirs, keep the plugin's. The reply tells them to remove the hand-added one with `claude mcp remove adcopilot` and to keep the plugin's. A reply that tells them to uninstall or remove the plugin, to remove both, or that gives the command with a scope flag such as `-s user` as the thing to run, FAILS.
+      2. Remove theirs from every scope, keep the plugin's. The reply tells them to remove the hand-added one with `claude mcp remove adcopilot` from each scope it can be in — user scope (`-s user`) and local scope (`-s local`), the local one run from the directory it was added in because a local registration belongs to that directory — and to keep the plugin's; and it says how they will know it worked (`claude mcp list` shows the `plugin:adcopilot:adcopilot` line once theirs is gone). A reply that gives only one bare `claude mcp remove adcopilot` with no scope and no word about the scopes, or tells them to uninstall or remove the plugin, or to remove both, FAILS.
 
       3. Setup's job still done. The reply says what the server reported as connected and what is not — in the customer's words, from the server's answer and not from a list of its own — and calls nothing unsupported. A short list or table in plain words is fine; the server's field names or JSON are not.
 

@@ -63,28 +63,42 @@ jobs:
           PY
 
   eval:
-    # The behaviour gate. Needs ANTHROPIC_API_KEY in repository secrets; without
-    # it this job says so in the run summary and stops, so a green run without
-    # the secret is never mistaken for a passing suite.
+    # The behaviour gate. Needs ANTHROPIC_API_KEY in repository secrets. Without
+    # it the job FAILS — a green check that ran no case is worse than a red one —
+    # except on a pull request from a fork, which GitHub never gives secrets to:
+    # there it writes NOT RUN to the summary and skips, and the job's name says
+    # so, so nobody reads it as the gate having passed.
+    name: "eval (the behaviour gate; skipped, not passed, on fork PRs)"
     needs: validate
     runs-on: ubuntu-latest
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
     steps:
       - uses: actions/checkout@v4
       - name: Is a credential configured?
         id: cred
         run: |
-          if [ -z "$ANTHROPIC_API_KEY" ]; then
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          elif [ "$IS_FORK_PR" = "true" ]; then
             echo "configured=false" >> "$GITHUB_OUTPUT"
             {
-              echo "## Eval suite: NOT RUN"
+              echo "## Eval suite: NOT RUN (fork pull request)"
               echo
-              echo "No \`ANTHROPIC_API_KEY\` in this repository's secrets, so only \`claude plugin validate\` ran."
-              echo "The behaviour gate (every case at or above 0.8) has **not** been checked on this commit."
+              echo "Pull requests from forks do not receive this repository's secrets, so the behaviour gate"
+              echo "(every case at or above 0.8) has **not** been checked on this change. A maintainer runs it"
+              echo "on the branch after review; this job is skipped, not passed."
             } >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "configured=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "## Eval suite: FAILED — no credential"
+              echo
+              echo "No \`ANTHROPIC_API_KEY\` in this repository's secrets. The behaviour gate cannot run without"
+              echo "one and this job fails rather than pass silently. Add the secret and re-run."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "ANTHROPIC_API_KEY is not configured; the eval job cannot run and does not pass." >&2
+            exit 1
           fi
       - name: Install Claude Code (pinned)
         if: steps.cred.outputs.configured == 'true'
@@ -95,14 +109,20 @@ jobs:
         if: steps.cred.outputs.configured == 'true'
         # Threshold 0.8, never 1.0: every case measured sits at 0.81-0.93 with
         # one dissenting judge vote, so 1.0 flaps on correct work. What makes
-        # 0.8 bite is the WEIGHTS: every meaning rubric weighs 2 (3 for the
-        # skill-carried half of measure-import-trap), so a run whose rubrics
-        # all fail lands at 0.62-0.75 — below the gate — while its process
-        # graders still pass. The judge is pinned to sonnet, which was
-        # steadier than the default on the launch rubrics. --ablation none:
-        # the harness's own baseline removes the connector with the plugin and
-        # measures nothing about the skills; the honest delta is the ablation
-        # job below.
+        # 0.8 bite is the WEIGHTS. The invariant: in every case the meaning
+        # rubrics together weigh more than a fifth of the case's total, so a
+        # run whose rubrics all fail lands below 0.8 (today 0.50-0.75) while
+        # its process graders still pass; and a rubric that carries a spec
+        # outcome on its own (the one Primary in measure-import-trap, the
+        # switch and the money sentence in launch-manual-settings) weighs more
+        # than a fifth by itself, so its death alone fails the case. Today
+        # every rubric weighs 2 or 3 except the two halves of the launch
+        # settings rubric at 1 each, which together are one rubric. Adding a
+        # deterministic grader to a case lowers its rubrics' share — check the
+        # floor before you do. The judge is pinned to sonnet, steadier than the
+        # default on the launch rubrics. --ablation none: the harness's own
+        # baseline removes the connector with the plugin and measures nothing
+        # about the skills; the honest delta is the ablation job below.
         run: |
           echo "eval ran on Claude Code $(claude --version), judge sonnet" >> "$GITHUB_STEP_SUMMARY"
           claude plugin eval . \

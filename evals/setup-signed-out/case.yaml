@@ -25,6 +25,8 @@ graders:
     pattern: '(?<![\w./:-])/mcp\b'
   - name: tries-once-or-twice-not-in-a-loop
     type: tool_used
+    # tool_used takes the exact registered name: plugin name, server name from .mcp.json, tool.
+    # Renaming either turns this into a false-fail, not an error — change it with them.
     tool: mcp__plugin_adcopilot_adcopilot__get_org_context
     min: 1
     max: 2

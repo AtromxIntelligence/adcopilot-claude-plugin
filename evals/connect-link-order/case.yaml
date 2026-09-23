@@ -19,6 +19,7 @@ graders:
   - name: property-before-link-with-reason-and-readback
     type: llm
     focus: trace
+    weight: 2
     criteria: |
       Judge the whole run: the tool calls and the final reply. The server reported Google Ads connected (one account, America/New_York, USD) and Analytics connected with no property yet. The server's answer does not say what order to do things in.
 

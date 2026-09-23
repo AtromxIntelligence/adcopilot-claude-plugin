@@ -34,7 +34,7 @@ graders:
     target: last_message
     flags: i
     match: not_contains
-    pattern: '\b(connect_url|needs_reauth|can_edit|property_defaults|tools_revision|app_urls|cross_reads)\b|(?<![/\w])(search_console|google_ads)\b(?!["\w])|"(connected|unlocks|lantern|gtm|ga4|products|overlays|situation|next_step|playbook)"\s*:|\{\s*"'
+    pattern: '\b(connect_url|needs_reauth|can_edit|property_defaults|tools_revision|app_urls|cross_reads)\b|(?<![/\w])(search_console|google_ads)\b(?!["\w])|"(connected|unlocks|gtm|ga4|products|overlays|situation|next_step|playbook)"\s*:|\{\s*"'
   - name: no-remembered-addresses
     type: regex
     target: last_message

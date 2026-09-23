@@ -18,6 +18,7 @@ graders:
   - name: teaches-two-steps
     type: llm
     focus: trace
+    weight: 2
     criteria: |
       The customer asked to be set up. Read the whole run — every assistant message, in order — as someone who has never opened Google Ads or Analytics.
 
