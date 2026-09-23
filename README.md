@@ -25,7 +25,7 @@ Five commands, which you type:
 - `/adcopilot:setup` — checks the connector is connected and signed in, says what each connected product unlocks, and catches the two ways a fresh install goes wrong: a lapsed sign-in, and a copy of the connector you added by hand before installing.
 - `/adcopilot:launch` — a first Search campaign, through the `adcopilot-launch` skill below.
 - `/adcopilot:measure` — conversion tracking, through the `adcopilot-measure` skill below.
-- `/adcopilot:daily` — the daily check-in: what was spent since yesterday, the searches the ads showed for, and what changed in the account, with the wrong searches turned into never-show-for words.
+- `/adcopilot:daily` — the daily check-in: what was spent since yesterday, the searches the ads showed for, and what changed in the account — in that order, as far as the connector's read cap for the day allows.
 - `/adcopilot:audit` — the connector's full audit and this month's budget pacing, with what is only newness kept out of the findings.
 
 Three skills, which Claude draws on when the conversation calls for them:

@@ -5,7 +5,7 @@ description: >
   evals/mocks is fictional; every value is invented). The only tool that
   exists answers every call with the same error: the server needs the user to
   sign in again. The reply must say how to sign back in — /mcp, choose
-  adcopilot, sign in with Google — and stop: not call the failing tool again
+  adcopilot, sign in — and stop: not call the failing tool again
   and again, not blame a permission, a scope, an outage or a bug, and not
   report anything as connected, since nothing was read. Deterministic graders
   test only strings with one spelling and a call count: the /mcp command (not
@@ -43,9 +43,9 @@ graders:
 
       PASS if all four hold:
 
-      1. The way back in. The reply tells them to run /mcp, choose the adcopilot connector, and sign in with Google. Extra help with that same sign-in — which Google account to pick, for example — is fine. A closing line that says to run setup again afterwards is fine.
+      1. The way back in. The reply tells them to run /mcp, choose the adcopilot connector, and sign in. Anything else the reply adds is fine as long as it is not one of the failures below — for example, which Google account to pick, the command's own check for a second, hand-added copy of the connector (asking them to run `claude mcp list`, and how to remove a copy they added), or a closing line saying to run setup again afterwards.
 
-      2. The right diagnosis. The reply says they are signed out, or that the sign-in has lapsed or expired. It does not blame a permission they lack, a missing scope, an outage, a bug, or the connector being unsupported or not installed. Saying explicitly that it is NOT one of those is fine.
+      2. The right diagnosis. The reply says they are signed out, or that the sign-in has lapsed, expired or needs doing again. It does not blame a permission they lack, a missing scope, an outage, a bug, or the connector being unsupported or not installed. Saying explicitly that it is NOT one of those is fine.
 
       3. Nothing reported that was not read. The reply does not say which products are connected or report anything about their account. Saying what it will report once they are signed in is fine; saying it saw no sign of a duplicate connector is fine.
 
