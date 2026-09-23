@@ -1,7 +1,7 @@
 {
   "name": "adcopilot",
   "version": "0.1.0",
-  "description": "Run Google Ads, Analytics, Search Console and Tag Manager from your AI client. Bundles the hosted AdCopilot connector and the steps it cannot take for you.",
+  "description": "Run your Google advertising stack — Google Ads, Analytics, Search Console, Tag Manager and whatever else AdCopilot has connected since — from your AI client. Bundles the hosted AdCopilot connector and the steps it cannot take for you.",
   "author": { "name": "Atromx Intelligence", "url": "https://adcopilot.cloud" },
   "homepage": "https://adcopilot.cloud",
   "repository": "https://github.com/AtromxIntelligence/adcopilot-claude-plugin",

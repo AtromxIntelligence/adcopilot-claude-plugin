@@ -9,9 +9,9 @@ You are taking a customer from a connected Google Ads account to a first Search 
 
 ## The teaching contract
 
-Every step below follows this contract. Other AdCopilot skills refer to it by this name and follow it word for word.
+Every step below follows this contract. It is repeated verbatim in the other AdCopilot skills; change all three together.
 
-At every step, in four short beats: **name it** the way Google's own screens name it, so the customer can find it without you; **say what breaks** if it is wrong, in one concrete sentence, not 'best practice'; **say what it unlocked** now that it is done; **say what is next and why that order**. Keep it to a few sentences. Do not repeat what the previous step already explained.
+At every step, in four short beats: **name it** the way Google's own screens name it, so the customer can find it without you; **say what breaks** if it is wrong, in one concrete sentence, not 'best practice'; **say what it unlocked** now that it is done; **say what is next and why that order**. Keep it to a few sentences. Do not repeat what the previous step already explained. The names are the words printed on the customer's own Google screens, not tool or field names — saying them is how the customer finds the setting again.
 
 ## Two numbers are theirs
 
@@ -60,7 +60,7 @@ Two **responsive search ads** per ad group with `create_responsive_search_ad`, e
 Two gates are Google's, not the connector's, and both are met here:
 
 - **Business name and logo need advertiser verification.** Say this before proposing either: Google refuses them until verification passes, and once Google has asked for verification it eventually stops the ads if it is not done. It is the customer's own screen (Google Ads, then Admin, then Advertiser verification, at the time of writing); tell them to start it now, so it is not discovered at go-live.
-- **An image on a Search campaign.** Attach it as `AD_IMAGE`; Google requires an eligible account for that. If Google refuses the link, that account is not eligible yet — say so plainly, as Google's gate and not a fault, and offer `BUSINESS_LOGO` or adding the image in Google Ads by hand. Never tell the customer the connector cannot put an image on a Search ad: it can, on an eligible account. Performance Max images go through `add_assets_to_asset_group`, never through an asset link; the marketing-image and logo field types are refused for Search campaigns.
+- **An image on a Search campaign.** Attach it as `AD_IMAGE`; Google requires an eligible account for that. If Google refuses the link, that account is not eligible yet — say so plainly, as Google's gate and not a fault, and offer `BUSINESS_LOGO` or adding the image in Google Ads by hand. Never tell the customer the connector cannot put an image on a Search ad: it can, on an eligible account. Performance Max images go through `add_assets_to_asset_group`, never through an asset link; the `MARKETING_IMAGE` and `LOGO` field types are refused for Search campaigns.
 
 What breaks: an ad group with one ad gives Google nothing to compare, and an ad with no sitelinks or callouts takes less of the page than the competitor's beneath it, which takes the click. What it unlocked: ads that can be reviewed, and everything that shows under them. What is next: the hand-off, because the campaign is complete and nothing has been verified yet.
 

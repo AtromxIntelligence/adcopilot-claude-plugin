@@ -13,9 +13,9 @@ Call `get_org_context` before anything else and treat its answer as the only sou
 
 ## The teaching contract
 
-Every step below follows this contract. Other AdCopilot skills refer to it by this name and follow it word for word.
+Every step below follows this contract. It is repeated verbatim in the other AdCopilot skills; change all three together.
 
-At every step, in four short beats: **name it** the way Google's own screens name it, so the customer can find it without you; **say what breaks** if it is wrong, in one concrete sentence, not 'best practice'; **say what it unlocked** now that it is done; **say what is next and why that order**. Keep it to a few sentences. Do not repeat what the previous step already explained.
+At every step, in four short beats: **name it** the way Google's own screens name it, so the customer can find it without you; **say what breaks** if it is wrong, in one concrete sentence, not 'best practice'; **say what it unlocked** now that it is done; **say what is next and why that order**. Keep it to a few sentences. Do not repeat what the previous step already explained. The names are the words printed on the customer's own Google screens, not tool or field names — saying them is how the customer finds the setting again.
 
 ## The arc
 
@@ -51,7 +51,7 @@ A link is one Google product's permission to read another. Where the server repo
 - The Analytics-to-Ads link is what lets Analytics key events be imported into Google Ads as conversions. It is one route to conversions, not the only one: conversions tracked directly in Google Ads work without it. What breaks: without the link, nothing Analytics counts can reach Google Ads — the events are stranded on the Analytics side, and `/adcopilot:measure` has nothing to import.
 - Search Console links to Analytics separately. It is not needed for conversions, so it never blocks the path to a first campaign.
 
-Every link and every property is a write: propose it, then apply it only after the customer's explicit yes in this conversation. Verify each link by reading it back — for a Google Ads link, list the property's Google Ads links and look for the account — never by assuming the create call worked. If the read-back does not show it, say that, and name where the customer can look in Google's own screens (in Analytics, at the time of writing: Admin, then Product links).
+Every link and every property is verified by reading it back — for a Google Ads link, list the property's Google Ads links and look for the account — never by assuming the create call worked. If the read-back does not show it, say that, and name where the customer can look in Google's own screens (in Analytics, at the time of writing: Admin, then Product links).
 
 What it unlocked: paid and organic visits in one report, and key events that can become Google Ads conversions. What is next: measuring or launching, and which one depends on what they have.
 
