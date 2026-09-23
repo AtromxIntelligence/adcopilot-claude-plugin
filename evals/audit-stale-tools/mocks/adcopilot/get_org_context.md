@@ -1,6 +1,8 @@
 ---
 type: agent
-tools: [get_org_context]
+# This case's own get_org_context, an agent so that it can answer the `tools`
+# branch: the suite-wide fixed fixture would otherwise answer every call
+# with the plain context. Nothing here is real.
 abort_when: |
   Never abort. Answer every call.
 ---

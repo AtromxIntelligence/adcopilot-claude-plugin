@@ -10,9 +10,11 @@ description: >
   by name with the demotion path (this is Outcome 2, and the server carries
   it). And the sign-up tag's trigger is Click - Just Links filtered on the
   built-in variable Click URL, which is not enabled in the container, so the
-  filter matches nothing and the tag never fires — which no tool description
-  or audit says; only the container read-back shows it, and only someone who
-  knows that a filter on a disabled variable is silent will look. The reply
+  filter matches nothing and the tag never fires. The audit's tag-firing
+  check says the sign-up action has recorded nothing since it was created —
+  the server's honest clue — but not why; only the container read-back shows
+  it, and only someone who knows that a filter on a disabled variable is
+  silent will look. The reply
   must read the account and the container back, say no, name the four in
   prose with the consequence of a Primary page view, give the demotion path
   ending with exactly one Primary, find the silent trigger by the variable's

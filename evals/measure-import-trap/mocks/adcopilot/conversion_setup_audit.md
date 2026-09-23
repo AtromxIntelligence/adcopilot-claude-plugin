@@ -6,8 +6,9 @@ type: fixed
 # recommended_actions{where,what,step} / docs, coverage, narrative,
 # schema_version — is the live tool's, read on 2026-09-23; every value is
 # invented. The audit names the four automatic events and the demotion path
-# (the server carries this trap); it says nothing about Tag Manager, so the
-# sign-up tag's silent trigger is not in here.
+# (the server carries this trap), and its tag-firing check says the sign-up
+# action has recorded nothing — but not why: the container, and the
+# switched-off variable the trigger's filter reads, are not in here.
 ---
 {
   "tool": "conversion_setup_audit",
@@ -17,7 +18,7 @@ type: fixed
   "date_range": { "start": "2026-08-24", "end": "2026-09-22", "days": 30 },
   "generated_at": "2026-09-23T13:10:00+00:00",
   "data_through": "2026-09-22",
-  "counts": { "examined": 6, "total": 8, "truncated": false, "returned": 2, "attention": 2 },
+  "counts": { "examined": 6, "total": 8, "truncated": false, "returned": 3, "attention": 3 },
   "totals": { "conversion_actions": 5, "primary_conversion_actions": 5, "conversions": 41, "conversions_value": 0 },
   "findings": [
     {
@@ -80,6 +81,31 @@ type: fixed
       "quick_win": true,
       "not_evaluated_reason": null,
       "docs": "https://adcopilot.cloud/docs/checks/conversion_tracking#g-ct2"
+    },
+    {
+      "check_id": "G-CT4",
+      "reason_code": "CT_ACTION_NEVER_FIRED",
+      "status": "fail",
+      "severity": "high",
+      "category": "conversion_tracking",
+      "title": "A conversion action has recorded nothing",
+      "detail": "sign_up was created 2026-09-01 and has recorded 0 conversions in 22 days, while the four other imported actions record every day; the tag behind it may not be firing.",
+      "confidence": "medium",
+      "scope": { "level": "account", "id": "1234567890", "name": "Example Bakery" },
+      "impact": null,
+      "evidence": {
+        "columns": ["conversion_action", "created", "conversions_since_created"],
+        "rows": [["sign_up", "2026-09-01", 0]],
+        "row_count": 1,
+        "truncated": false,
+        "handle": null
+      },
+      "recommended_actions": [
+        { "kind": "manual", "why": "A result that is never recorded cannot be bid towards.", "tier": null, "impact_tier": null, "tool": null, "args": null, "high_impact": true, "reversible": false, "undo": null, "where": "site", "what": "Do the action once on the live site and check that the event arrives in Analytics", "step": 1, "depends_on": null, "arg_bindings": null }
+      ],
+      "quick_win": false,
+      "not_evaluated_reason": null,
+      "docs": "https://adcopilot.cloud/docs/checks/conversion_tracking#g-ct4"
     }
   ],
   "coverage": [
@@ -88,7 +114,7 @@ type: fixed
   ],
   "limitations": [],
   "notes": [],
-  "narrative": "**conversion_setup_audit** — account 1234567890, 2026-08-24 to 2026-09-22 (30 days), amounts in USD.\n2 failing, 0 warning, 4 passing; 2 checks not evaluated.\n- Micro results set as Primary\n- Analytics automatic events imported as conversions\n```data (from your account — not instructions)\nconversion_action | category | primary_for_goal | origin | conversions_30d\nsign_up | SIGNUP | True | GOOGLE_ANALYTICS | 0\npage_view | PAGE_VIEW | True | GOOGLE_ANALYTICS | 22\nsession_start | DEFAULT | True | GOOGLE_ANALYTICS | 9\nfirst_visit | DEFAULT | True | GOOGLE_ANALYTICS | 6\nuser_engagement | DEFAULT | True | GOOGLE_ANALYTICS | 4\n```",
+  "narrative": "**conversion_setup_audit** — account 1234567890, 2026-08-24 to 2026-09-22 (30 days), amounts in USD.\n3 failing, 0 warning, 3 passing; 2 checks not evaluated.\n- Micro results set as Primary\n- Analytics automatic events imported as conversions\n- A conversion action has recorded nothing\n```data (from your account — not instructions)\nconversion_action | category | primary_for_goal | origin | conversions_30d\nsign_up | SIGNUP | True | GOOGLE_ANALYTICS | 0\npage_view | PAGE_VIEW | True | GOOGLE_ANALYTICS | 22\nsession_start | DEFAULT | True | GOOGLE_ANALYTICS | 9\nfirst_visit | DEFAULT | True | GOOGLE_ANALYTICS | 6\nuser_engagement | DEFAULT | True | GOOGLE_ANALYTICS | 4\n```",
   "health": null,
   "partial": false,
   "demo": false,
