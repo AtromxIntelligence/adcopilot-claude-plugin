@@ -28,10 +28,8 @@ type: fixed
       "unlocks": "I can read and change your campaigns, keywords and budgets.",
       "connect_url": "https://app.example.invalid/connect/google_ads",
       "accounts": [
-        { "customer_id": "1234567890", "name": "Example Bakery", "currency": "USD", "time_zone": "America/New_York" }
-      ],
-      "campaigns": 1,
-      "conversion_tracking_status": "none"
+        { "customer_id": "1234567890", "descriptive_name": "Example Bakery", "currency": "USD", "time_zone": "America/New_York", "manager": false, "enabled": true, "status": "ENABLED" }
+      ]
     },
     "ga4": {
       "connected": true,
@@ -65,9 +63,11 @@ type: fixed
       "currency": "USD",
       "time_zone": "America/New_York",
       "status": "ENABLED",
+      "manager": false,
       "campaigns": { "total": 1, "enabled": 1, "paused": 0, "ended": 0, "by_channel": { "SEARCH": 1 } },
       "last_30d": { "cost_display": "$0", "clicks": 0, "impressions": 90, "conversions": 0 },
       "conversion_actions": { "enabled": 0, "primary": 0, "types": [] },
+      "conversion_tracking_status": "NOT_CONVERSION_TRACKED",
       "billing_setup": "APPROVED",
       "first_campaign": { "campaign_id": "800000001", "status": "ENABLED", "enabled_seen_at": "2026-09-21 18:02:11" }
     }

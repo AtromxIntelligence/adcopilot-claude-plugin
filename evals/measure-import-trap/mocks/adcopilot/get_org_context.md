@@ -28,10 +28,8 @@ type: fixed
       "unlocks": "I can read and change your campaigns, keywords and budgets.",
       "connect_url": "https://app.example.invalid/connect/google_ads",
       "accounts": [
-        { "customer_id": "1234567890", "name": "Example Bakery", "currency": "USD", "time_zone": "America/New_York" }
-      ],
-      "campaigns": 1,
-      "conversion_tracking_status": "active"
+        { "customer_id": "1234567890", "descriptive_name": "Example Bakery", "currency": "USD", "time_zone": "America/New_York", "manager": false, "enabled": true, "status": "ENABLED" }
+      ]
     },
     "ga4": {
       "connected": true,
@@ -64,8 +62,22 @@ type: fixed
   },
   "ads_probe": {
     "1234567890": {
-      "conversion_actions": { "enabled": 5, "primary": 5, "types": { "GOOGLE_ANALYTICS_4_CUSTOM": 5 } }
-    }
+      "name": "Example Bakery",
+      "currency": "USD",
+      "time_zone": "America/New_York",
+      "status": "ENABLED",
+      "manager": false,
+      "campaigns": { "total": 1, "enabled": 1, "paused": 0, "ended": 0, "by_channel": { "SEARCH": 1 } },
+      "last_30d": { "cost_display": "$412", "clicks": 187, "impressions": 6120, "conversions": 44 },
+      "conversion_actions": { "enabled": 5, "primary": 5, "types": ["GOOGLE_ANALYTICS_4_CUSTOM"] },
+      "conversion_tracking_status": "CONVERSION_TRACKING_MANAGED_BY_SELF",
+      "billing_setup": "APPROVED",
+      "first_campaign": { "campaign_id": "800000001", "status": "ENABLED", "enabled_seen_at": "2026-09-01 09:12:40" },
+      "error": null
+    },
+    "computed_at": "2026-09-22 09:00:00",
+    "ttl_s": 600,
+    "probe_status": "ok"
   },
   "overlays": {
     "needs_reauth": []
