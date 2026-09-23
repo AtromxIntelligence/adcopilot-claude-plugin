@@ -20,7 +20,10 @@ description: >
   answered this time; which copy answered is not judged. Deterministic graders
   test only strings with one spelling: the remedy command's name, raw field
   names (not the same words inside a connect address the server returned).
-  Which scopes, and why, is the rubric's.
+  Meaning is two rubrics along the case's seams — the duplicate and its
+  scoped removal, the case's outcome, at weight 2 (dead alone: 5/7 = 0.714,
+  below the gate); setup's job and the one next step at weight 1 — so a
+  judge that disagrees about one obligation no longer fails the whole.
 tags: [setup]
 runs: 5
 execution:
@@ -42,24 +45,34 @@ graders:
     flags: i
     match: not_contains
     pattern: '(?<!/)\b(connect_url|needs_reauth|can_edit|property_defaults|tools_revision|app_urls|cross_reads|search_console|google_ads)\b|"(connected|unlocks|gtm|ga4|products|overlays|situation|next_step|playbook)"\s*:|\{\s*"'
-  - name: keeps-the-plugin-removes-theirs
+  - name: duplicate-noticed-and-removed-from-every-scope
     type: llm
     focus: last_message
     weight: 2
     criteria: |
-      The customer ran /adcopilot:setup. The connector answered normally: Google Ads connected (one account, Example Bakery, no campaigns yet), Analytics connected with no property, Search Console connected but needing to be signed in again, Tag Manager not connected, and a fifth product the server calls lantern, not connected. The prompt also said that `claude mcp list` shows an `adcopilot` HTTP server the customer added by hand. This plugin registers a connector of the same name. The reply may say which of the two answered this call; that is not judged.
+      The customer ran /adcopilot:setup. The connector answered normally. The prompt also said that `claude mcp list` shows a bare `adcopilot` HTTP server the customer added by hand, and no `plugin:adcopilot:adcopilot` line. This plugin registers a connector of the same name, and Claude Code keeps a hand-added copy and silently ignores the plugin's. The harness registered the mock under the plugin's own name, so the reply may observe that the plugin's copy answered this call; which copy answered is not judged, and what the reply says the server reported is judged by another rubric and neither helps nor hurts here.
 
-      Judge the reply's meaning only, as someone who first opened a terminal this week. PASS only if all four hold:
+      Judge the reply's meaning only, as someone who first opened a terminal this week. PASS only if both hold:
 
-      1. The duplicate is noticed. The reply says there are two registrations of the same connector — one the customer added by hand and the plugin's — and treats the hand-added one as the duplicate to remove. It does not treat the plugin as broken, missing or not installed, and it does not say it cannot tell whether there is a duplicate.
+      1. The duplicate is noticed. The reply takes the customer's `claude mcp list` as true, says there are two registrations of the same connector — one the customer added by hand and the plugin's — and treats the hand-added one as the duplicate to remove. It does not treat the plugin as broken, missing or not installed, does not say it cannot tell whether there is a duplicate, and does not make what to do conditional on the customer checking again first.
 
-      2. Remove theirs from every scope, keep the plugin's. The reply tells them to remove the hand-added one with `claude mcp remove adcopilot` from each scope it can be in — user scope (`-s user`) and local scope (`-s local`), the local one run from the directory it was added in because a local registration belongs to that directory — and to keep the plugin's; and it says how they will know it worked (`claude mcp list` shows the `plugin:adcopilot:adcopilot` line once theirs is gone). A reply that gives only one bare `claude mcp remove adcopilot` with no scope and no word about the scopes, or tells them to uninstall or remove the plugin, or to remove both, FAILS.
+      2. Removed from every scope, the plugin's kept. The reply tells them to remove the hand-added one with `claude mcp remove adcopilot` from each scope it can be in — user scope (`-s user`) and local scope (`-s local`), the local one run from the directory it was added in because a local registration belongs to that directory — and to keep the plugin's; and it says how they will know it worked (`claude mcp list` shows the `plugin:adcopilot:adcopilot` line once theirs is gone). Mentioning `-s project` as well is fine. A reply that gives only one bare `claude mcp remove adcopilot` with no scope and no word about the scopes, or tells them to uninstall or remove the plugin, or to remove both, FAILS.
 
-      3. Setup's job still done. The reply says what the server reported as connected and what is not — in the customer's words, from the server's answer and not from a list of its own — and calls nothing unsupported. A short list or table in plain words is fine; the server's field names or JSON are not.
+      FAIL if either is missing.
+  - name: setups-job-and-one-next-step
+    type: llm
+    focus: last_message
+    weight: 1
+    criteria: |
+      The customer ran /adcopilot:setup. The connector answered normally: Google Ads connected (one account, Example Bakery, no campaigns yet), Analytics connected with no property, Search Console connected but needing to be signed in again, Tag Manager not connected, and a fifth product the server calls lantern, not connected. The prompt also said a hand-added copy of the connector is registered; what the reply says about that duplicate is judged by another rubric and neither helps nor hurts here.
 
-      4. A next step. The reply ends by pointing the customer at one next step with a reason — /adcopilot:launch (no campaigns yet) or /adcopilot:measure (nothing counted yet; the account has neither, and the skill's rule is one, not both) — or at re-running setup once the duplicate is removed. Either command is right here as long as it is one and the reason is given. Saying that re-approving Search Console or creating the Analytics property comes before it is fine, since the server reported both.
+      Judge the reply's meaning only, as someone who first opened a terminal this week. PASS only if both hold:
 
-      FAIL if any of the four is missing.
+      1. Setup's job still done. The reply says what the server reported as connected and what is not — in the customer's words, from the server's answer and not from a list of its own — and calls nothing unsupported. A short list or table in plain words is fine; the server's field names or JSON are not.
+
+      2. One next step. The reply ends by pointing the customer at one next step with a reason — /adcopilot:launch (no campaigns yet) or /adcopilot:measure (nothing counted yet; the account has neither, and the skill's rule is one, not both) — or at re-running setup once the duplicate is removed. Either command is right here as long as it is one and the reason is given. Saying that re-approving Search Console or creating the Analytics property comes before it is fine, since the server reported both.
+
+      FAIL if either is missing.
   - name: read-the-server-first
     type: regex
     target: mock_calls
