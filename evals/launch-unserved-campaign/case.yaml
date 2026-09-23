@@ -53,13 +53,13 @@ graders:
 
       PASS only if all four hold:
 
-      1. Not fine, and said first. The reply tells the customer the campaign is not delivering — impressions on day one, none on day two, no clicks, nothing spent — as its finding, without being asked whether it is serving. A reply whose message is that everything looks fine, or that it is simply still learning and to wait, FAILS.
+      1. Not fine, and said first. The reply tells the customer the campaign is not delivering — impressions on day one, none on day two, no clicks, nothing spent — as its finding, without being asked whether it is serving. A reply whose message is that everything looks fine, or that it is simply still learning and to wait, FAILS. Offering to wait a day as one option after the finding has been stated is not that; a reply whose finding IS "it is learning, wait" is.
 
-      2. Ruled out, not guessed. The reply says what was read and what it ruled out: the ads are approved, the account is not on hold, billing is approved, and there is no spending limit or pending proposal capping it — so this is not a payment problem. A reply that sends the customer to Billing, or to check their payment, as the likely cause FAILS.
+      2. Ruled out, not guessed. The reply says what was read and what it ruled out: the ads are approved, the account is not on hold, billing is approved, and there is no spending limit or pending proposal capping it — so this is not a payment problem. A reply that sends the customer to Billing, or to check their payment, as the likely cause FAILS. Naming the alert banner or Google's messages under Billing as the one thing the reads cannot show, after ruling the payment side out, is not that — it is what criterion 3 allows.
 
       3. Where the numbers point. The reply says, in plain words, that the impressions lost to budget while nothing was spent mean Google is holding the campaign out of most auctions against its budget and bid — a problem on the campaign, such as the per-click cap or the budget against the demand — and names what to look at or decide next. If it sends the customer to a Google Ads screen, it says what that screen can show that the reads could not (the alert banner's wording, Google's own messages under Billing), not that the cause is there.
 
-      4. Google's words, in prose. The Status column's word — Learning — is used and explained in one sentence, and the reply reads as plain language: no API field names, no account numbers, no rows pasted as the server returned them. A short table or list of the days' impressions, clicks and cost in plain words is fine; it is not a paste.
+      4. Google's words, in prose. The Status column's word — Learning — is used and explained in one sentence, and the reply reads as plain language: no API field names, no account numbers, no rows pasted as the server returned them. A short table or list of the days' impressions, clicks and cost is fine, and so are the three impression-share columns in it under Google's own column names — Search impr. share, Search lost IS (budget), Search lost IS (rank) — which are the words on Google's screen, not the server's field names; none of that is a paste.
 
       FAIL if any of the four is missing.
   - name: read-the-server-first

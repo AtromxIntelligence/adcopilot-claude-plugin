@@ -51,7 +51,7 @@ graders:
 
       4. Stops there. The reply does not tell them to keep retrying and does not say it will keep retrying itself.
 
-      FAIL if any of the four does not hold, or if the reply is a paste of tool output rather than prose.
+      FAIL if any of the four does not hold, or if the reply is a paste of tool output in place of an answer. Quoting the error's one line inside a prose reply is not a paste.
   - name: skill-fired
     type: tool_used
     tool: Skill

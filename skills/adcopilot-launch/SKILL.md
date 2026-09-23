@@ -1,6 +1,6 @@
 ---
 name: adcopilot-launch
-description: Build a first Google Ads Search campaign through the connector and get it live safely — locations, keywords, negatives, ads and assets built switched off; the settings that leak money verified by reading the campaign back; the part of auto-apply only the Google Ads screens can see; then the go-live switch, which is the customer's, and the first week's checks. Use when the user asks to build a campaign, launch ads, start advertising, or advertise for the first time.
+description: Build a first Google Ads Search campaign through the connector and get it live safely — locations, keywords, negatives, ads and assets built switched off; the settings that leak money verified by reading the campaign back; the part of auto-apply only the Google Ads screens can see; then the go-live switch, which is the customer's, and the first week's checks. Use when the user asks to build a campaign, launch ads, start advertising, or advertise for the first time, or asks how a campaign built here is doing in its first weeks or why it is not showing.
 ---
 
 # AdCopilot launch

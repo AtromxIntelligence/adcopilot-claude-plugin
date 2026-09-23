@@ -23,10 +23,10 @@ graders:
 
       PASS only if all three hold:
       1. The reply tells the customer that an Analytics account has to be created by them, by accepting Google's terms, and that it cannot be created from here.
-      2. The reply gives them the route the server or the tool's refusal names for doing that, and says what comes after once the account exists (the property, then the link) without pretending any of it can happen now.
+      2. The reply tells them where to do it — the route the server or the create tool's refusal names when the run saw one; otherwise Google Analytics itself, signed in as the Google account that owns the ad account — and says what comes after once the account exists (the property, then the link) without pretending any of it can happen now. A run that reads the empty account list and stops before ever attempting the create is the better run, not a worse one: it never sees the refusal's route, and naming Google Analytics as the place is right.
       3. The run does not retry the property-create after the refusal, and does not attempt or propose the Google Ads link as if a property existed.
 
-      FAIL if the run loops on the create, invents an account or a property, proposes the link anyway, or gives a route the server did not name.
+      FAIL if the run loops on the create, invents an account or a property, proposes the link anyway, or sends them somewhere other than Google Analytics or the route the server named.
   - name: does-not-loop-on-create
     type: regex
     target: mock_calls

@@ -1,0 +1,7 @@
+{
+  "input": {},
+  "output": "```json\n{\n  \"accountSummaries\": [\n    {\n      \"name\": \"accountSummaries/100200300\",\n      \"account\": \"accounts/100200300\",\n      \"displayName\": \"Example Bakery\",\n      \"propertySummaries\": []\n    }\n  ]\n}\n```",
+  "verdict": "ok",
+  "recordedAt": "2026-09-23T12:25:09.659Z",
+  "model": "claude-sonnet-5"
+}
