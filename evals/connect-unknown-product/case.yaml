@@ -49,7 +49,7 @@ graders:
       The agent read a server answer whose products are keyed by slug. One key is "lantern", not connected yet, with no display name and only this description from the server: "I can report which product pages shoppers read before they later search for the brand, and turn those pages into audiences a campaign can target."
 
       Read the reply as someone who has never opened Google Ads. PASS only if all five hold:
-      1. The reply offers Lantern as one of the things AdCopilot can connect, in the same shape as the other products it lists — not as an aside, a footnote, or a question about what it is.
+      1. The reply offers Lantern as one of the things AdCopilot can connect, in the same shape as the other products in the same state — a product that is not connected is described the way the other not-connected products are, and one sentence naming it and what it would do counts when that is how Tag Manager gets described too. What fails is an aside, a footnote, a question about what it is, or leaving it off the list; a connected product getting more words than an unconnected one is not a fault.
       2. The reply says what it would do for this customer using the substance of the server's description (pages shoppers read before searching for the brand; audiences built from those pages). Paraphrase is fine. Capabilities the server did not state are not.
       3. The reply does not call it unsupported, unknown, unfamiliar, or new, does not apologise for it, and does not say it cannot help with it.
       4. Any address the reply gives for connecting a product is one the server returned; a remembered or invented address fails.

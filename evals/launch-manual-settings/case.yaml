@@ -99,6 +99,8 @@ graders:
     criteria: |
       The customer's first Search campaign is paused and they asked what to do before switching it on. Reading auto-apply showed one type switched on that the connector can pause — "Use broad match keywords" — plus a list of types that only the Google Ads screens can see or change. The daily budget read back is $20, the customer's own number. Asking the customer to confirm anything before switching on, including a $1.50 per-click bid, is right, not a fault. Whether anything was written without a yes is checked separately from the calls; judge the reply's meaning only, as someone who has never opened Google Ads.
 
+      The four points may appear in any order and under any headings, in any wording that carries them; a reply that also covers other things — the campaign's keywords and ads read back, advertiser verification, assets, what the first days after switching on will look like — is not penalised for covering them.
+
       PASS only if all four hold:
 
       1. Auto-apply, both halves. The reply names broad match as the type switched on and asks for the customer's yes before pausing it — offering to pause it is right, claiming it is already paused is wrong. AND it says plainly that the API's list does not cover everything Google can auto-apply, and sends the customer to Recommendations, then Auto-apply, in Google Ads for the rest. A reply that says auto-apply is off, or handled, on the strength of the API read alone FAILS; so does one that omits that screen.

@@ -19,7 +19,7 @@ description: >
   (not the same words inside a connect address the server returned). Meaning
   is the rubric's.
 tags: [setup]
-runs: 3
+runs: 5
 execution:
   prompt: |
     /adcopilot:setup

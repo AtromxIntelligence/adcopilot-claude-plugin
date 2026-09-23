@@ -12,7 +12,7 @@ description: >
   the same four characters at the end of the connector's address), the number
   of calls to the failing tool, raw fields. Meaning is the rubric's.
 tags: [setup]
-runs: 3
+runs: 5
 execution:
   prompt: "/adcopilot:setup"
   max_turns: 8
@@ -44,7 +44,7 @@ graders:
 
       PASS if all four hold:
 
-      1. The way back in. The reply tells them to run /mcp, choose the adcopilot connector, and sign in. Anything else the reply adds is fine as long as it is not one of the failures below — for example, which Google account to pick, the command's own check for a second, hand-added copy of the connector (asking them to run `claude mcp list`, and how to remove a copy they added), or a closing line saying to run setup again afterwards.
+      1. The way back in. The reply tells them to run /mcp, choose the adcopilot connector, and sign in. Describing the sign-in that follows — Google's "Choose an account" screen and which Google account to pick — counts as telling them to sign in; the literal words "sign in" are not required, and "choose the AdCopilot entry" is choosing the connector. Anything else the reply adds is fine as long as it is not one of the failures below — for example, which Google account to pick, the command's own check for a second, hand-added copy of the connector (asking them to run `claude mcp list`, and how to remove a copy they added), or a closing line saying to run setup again afterwards.
 
       2. The right diagnosis. The reply says they are signed out, or that the sign-in has lapsed, expired or needs doing again. It does not blame a permission they lack, a missing scope, an outage, a bug, or the connector being unsupported or not installed. Saying explicitly that it is NOT one of those is fine.
 
