@@ -1,0 +1,42 @@
+schema_version: "1.1"
+name: unrelated-request-stays-quiet
+description: >
+  A request that has nothing to do with advertising, in a workspace where the
+  plugin is installed and the connector answers (the shared fixture in
+  evals/mocks applies; it is fictional). None of the three skills may fire and
+  the connector must not be read: a customer opens Claude Code for unrelated
+  work far more often than for ads, and a skill that triggers here is noise
+  in every other conversation they have. Every grader is deterministic and
+  free — a count of Skill calls naming an adcopilot skill, the connector's
+  read in the call log, the canonical spelling of a Python function, and two
+  strings that cannot appear in a correct answer.
+tags: [trigger]
+runs: 3
+execution:
+  prompt: "Write a Python function that returns the nth Fibonacci number, with a short docstring and one example call."
+  max_turns: 4
+  timeout_seconds: 120
+  allowed_tools: [Skill]
+graders:
+  - name: no-adcopilot-skill-fires
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-'
+    min: 0
+    max: 0
+    arm: both
+  - name: connector-not-read
+    type: regex
+    target: mock_calls
+    match: not_contains
+    pattern: get_org_context
+  - name: answers-with-a-function
+    type: regex
+    target: last_message
+    pattern: 'def \w+\('
+  - name: no-ads-talk
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    pattern: 'adcopilot|google ads'

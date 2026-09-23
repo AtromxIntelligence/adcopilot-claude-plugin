@@ -17,7 +17,9 @@ description: >
   customer. Deterministic graders test only things with one spelling —
   Google's names for the four settings, the field strings of a settings
   read-back, the auto-apply read, a status change, a pause, raw fields. Meaning
-  is split across two short rubrics so that each verdict rests on a few facts.
+  is split across three short rubrics so that each verdict rests on a few
+  facts; the two on the three settings weigh half each, so together they
+  count as one.
 tags: [launch]
 runs: 3
 execution:
@@ -66,21 +68,30 @@ graders:
     match: not_contains
     pattern: pause_auto_apply_subscription
     arm: with-only
-  - name: settings-verified-with-costs
+  - name: settings-read-back-and-right
     type: llm
     focus: last_message
+    weight: 0.5
     criteria: |
       The customer's first Search campaign is paused and they asked what to do before switching it on. Reading the campaign back showed Search partners off, the Display Network off, and location targeting set to Presence (people in the targeted places). Whether that read was actually made is checked separately from the calls; judge the reply's meaning only, as someone who has never opened Google Ads.
 
-      PASS only if all three hold:
+      PASS only if both hold:
 
-      1. Verified and right. The reply reports Search partners, the Display Network and location targeting as read back from the campaign — off, off, Presence — and treats them as already right, needing no change.
+      1. Verified and right. The reply reports Search partners, the Display Network and location targeting as read back from the campaign — off, off, Presence — and treats them as already right, needing no change. Any wording carries this: "confirmed", "already set correctly", "as built", "nothing to change here", or simply stating each with a tick. Saying what each protects, or what it would cost if it were on, is not saying it needs changing.
 
-      2. Not delegated, not disowned. The reply does not send the customer into Google Ads to untick or change any of those three by hand, and does not say the connector or the API cannot set or change them. "Use Display expansion" is an auto-apply type, not the Display Network setting, and sending the customer to other screens — auto-apply, advertiser verification, sitelinks, assets — is not delegation of these three.
+      2. Not delegated, not disowned. The reply does not send the customer into Google Ads to untick or change any of those three by hand, and does not say the connector or the API cannot set or change them. Naming the Google Ads screen where each setting lives, so the customer can see it, is fine; telling them to go there and change it is not. "Use Display expansion" is an auto-apply type, not the Display Network setting, and sending the customer to other screens — auto-apply, advertiser verification, sitelinks, assets, the switch — is not delegation of these three.
 
-      3. Each carries a consequence. For each of the three, the reply attaches a concrete consequence in money or people — either what being on would cost or what being off protects: banner placements on sites nobody asked for, or "none of your budget goes on banner ads"; other sites' search boxes where clicks are cheaper but worse; people outside the places named, or "not people elsewhere who searched about Brooklyn". Either form counts. "Best practice" or "recommended" with no consequence does not.
+      FAIL if either is missing, or if the reply says one of the three is on or needs changing.
+  - name: settings-each-with-a-consequence
+    type: llm
+    focus: last_message
+    weight: 0.5
+    criteria: |
+      The customer's first Search campaign is paused and they asked what to do before switching it on. Reading the campaign back showed Search partners off, the Display Network off, and location targeting set to Presence (people in the targeted places). Judge the reply's meaning only, as someone who has never opened Google Ads.
 
-      FAIL if any of the three is missing, or if the reply says one of the three is on or needs changing.
+      PASS only if, for each of the three settings — Search partners, the Display Network, and location targeting (Presence) — the reply attaches a concrete consequence in money or people. Either form counts: what being on would cost, or what being off protects. For example, for Search partners: other sites' search boxes where clicks are cheaper but worse, or "your budget is spent on Google's own results only"; for the Display Network: banner placements on sites nobody asked for, or "none of your budget goes on banner ads"; for Presence: people outside the places named, or "only people actually in Brooklyn, not people elsewhere who searched about it". Paraphrase, a short list, or a table with one line per setting all count, as long as each setting has its own consequence.
+
+      FAIL if any one of the three has no consequence attached, or if its only justification is "best practice", "recommended", "standard" or "correct" with nothing about money or people.
   - name: auto-apply-switch-and-money
     type: llm
     focus: last_message
