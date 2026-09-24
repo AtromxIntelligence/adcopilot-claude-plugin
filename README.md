@@ -39,7 +39,7 @@ Together with the connector registration above, the commands and skills above ar
 ## What it will not do
 
 - **Switch a campaign on.** Every campaign it builds is created paused. You switch it on in Google Ads yourself.
-- **Delete anything.** No tool deletes a campaign, keyword or asset outright, and the connector's rails tell the assistant never to set a REMOVED status — pausing is as far as it goes.
+- **Delete anything.** The connector refuses a REMOVED status server-side: the campaign, ad group, ad and keyword tools accept only ENABLED or PAUSED, and the asset tools refuse a remove outright. Pausing is as far as it goes, and it is the server that enforces that rather than the assistant's good manners.
 - **Spend without being asked.** Reads run freely; every write is proposed first and applied only after you say yes in that conversation.
 
 ## Support
