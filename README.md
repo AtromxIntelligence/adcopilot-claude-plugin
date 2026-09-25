@@ -76,9 +76,9 @@ MIT. Copyright Atromx Intelligence Private Limited. See [LICENSE](LICENSE).
 This repository ships no GitHub Actions workflow. It had one — `claude plugin
 validate --strict` on every push, the eval gate, and the tools-only ablation on
 dispatch — and it was removed on 2026-09-26 for the plugin directory
-submission: its only way to install Claude Code on a runner was
-`curl … | bash`, and the scanner holds a download-and-execute pattern anywhere
-in the repository for review, whoever published the script being fetched.
+submission: its only way to install Claude Code on a runner was a piped shell
+installer, and the scanner holds a download-and-execute pattern anywhere in the
+repository for review, whoever published the script being fetched.
 
 Nothing about the gates themselves changed. `evals/` is intact, and the
 release checklist above is the contract: no version tag without both
