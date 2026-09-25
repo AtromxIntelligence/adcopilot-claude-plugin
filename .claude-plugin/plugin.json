@@ -5,6 +5,8 @@
   "author": { "name": "Atromx Intelligence", "url": "https://adcopilot.cloud" },
   "homepage": "https://adcopilot.cloud",
   "privacyPolicyUrl": "https://adcopilot.cloud/privacy",
+  "documentationUrl": "https://adcopilot.cloud/docs",
+  "termsOfServiceUrl": "https://adcopilot.cloud/terms",
   "repository": "https://github.com/AtromxIntelligence/adcopilot-claude-plugin",
   "license": "MIT",
   "keywords": ["google-ads", "ppc", "analytics", "search-console", "tag-manager", "mcp"]
