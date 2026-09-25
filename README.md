@@ -53,7 +53,7 @@ Written against AdCopilot **v2.14.1**. The tool snapshot the eval suite mocks ag
 
 ## Evals, and how a skill earns its place
 
-The suite in `evals/` runs with `claude plugin eval . --trust-plugin --ablation none --threshold 0.8 --judge-model sonnet --concurrency 2 --max-cost-usd 20 --no-publish`, which is exactly what CI runs on every push (the judge model is not incidental: the same case scored 0.81 under the default judge and 0.905 under sonnet). The harness's own with/without comparison removes the whole plugin — connector included — so it cannot say what a skill adds; `evals/ablation/tools-only.sh` runs the same cases against a copy of the plugin whose skills are cut to their frontmatter and prints each skill's delta over that tools-only arm. A skill whose cases show no delta there is deleted, not kept; the gate reads on each skill's weakest case as well as its mean, so one strong case cannot carry a dead one — and a case the tools-only arm already passes at 0.8 is a regression guard on the connector, not evidence about the skill, so it is held at 0.8 and left out of the delta. Fixtures under `evals/**/mocks/` are a fictional tenant: the field names follow the live connector's answers and every value is invented.
+The suite in `evals/` runs with `claude plugin eval . --trust-plugin --ablation none --threshold 0.8 --judge-model sonnet --concurrency 2 --max-cost-usd 20 --no-publish`, which the release checklist below runs before a version tag — by hand, because this repository ships no GitHub Actions workflow (see **Why there is no CI** at the end) (the judge model is not incidental: the same case scored 0.81 under the default judge and 0.905 under sonnet). The harness's own with/without comparison removes the whole plugin — connector included — so it cannot say what a skill adds; `evals/ablation/tools-only.sh` runs the same cases against a copy of the plugin whose skills are cut to their frontmatter and prints each skill's delta over that tools-only arm. A skill whose cases show no delta there is deleted, not kept; the gate reads on each skill's weakest case as well as its mean, so one strong case cannot carry a dead one — and a case the tools-only arm already passes at 0.8 is a regression guard on the connector, not evidence about the skill, so it is held at 0.8 and left out of the delta. Fixtures under `evals/**/mocks/` are a fictional tenant: the field names follow the live connector's answers and every value is invented.
 
 ## Releasing
 
@@ -64,9 +64,25 @@ Before a version tag is pushed, in a fresh Claude Code — a profile with no han
 3. `/mcp` — choose `adcopilot` and sign in with the Google account that owns the ad account.
 4. `/adcopilot:setup` on a real account: it reports what is connected, in prose, and one next step.
 5. `/adcopilot:audit` on the same account: the full audit and this month's pacing, with the brand-new-account findings kept separate.
-6. `claude plugin validate . --strict` and `claude plugin validate .claude-plugin/plugin.json --strict` both pass; the suite passes at 0.8; the tools-only ablation is green — every skill's delta over the connector plus its own frontmatter description (the tools-only arm keeps the frontmatter so the skill still fires), on its mean and on its weakest case among the cases that baseline does not already carry, is at least 0.05 (`ABLATION_FAIL_BELOW=0.05 evals/ablation/tools-only.sh`, or the CI workflow dispatched with `ablation: true`). A case the tools-only arm passes at 0.8 is a regression guard on the connector's own behaviour: it must still pass at 0.8 with the skill, and it is left out of the skill's delta. A red ablation blocks the tag: the skill it names is fixed or deleted first.
+6. `claude plugin validate . --strict` and `claude plugin validate .claude-plugin/plugin.json --strict` both pass; the suite passes at 0.8; the tools-only ablation is green — every skill's delta over the connector plus its own frontmatter description (the tools-only arm keeps the frontmatter so the skill still fires), on its mean and on its weakest case among the cases that baseline does not already carry, is at least 0.05 (`ABLATION_FAIL_BELOW=0.05 evals/ablation/tools-only.sh`). A case the tools-only arm passes at 0.8 is a regression guard on the connector's own behaviour: it must still pass at 0.8 with the skill, and it is left out of the skill's delta. A red ablation blocks the tag: the skill it names is fixed or deleted first.
 7. Record the AdCopilot version and `tools_revision` the steps above ran against, in the release notes and in the section above.
 
 ## Licence
 
 MIT. Copyright Atromx Intelligence Private Limited. See [LICENSE](LICENSE).
+
+## Why there is no CI
+
+This repository ships no GitHub Actions workflow. It had one — `claude plugin
+validate --strict` on every push, the eval gate, and the tools-only ablation on
+dispatch — and it was removed on 2026-09-26 for the plugin directory
+submission: its only way to install Claude Code on a runner was
+`curl … | bash`, and the scanner holds a download-and-execute pattern anywhere
+in the repository for review, whoever published the script being fetched.
+
+Nothing about the gates themselves changed. `evals/` is intact, and the
+release checklist above is the contract: no version tag without both
+`--strict` validations, the suite at 0.8, and a green tools-only ablation.
+They are now run by the person cutting the release rather than by a runner,
+which means they can be skipped — so the checklist, not a green tick, is what
+stands between a broken skill and a tag.
