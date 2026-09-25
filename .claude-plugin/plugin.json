@@ -4,6 +4,7 @@
   "description": "Run your Google advertising stack — Google Ads, Analytics, Search Console, Tag Manager and whatever else AdCopilot has connected since — from your AI client. Bundles the hosted AdCopilot connector and the steps it cannot take for you.",
   "author": { "name": "Atromx Intelligence", "url": "https://adcopilot.cloud" },
   "homepage": "https://adcopilot.cloud",
+  "privacyPolicyUrl": "https://adcopilot.cloud/privacy",
   "repository": "https://github.com/AtromxIntelligence/adcopilot-claude-plugin",
   "license": "MIT",
   "keywords": ["google-ads", "ppc", "analytics", "search-console", "tag-manager", "mcp"]
