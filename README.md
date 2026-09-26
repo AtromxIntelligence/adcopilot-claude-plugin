@@ -53,7 +53,7 @@ Written against AdCopilot **v2.14.1**. The tool snapshot the eval suite mocks ag
 
 ## Evals, and how a skill earns its place
 
-The suite in `evals/` runs with `claude plugin eval . --trust-plugin --ablation none --threshold 0.8 --judge-model sonnet --concurrency 2 --max-cost-usd 20 --no-publish`, which the release checklist below runs before a version tag — by hand, because this repository ships no GitHub Actions workflow (see **Why there is no CI** at the end) (the judge model is not incidental: the same case scored 0.81 under the default judge and 0.905 under sonnet). The harness's own with/without comparison removes the whole plugin — connector included — so it cannot say what a skill adds; `evals/ablation/tools-only.sh` runs the same cases against a copy of the plugin whose skills are cut to their frontmatter and prints each skill's delta over that tools-only arm. A skill whose cases show no delta there is deleted, not kept; the gate reads on each skill's weakest case as well as its mean, so one strong case cannot carry a dead one — and a case the tools-only arm already passes at 0.8 is a regression guard on the connector, not evidence about the skill, so it is held at 0.8 and left out of the delta. Fixtures under `evals/**/mocks/` are a fictional tenant: the field names follow the live connector's answers and every value is invented.
+The suite in `evals/` runs with `claude plugin eval . --trust-plugin --ablation none --threshold 0.8 --judge-model sonnet --concurrency 2 --max-cost-usd 20 --no-publish`, which the release checklist below runs before a version tag — by hand, because no workflow in this repository runs Claude Code (see **Why there is no CI** at the end) (the judge model is not incidental: the same case scored 0.81 under the default judge and 0.905 under sonnet). The harness's own with/without comparison removes the whole plugin — connector included — so it cannot say what a skill adds; `evals/ablation/tools-only.sh` runs the same cases against a copy of the plugin whose skills are cut to their frontmatter and prints each skill's delta over that tools-only arm. A skill whose cases show no delta there is deleted, not kept; the gate reads on each skill's weakest case as well as its mean, so one strong case cannot carry a dead one — and a case the tools-only arm already passes at 0.8 is a regression guard on the connector, not evidence about the skill, so it is held at 0.8 and left out of the delta. Fixtures under `evals/**/mocks/` are a fictional tenant: the field names follow the live connector's answers and every value is invented.
 
 ## Releasing
 
@@ -73,7 +73,7 @@ MIT. Copyright Atromx Intelligence Private Limited. See [LICENSE](LICENSE).
 
 ## Why there is no CI
 
-This repository ships no GitHub Actions workflow. It had one — `claude plugin
+No workflow in this repository runs Claude Code. It had one — `claude plugin
 validate --strict` on every push, the eval gate, and the tools-only ablation on
 dispatch — and it was removed on 2026-09-26 for the plugin directory
 submission: its only way to install Claude Code on a runner was a piped shell
@@ -86,3 +86,11 @@ release checklist above is the contract: no version tag without both
 They are now run by the person cutting the release rather than by a runner,
 which means they can be skipped — so the checklist, not a green tick, is what
 stands between a broken skill and a tag.
+
+The one workflow here is the leak check, `.github/workflows/leak-check.yml`:
+gitleaks over every commit, on each push to `main` and each pull request. It
+runs gitleaks from its published container image, pinned by digest, reads no
+secret, and fails when the scan finds a possible credential or reads no commits
+at all. GitHub's own secret scanning and push protection are also switched on
+for this repository, so a push carrying a secret type GitHub recognises is
+blocked unless the pusher deliberately bypasses the block.
