@@ -21,21 +21,16 @@ At every step, in four short beats: **name it** the way Google's own screens nam
 
 ### 1. Signed in
 
-**First work out where they are, because the connector is authorised in a different place on each surface and the wrong instruction wastes their first two minutes.**
+Where the connector is signed in depends on the surface, and the tell is whether you have a shell.
 
-The tell is whether you have a shell. If you can run `claude mcp list`, they are in **Claude Code**. If you cannot — claude.ai, Cowork, or the desktop app — they are on the **web**, and every `/mcp`, `claude mcp list` and `claude mcp remove` instruction below is useless to them: those commands do not exist there.
+- **Claude Code** (`claude mcp list` runs): `/mcp`, choose `adcopilot`, sign in.
+- **Web** (claude.ai, Cowork, desktop — no shell): the plugin's own **Connectors** tab, sign in to `adcopilot`. It is already listed.
 
-**NEVER tell a customer who has this plugin installed to add the connector by hand** — not "Add custom connector", not Settings → Connectors, not by pasting `https://mcp.adcopilot.cloud/mcp` anywhere. The plugin already registers it. A hand-added copy SHADOWS the plugin's registration, Claude keeps theirs and silently ignores the plugin's, and `/adcopilot:setup` then has to walk them back out of it. Hand-adding is the repair for someone who has no plugin, and it is the one thing that breaks someone who does. If you find yourself about to describe a connector URL, stop: the right answer is always a screen in their own client.
+Never tell them to add the connector by hand — the plugin registers it, and a hand-added copy shadows the plugin's own. `/adcopilot:setup` diagnoses that.
 
-**On the web**, the connector is authorised on the plugin's own connector screen — open the plugin from the sidebar's plugin list, then its Connectors tab, and sign in to `adcopilot` there. It is already listed; nothing needs adding. Do not send them to the connector *directory* to search for AdCopilot either: the plugin's own bundled connector is the one to sign in to, and a directory listing is not a substitute for it.
+Google's screen here is the account chooser, "Choose an account", and the one to pick is the Google account that owns the ad account. Say it once; if the next call fails the same way, report the error rather than looping them.
 
-**In Claude Code**, tell them to run `/mcp`, choose `adcopilot`, and sign in.
-
-Either way: Google's own screen for this is the account chooser, "Choose an account", and the one to pick is the Google account that owns the ad account. Say it once. If the next call fails the same way, stop and report the error; do not send them round the loop again.
-
-If there is no `get_org_context` tool at all, the connector has not been signed in to yet, or — in Claude Code only — a copy added by hand is shadowing the plugin's. `/adcopilot:setup` diagnoses that; this skill starts from a connector that answers.
-
-**And say plainly what still remains after signing in, because signing in is not the finish line.** The Google products themselves are connected once, inside AdCopilot at `https://app.adcopilot.cloud`, not in this client. A customer who signs in to the connector and has no AdCopilot workspace with Google Ads connected will get an answer from `get_org_context` that reports nothing connected — which is the server working correctly, not a fault. Tell them that before they go looking for one.
+Signing in links their AdCopilot workspace. The Google products are connected inside AdCopilot at `https://app.adcopilot.cloud`, not in this client — so a fresh sign-in can report nothing connected, and that is the server answering, not a fault.
 
 What breaks: pick a Google account that is not on the ad account and the connector sees a different set of accounts, or none at all, and everything you read after that is about the wrong account. What it unlocked: every read and write from now on runs as that account. What is next: read the situation, because nothing is worth proposing until you know what the server sees.
 
