@@ -5,8 +5,20 @@ description: Check the AdCopilot connector is connected and signed in, and say w
 
 Follow the `adcopilot-connect` skill.
 
-One condition the server cannot see, so check it here: **a second, hand-added
-connector**. This plugin already registers `adcopilot`; a copy added from our
+**Work out the surface before you diagnose anything.** If you can run
+`claude mcp list`, this is Claude Code and the whole of the next two paragraphs
+applies. If you cannot — claude.ai, Cowork, the desktop app — none of it does:
+there is no `/mcp`, no `claude mcp list` and no `claude mcp remove` there, and
+no way to hand-add a connector into the shadowing state they describe. On the
+web the only question is whether they have signed in to the plugin's own
+connector yet: open the plugin from the plugin list, then its Connectors tab,
+and sign in to `adcopilot` there. Never offer "Add custom connector" or the
+connector URL to someone who has this plugin installed — that is what CREATES
+the shadowed state, and it is the one instruction that turns a working install
+into a broken one.
+
+One condition the server cannot see, and only in Claude Code, so check it there:
+**a second, hand-added connector**. This plugin already registers `adcopilot`; a copy added from our
 site's instructions before the plugin was installed shadows it, and Claude Code
 keeps theirs and silently ignores the plugin's. The tell, in `claude mcp list`
 (run it, or ask them to paste its `adcopilot` lines): a bare `adcopilot:` line
@@ -21,6 +33,11 @@ each: `claude mcp remove adcopilot -s user`, and `claude mcp remove adcopilot
 to that directory and is invisible from any other (a project's `.mcp.json` is
 `-s project`, from that project). Then `claude mcp list` again until only
 `plugin:adcopilot:adcopilot` remains, then `/mcp` to sign in.
+
+If the connector answers but reports nothing connected, that is the server
+working, not a fault: the Google products are connected inside AdCopilot at
+`https://app.adcopilot.cloud`, not in this client. Say so and send them there,
+rather than letting them hunt for a broken connector.
 
 End as the skill's step 5 does: the one next step, `/adcopilot:launch` or
 `/adcopilot:measure`, and why it fits their situation.

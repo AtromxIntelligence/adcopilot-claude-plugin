@@ -6,7 +6,26 @@ The plugin is free (MIT). The connector is a hosted service — plans at https:/
 
 ## Install
 
-In Claude Code:
+Two steps on every surface: add the plugin, then **sign in to the connector it
+brings with it**. The second step is the one people miss, and nothing works
+until it is done.
+
+### claude.ai, Cowork and the desktop app
+
+1. Add the plugin from the directory listing.
+2. Open the plugin from your plugin list, go to its **Connectors** tab, and sign
+   in to `adcopilot` there.
+
+The connector is already listed — there is nothing to add. **Do not use
+"Add custom connector", and do not paste the connector URL anywhere:** the
+plugin registers it for you, and a hand-added copy shadows the plugin's own, so
+Claude keeps yours and silently ignores the plugin's.
+
+If you clicked **Try in Cowork** straight from the listing, you landed in a chat
+before step 2 — the connector will report as missing. Do step 2 and say "get me
+started" again.
+
+### Claude Code
 
 ```
 /plugin marketplace add AtromxIntelligence/adcopilot-claude-plugin
@@ -16,7 +35,18 @@ In Claude Code:
 
 The last step opens the connector list. Choose `adcopilot` and sign in with your own Google account. There is no `claude mcp add` step: the plugin registers the connector at `https://mcp.adcopilot.cloud/mcp` for you. Signing in links your AdCopilot workspace, so you need an AdCopilot account; your Google products are connected once, in AdCopilot at https://app.adcopilot.cloud, not in Claude Code — `/adcopilot:setup` tells you which are missing and sends you to the right page.
 
-If you had already added the connector by hand before installing, Claude Code keeps yours and silently ignores the plugin's: `claude mcp list` then shows a bare `adcopilot:` line and no `plugin:adcopilot:adcopilot` line. Remove yours from every scope it is in — `claude mcp remove adcopilot -s user`, and `claude mcp remove adcopilot -s local` run from the directory you added it in, because a local registration belongs to that directory — and the plugin's line appears and asks you to sign in.
+### Then, on every surface
+
+Signing in to the connector links your **AdCopilot workspace**, so you need an
+AdCopilot account. Your Google products — Google Ads, Analytics, Search Console,
+Tag Manager — are connected **once, inside AdCopilot at
+https://app.adcopilot.cloud**, not in Claude. So a fresh sign-in can report
+nothing connected: that is the server answering correctly, not a fault.
+
+Run `/adcopilot:setup` first. It says what is connected, what is not, and sends
+you to the right page for each.
+
+If you had already added the connector by hand before installing (Claude Code only — the web has no such command), Claude Code keeps yours and silently ignores the plugin's: `claude mcp list` then shows a bare `adcopilot:` line and no `plugin:adcopilot:adcopilot` line. Remove yours from every scope it is in — `claude mcp remove adcopilot -s user`, and `claude mcp remove adcopilot -s local` run from the directory you added it in, because a local registration belongs to that directory — and the plugin's line appears and asks you to sign in.
 
 ## What you get
 
