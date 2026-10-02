@@ -21,9 +21,16 @@ At every step, in four short beats: **name it** the way Google's own screens nam
 
 ### 1. Signed in
 
-If tool calls fail with an authentication error, tell the customer to run `/mcp`, choose `adcopilot`, and sign in. Google's own screen for this is the account chooser, "Choose an account", and the one to pick is the Google account that owns the ad account. Say it once. If the next call fails the same way, stop and report the error; do not send them round the loop again.
+Where the connector is signed in depends on the surface, and the tell is whether you have a shell.
 
-If there is no `get_org_context` tool at all, the connector is not registered, or a copy of it added by hand is shadowing the plugin's. `/adcopilot:setup` diagnoses that; this skill starts from a connector that answers.
+- **Claude Code** (`claude mcp list` runs): `/mcp`, choose `adcopilot`, sign in.
+- **Web** (claude.ai, Cowork, desktop — no shell): the plugin's own **Connectors** tab, sign in to `adcopilot`. It is already listed.
+
+Never tell them to add the connector by hand — the plugin registers it, and a hand-added copy shadows the plugin's own. `/adcopilot:setup` diagnoses that.
+
+Google's screen here is the account chooser, "Choose an account", and the one to pick is the Google account that owns the ad account. Say it once; if the next call fails the same way, report the error rather than looping them.
+
+Signing in links their AdCopilot workspace. The Google products are connected inside AdCopilot at `https://app.adcopilot.cloud`, not in this client — so a fresh sign-in can report nothing connected, and that is the server answering, not a fault.
 
 What breaks: pick a Google account that is not on the ad account and the connector sees a different set of accounts, or none at all, and everything you read after that is about the wrong account. What it unlocked: every read and write from now on runs as that account. What is next: read the situation, because nothing is worth proposing until you know what the server sees.
 
