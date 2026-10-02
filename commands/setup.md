@@ -3,14 +3,9 @@ name: setup
 description: Check the AdCopilot connector is connected and signed in, and say what each connected product unlocks.
 ---
 
-Follow the `adcopilot-connect` skill — including its first rule, which is that
-`get_org_context` is called before anything else. Ask the server first even when
-you intend to diagnose: its answer is what says whether there is anything to
-diagnose, and a reply about this customer's setup that was not read from it is a
-guess. Only if the call cannot be made at all does the surface question below
-come first.
+Follow the `adcopilot-connect` skill.
 
-**Then work out the surface before you diagnose anything further.** If you can run
+**Work out the surface before you diagnose anything.** If you can run
 `claude mcp list`, this is Claude Code and the whole of the next two paragraphs
 applies. If you cannot — claude.ai, Cowork, the desktop app — none of it does:
 there is no `/mcp`, no `claude mcp list` and no `claude mcp remove` there, and
