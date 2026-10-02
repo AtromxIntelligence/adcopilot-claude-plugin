@@ -1,12 +1,16 @@
 {
   "name": "adcopilot-claude-plugin",
   "description": "AdCopilot for Claude Code: your Google advertising stack — Google Ads, Analytics, Search Console, Tag Manager and whatever else AdCopilot has connected since — plus the steps the connector cannot take for you.",
-  "owner": { "name": "Atromx Intelligence", "url": "https://adcopilot.cloud" },
+  "owner": {
+    "name": "Atromx Intelligence",
+    "url": "https://adcopilot.cloud"
+  },
   "plugins": [
     {
       "name": "adcopilot",
       "source": "./",
-      "description": "Your Google advertising stack — Google Ads, Analytics, Search Console, Tag Manager and whatever AdCopilot connects next — in your AI client, with the manual steps spelled out."
+      "description": "Your Google advertising stack — Google Ads, Analytics, Search Console, Tag Manager and whatever AdCopilot connects next — in your AI client, with the manual steps spelled out.",
+      "category": "Marketing"
     }
   ]
 }
