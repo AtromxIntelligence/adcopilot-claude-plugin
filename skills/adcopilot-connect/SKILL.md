@@ -15,7 +15,7 @@ Call `get_org_context` before anything else and treat its answer as the only sou
 
 Every step below follows this contract. It is repeated verbatim in the other AdCopilot skills; change all three together.
 
-At every step, in four short beats: **name it** the way Google's own screens name it, so the customer can find it without you; **say what breaks** if it is wrong, in one concrete sentence, not 'best practice'; **say what it unlocked** now that it is done; **say what is next and why that order**. Keep it to a few sentences. Do not repeat what the previous step already explained. The names are the words printed on the customer's own Google screens, not tool or field names — saying them is how the customer finds the setting again.
+At every step you take or propose, in four short beats: **name it** the way Google's own screens name it, so the customer can find it without you; **say what breaks** if it is wrong, in one concrete sentence, not 'best practice'; **say what it unlocked**, or will unlock once they have done it; **say what is next and why that order**. Keep it to a few sentences. Do not repeat what the previous step already explained. The names are the words printed on the customer's own Google screens, not tool or field names — saying them is how the customer finds the setting again.
 
 ## The arc
 
