@@ -12,14 +12,18 @@ until it is done.
 
 ### claude.ai, Cowork and the desktop app
 
-1. Add the plugin from the directory listing.
-2. Open the plugin from your plugin list, go to its **Connectors** tab, and sign
-   in to `adcopilot` there.
+1. Add the plugin: open
+   [AdCopilot in the plugin directory](https://claude.ai/new#customize/plugins/id/c9bfd1ff-d329-4949-91fb-dc97116194ae%40anthropic-plugin-directory),
+   or go to **Customize**, then **Plugins**, and search for AdCopilot. Click
+   **Add**.
+2. In the plugin, open its **Connectors** tab, click **Connect** beside
+   `adcopilot`, and sign in.
 
-The connector is already listed — there is nothing to add. **Do not use
-"Add custom connector", and do not paste the connector URL anywhere:** the
-plugin registers it for you, and a hand-added copy shadows the plugin's own, so
-Claude keeps yours and silently ignores the plugin's.
+The connector is already listed — there is nothing to add, and no need for
+"Add custom connector" or the connector URL: the plugin registers it for you.
+If you added AdCopilot by hand before installing the plugin, nothing breaks:
+Claude links a connector by its URL, so you still have one AdCopilot connector,
+the same one.
 
 If you clicked **Try in Cowork** straight from the listing, you landed in a chat
 before step 2 — the connector will report as missing. Do step 2 and say "get me
@@ -52,7 +56,7 @@ If you had already added the connector by hand before installing (Claude Code on
 
 Five commands, which you type:
 
-- `/adcopilot:setup` — checks the connector is connected and signed in, says what each connected product unlocks, and catches the two ways a fresh install goes wrong: a lapsed sign-in, and a copy of the connector you added by hand before installing.
+- `/adcopilot:setup` — checks the connector is connected and signed in, says what each connected product unlocks, and catches the two ways a fresh install goes wrong: a lapsed sign-in, and, in Claude Code, a copy of the connector you added by hand before installing.
 - `/adcopilot:launch` — a first Search campaign, through the `adcopilot-launch` skill below.
 - `/adcopilot:measure` — conversion tracking, through the `adcopilot-measure` skill below.
 - `/adcopilot:daily` — the daily check-in: what was spent since yesterday, the searches the ads showed for, and what changed in the account — in that order, as far as the connector's read cap for the day allows.
@@ -70,7 +74,7 @@ Together with the connector registration above, the commands and skills above ar
 
 - **Switch a campaign on.** Every campaign it builds is created paused. You switch it on in Google Ads yourself.
 - **Delete anything.** The connector refuses a REMOVED status server-side: the campaign, ad group, ad and keyword tools accept only ENABLED or PAUSED, and the asset tools refuse a remove outright. Pausing is as far as it goes, and it is the server that enforces that rather than the assistant's good manners.
-- **Spend without being asked.** Reads run freely; every write is proposed first and applied only after you say yes in that conversation.
+- **Spend without being asked.** Reads run freely; your AI client asks before each change while the write tools stay on **Needs approval**.
 
 ## Support
 
@@ -79,7 +83,7 @@ Together with the connector registration above, the commands and skills above ar
 
 ## AdCopilot version
 
-Written against AdCopilot **v2.14.1**. The tool snapshot the eval suite mocks against (`evals/mocks/adcopilot/_tools.json`) is frozen at connector tools revision `0066a60e`, taken 2026-09-23; the live revision moves independently of this plugin, and a difference between the two is not a fault. `/adcopilot:audit` relies on the `tools_revision` that `get_org_context` reports from v2.14.1 on, to refresh a stale tool description in-conversation.
+Written against AdCopilot **v2.14.1**. The tool snapshot the eval suite mocks against (`evals/mocks/adcopilot/_tools.json`) is frozen at connector tools revision `0066a60e`, taken 2026-09-23; the live revision moves independently of this plugin, and a difference between the two is not a fault. `/adcopilot:audit` relies on the `tools_revision` that `get_org_context` reports from v2.14.1 on, to refresh a stale tool description in-conversation. The skills and `/adcopilot:audit` call `get_org_context` with `source: "claude-plugin"`, which AdCopilot reads from v2.29.0 on to record plugin use per workspace; calls without it behave as before.
 
 ## Evals, and how a skill earns its place
 
