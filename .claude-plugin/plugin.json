@@ -1,6 +1,6 @@
 {
   "name": "adcopilot",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Google Ads, Analytics, Search Console and Tag Manager from your AI client — audit wasted spend, build campaigns, fix conversion tracking. Every change is proposed and waits for your approval, and it can never delete.",
   "author": {
     "name": "Atromx Intelligence",
