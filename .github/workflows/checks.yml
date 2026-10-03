@@ -12,9 +12,10 @@ name: checks
 #
 # WHAT IT DELIBERATELY DOES NOT DO. It does not run the eval suite or the
 # tools-only ablation. Those drive a model, which needs an authenticated Claude
-# Code, and this job holds no secret — see "Why there is no CI" in the README
-# for how they are run instead. `claude plugin validate` needs no auth at all:
-# it reads local files, and is the only Claude Code command used here.
+# Code, and this job holds no secret — see "What CI runs, and what it does
+# not" in the README for how they are run instead. `claude plugin validate`
+# needs no auth at all: it reads local files, and is the only Claude Code
+# command used here.
 #
 # Each check below exists because something it would have caught actually
 # happened; the comment on each one says what.

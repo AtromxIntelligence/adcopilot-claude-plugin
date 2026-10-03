@@ -74,7 +74,7 @@ Together with the connector registration above, the commands and skills above ar
 
 - **Switch a campaign on.** Every campaign it builds is created paused. You switch it on in Google Ads yourself.
 - **Delete anything.** The connector refuses a REMOVED status server-side: the campaign, ad group, ad and keyword tools accept only ENABLED or PAUSED, and the asset tools refuse a remove outright. Pausing is as far as it goes, and it is the server that enforces that rather than the assistant's good manners.
-- **Spend without being asked.** Reads run freely; your AI client asks before each change while the write tools stay on **Needs approval**.
+- **Change your account unasked, while the write tools need approval.** Reads run freely. Your AI client asks before each change while the write tools stay on **Needs approval** (claude.ai, Cowork and the desktop app) or, in Claude Code, while it still prompts for them: the tools are not allowlisted and the session is not in `auto` or `bypassPermissions` mode. Take the question away and changes to what already exists, a budget or a switched-on campaign among them, apply without it; only a new campaign is still built paused.
 
 ## Support
 
@@ -83,11 +83,11 @@ Together with the connector registration above, the commands and skills above ar
 
 ## AdCopilot version
 
-Written against AdCopilot **v2.14.1**. The tool snapshot the eval suite mocks against (`evals/mocks/adcopilot/_tools.json`) is frozen at connector tools revision `0066a60e`, taken 2026-09-23; the live revision moves independently of this plugin, and a difference between the two is not a fault. `/adcopilot:audit` relies on the `tools_revision` that `get_org_context` reports from v2.14.1 on, to refresh a stale tool description in-conversation. The skills and `/adcopilot:audit` call `get_org_context` with `source: "claude-plugin"`, which AdCopilot reads from v2.29.0 on to record plugin use per workspace; calls without it behave as before.
+Written against AdCopilot **v2.29.0**. The tool snapshot the eval suite mocks against (`evals/mocks/adcopilot/_tools.json`) is frozen at connector tools revision `0066a60e`, taken 2026-09-23 under v2.14.1, before `get_org_context` took `source`; the live revision moves independently of this plugin, and a difference between the two is not a fault. `/adcopilot:audit` relies on the `tools_revision` that `get_org_context` reports from v2.14.1 on, to refresh a stale tool description in-conversation. The skills and `/adcopilot:audit` call `get_org_context` with `source: "claude-plugin"`, which AdCopilot reads from v2.29.0 on to record plugin use per workspace; calls without it behave as before.
 
 ## Evals, and how a skill earns its place
 
-The suite in `evals/` runs with `claude plugin eval . --trust-plugin --ablation none --threshold 0.8 --judge-model sonnet --concurrency 2 --max-cost-usd 20 --no-publish`, which the release checklist below runs before a version tag — by hand, because no workflow in this repository runs Claude Code (see **Why there is no CI** at the end) (the judge model is not incidental: the same case scored 0.81 under the default judge and 0.905 under sonnet). The harness's own with/without comparison removes the whole plugin — connector included — so it cannot say what a skill adds; `evals/ablation/tools-only.sh` runs the same cases against a copy of the plugin whose skills are cut to their frontmatter and prints each skill's delta over that tools-only arm. A skill whose cases show no delta there is deleted, not kept; the gate reads on each skill's weakest case as well as its mean, so one strong case cannot carry a dead one — and a case the tools-only arm already passes at 0.8 is a regression guard on the connector, not evidence about the skill, so it is held at 0.8 and left out of the delta. Fixtures under `evals/**/mocks/` are a fictional tenant: the field names follow the live connector's answers and every value is invented.
+The suite in `evals/` runs with `claude plugin eval . --trust-plugin --ablation none --threshold 0.8 --judge-model sonnet --concurrency 2 --max-cost-usd 20 --no-publish`, which the release checklist below runs before a version tag — by hand, because it drives a model and no workflow here holds a credential to sign Claude Code in (see **What CI runs, and what it does not** at the end) (the judge model is not incidental: the same case scored 0.81 under the default judge and 0.905 under sonnet). The harness's own with/without comparison removes the whole plugin — connector included — so it cannot say what a skill adds; `evals/ablation/tools-only.sh` runs the same cases against a copy of the plugin whose skills are cut to their frontmatter and prints each skill's delta over that tools-only arm. A skill whose cases show no delta there is deleted, not kept; the gate reads on each skill's weakest case as well as its mean, so one strong case cannot carry a dead one — and a case the tools-only arm already passes at 0.8 is a regression guard on the connector, not evidence about the skill, so it is held at 0.8 and left out of the delta. Fixtures under `evals/**/mocks/` are a fictional tenant: the field names follow the live connector's answers and every value is invented.
 
 ## Releasing
 
@@ -105,26 +105,38 @@ Before a version tag is pushed, in a fresh Claude Code — a profile with no han
 
 MIT. Copyright Atromx Intelligence Private Limited. See [LICENSE](LICENSE).
 
-## Why there is no CI
+## What CI runs, and what it does not
 
-No workflow in this repository runs Claude Code. It had one — `claude plugin
-validate --strict` on every push, the eval gate, and the tools-only ablation on
-dispatch — and it was removed on 2026-09-26 for the plugin directory
-submission: its only way to install Claude Code on a runner was a piped shell
-installer, and the scanner holds a download-and-execute pattern anywhere in the
-repository for review, whoever published the script being fetched.
+Two workflows run on every push to `main` and every pull request, and neither
+reads a secret.
 
-Nothing about the gates themselves changed. `evals/` is intact, and the
-release checklist above is the contract: no version tag without both
-`--strict` validations, the suite at 0.8, and a green tools-only ablation.
-They are now run by the person cutting the release rather than by a runner,
-which means they can be skipped — so the checklist, not a green tick, is what
-stands between a broken skill and a tag.
+`.github/workflows/checks.yml` is the structural half of the release gates. It
+installs Claude Code from npm at a pinned version (`2.1.288`) and runs both
+`--strict` validations, `claude plugin validate . --strict` and
+`claude plugin validate .claude-plugin/plugin.json --strict`, which read local
+files and need no sign-in. It also checks that the three manifests parse, that
+every skill and command carries a `name:` and a `description:`, that no
+download-and-execute pattern is back anywhere in the repository, and that the
+manifest version is not behind the latest tag.
 
-The one workflow here is the leak check, `.github/workflows/leak-check.yml`:
-gitleaks over every commit, on each push to `main` and each pull request. It
-runs gitleaks from its published container image, pinned by digest, reads no
-secret, and fails when the scan finds a possible credential or reads no commits
-at all. GitHub's own secret scanning and push protection are also switched on
-for this repository, so a push carrying a secret type GitHub recognises is
-blocked unless the pusher deliberately bypasses the block.
+`.github/workflows/leak-check.yml` runs gitleaks over every commit. It runs
+gitleaks from its published container image, pinned by digest, and fails when
+the scan finds a possible credential or reads no commits at all. GitHub's own
+secret scanning and push protection are also switched on for this repository,
+so a push carrying a secret type GitHub recognises is blocked unless the pusher
+deliberately bypasses the block.
+
+What no workflow runs is the eval suite and the tools-only ablation. Both drive
+a model, which needs a signed-in Claude Code, and these jobs hold no
+credential. The person cutting the release runs them, which means they can be
+skipped, so the checklist above, not a green tick, is what stands between a
+broken skill and a tag: no version tag without both `--strict` validations,
+the suite at 0.8, and a green tools-only ablation.
+
+The first workflow here ran all of it, the eval gate and the ablation included.
+It was removed on 2026-09-26 for the plugin directory submission: its only way
+to install Claude Code on a runner was a piped shell installer, and the
+directory's scanner holds a download-and-execute pattern anywhere in the
+repository for review, whoever published the script being fetched. Installing
+from npm at a pinned version is not that pattern, which is why `checks.yml`
+could come back.
