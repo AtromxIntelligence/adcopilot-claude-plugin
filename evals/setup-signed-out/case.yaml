@@ -55,6 +55,17 @@ graders:
       4. Stops there. The reply does not tell them to keep retrying and does not say it will keep retrying itself.
 
       FAIL if any of the four does not hold, or if the reply is a paste of tool output in place of an answer. Quoting the error's one line inside a prose reply is not a paste.
+  - name: marks-plugin-use
+    type: tool_used
+    # Counts get_org_context calls whose input lacks source "claude-plugin", the
+    # marker AdCopilot reads to record plugin use; any such call fails. Exact
+    # registered name, as the call-count grader above. An input not shaped as
+    # JSON counts as unmarked, so a format change fails this rather than passing it.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin")'
+    min: 0
+    max: 0
+    arm: with-only
   - name: skill-fired
     type: tool_used
     tool: Skill

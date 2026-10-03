@@ -16,7 +16,7 @@ description: >
   Deterministic graders test only canonical spellings: the server read, the
   tools argument naming full_audit in the call log, the /mcp command, raw
   fields. Meaning is the rubric's, at weight 2, so a run with the rubric
-  dead lands at 0.667, below the gate.
+  dead lands at 0.714, below the gate.
 tags: [audit]
 runs: 3
 execution:
@@ -58,6 +58,17 @@ graders:
     flags: i
     match: not_contains
     pattern: '\b(tools_revision_note|input_schema|inputSchema|conversion_tracking_status|needs_reauth|can_edit|connect_url|ads_probe|customer_id)\b|"(name|description|tools|tools_revision|findings|results?)"\s*:|\{\s*"'
+  - name: marks-plugin-use
+    type: tool_used
+    # Counts get_org_context calls whose input lacks source "claude-plugin", the
+    # marker AdCopilot reads to record plugin use; any such call fails. Exact
+    # registered name, as in setup-signed-out. An input not shaped as JSON counts
+    # as unmarked, so a format change fails this rather than passing it.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin")'
+    min: 0
+    max: 0
+    arm: with-only
   - name: read-the-server-first
     type: regex
     target: mock_calls

@@ -37,6 +37,17 @@ graders:
     # (tools: [...] asks for its text). That is a read, not a call; the lookbehind skips it.
     pattern: '^(?:(?!ga4_create_property)[\s\S])*(?<!\\?"tools\\?"[^\n]{0,200})ga4_create_google_ads_link'
     arm: with-only
+  - name: marks-plugin-use
+    type: tool_used
+    # Counts get_org_context calls whose input lacks source "claude-plugin", the
+    # marker AdCopilot reads to record plugin use; any such call fails. Exact
+    # registered name, as in setup-signed-out. An input not shaped as JSON counts
+    # as unmarked, so a format change fails this rather than passing it.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin")'
+    min: 0
+    max: 0
+    arm: with-only
   - name: read-the-server-first
     type: regex
     target: mock_calls

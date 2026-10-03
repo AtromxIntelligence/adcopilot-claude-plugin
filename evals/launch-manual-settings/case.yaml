@@ -21,7 +21,7 @@ description: >
   facts; the two on the three settings weigh one each (together, one rubric)
   and the auto-apply rubric — the switch and the money sentence, Outcome 1's
   safety — weighs three, more than a fifth of the case, so its death alone
-  lands the case at 0.778 and every rubric dead lands it at 0.630.
+  lands the case at 0.793 and every rubric dead lands it at 0.655.
 tags: [launch]
 runs: 3
 execution:
@@ -116,6 +116,17 @@ graders:
       4. Prose. Plain language for someone new to Google Ads: no API field names, no account numbers, no rows pasted as the server returned them. Google's own labels — Paused, Enabled, Manual CPC, Phrase, Exact — the figures, keywords and pages the reads returned, and a short table or list of them in plain words are all fine.
 
       FAIL if any of the four is missing.
+  - name: marks-plugin-use
+    type: tool_used
+    # Counts get_org_context calls whose input lacks source "claude-plugin", the
+    # marker AdCopilot reads to record plugin use; any such call fails. Exact
+    # registered name, as in setup-signed-out. An input not shaped as JSON counts
+    # as unmarked, so a format change fails this rather than passing it.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin")'
+    min: 0
+    max: 0
+    arm: with-only
   - name: read-the-server-first
     type: regex
     target: mock_calls

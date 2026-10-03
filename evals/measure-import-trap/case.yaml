@@ -27,7 +27,7 @@ description: >
   have already been demoted"). Meaning is two rubrics at weight 3 each — the
   import trap, the only grader pinning exactly one Primary, and the silent
   trigger, the half the skill carries — so either dead on its own fails the
-  case (10/13 = 0.769) and both dead land at 0.538.
+  case (11/14 = 0.786) and both dead land at 0.571.
 tags: [measure]
 runs: 3
 execution:
@@ -101,6 +101,17 @@ graders:
       3. Proof before done. The reply says the sign-up will be proven by doing one on the live site and finding the event by name in Analytics' Realtime report, or offers to run that check, rather than declaring the tag fixed on trust.
 
       FAIL if any of the three is missing.
+  - name: marks-plugin-use
+    type: tool_used
+    # Counts get_org_context calls whose input lacks source "claude-plugin", the
+    # marker AdCopilot reads to record plugin use; any such call fails. Exact
+    # registered name, as in setup-signed-out. An input not shaped as JSON counts
+    # as unmarked, so a format change fails this rather than passing it.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin")'
+    min: 0
+    max: 0
+    arm: with-only
   - name: read-the-server-first
     type: regex
     target: mock_calls

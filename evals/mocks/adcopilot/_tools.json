@@ -2,13 +2,26 @@
   "tools": [
     {
       "name": "get_org_context",
-      "description": "Returns this workspace's AdCopilot context: which Google products are connected, the enabled Google Ads accounts (name, currency, time zone), whether campaigns and conversion tracking exist, the saved business profile, the onboarding stage, plan limits, and a `situation` code with a suggested `next_step`, a `playbook`, and `cross_reads` — reads outside Google Ads with their arguments. Also returns `tools_revision`, the revision this connection's tool descriptions end with; given `tools`, returns only those tools' current descriptions and input schemas. Read-only; changes nothing.\n\nTools revision: 0066a60e.",
+      "description": "The workspace overview a new conversation, a get-started request or an account audit begins from. Returns this workspace's AdCopilot context: which Google products are connected, the enabled Google Ads accounts (name, currency, time zone), whether campaigns and conversion tracking exist, the saved business profile, the onboarding stage, plan limits, and a `situation` code with a suggested `next_step`, a `playbook`, and `cross_reads` — reads outside Google Ads with their arguments. Also returns `tools_revision`, the revision this connection's tool descriptions end with; given `tools`, returns only those tools' current descriptions and input schemas. Read-only; changes nothing.\n\nTools revision: 782ec74d.",
       "inputSchema": {
         "properties": {
           "refresh": {
             "default": false,
             "title": "Refresh",
             "type": "boolean"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "\"claude-plugin\" when AdCopilot's Claude plugin is in this conversation (its skills or commands, such as /setup, are available). Any other value is ignored.",
+            "title": "Source"
           },
           "tools": {
             "anyOf": [

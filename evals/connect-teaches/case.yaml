@@ -30,6 +30,17 @@ graders:
       Teaching attached to the step being taken or proposed right now counts. A lecture covering the whole setup before anything has happened does not, and neither does teaching about a step this workspace does not need as the server reported it.
 
       FAIL if the run completes or plans the setup without teaching — a bare checklist, a list of tool calls made, or "done" with no explanation — or if fewer than two steps carry all three of (a), (b) and (c). Ending by asking the customer one question is fine.
+  - name: marks-plugin-use
+    type: tool_used
+    # Counts get_org_context calls whose input lacks source "claude-plugin", the
+    # marker AdCopilot reads to record plugin use; any such call fails. Exact
+    # registered name, as in setup-signed-out. An input not shaped as JSON counts
+    # as unmarked, so a format change fails this rather than passing it.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin")'
+    min: 0
+    max: 0
+    arm: with-only
   - name: read-the-server-first
     type: regex
     target: mock_calls

@@ -21,7 +21,7 @@ description: >
   test only strings with one spelling: the remedy command's name, raw field
   names (not the same words inside a connect address the server returned).
   Meaning is two rubrics along the case's seams — the duplicate and its
-  scoped removal, the case's outcome, at weight 2 (dead alone: 5/7 = 0.714,
+  scoped removal, the case's outcome, at weight 2 (dead alone: 6/8 = 0.750,
   below the gate); setup's job and the one next step at weight 1 — so a
   judge that disagrees about one obligation no longer fails the whole.
 tags: [setup]
@@ -73,6 +73,17 @@ graders:
       2. One next step. The reply ends by pointing the customer at one next step with a reason — /adcopilot:launch (no campaigns yet) or /adcopilot:measure (nothing counted yet; the account has neither, and the skill's rule is one, not both) — or at re-running setup once the duplicate is removed. Either command is right here as long as it is one and the reason is given. Saying that re-approving Search Console or creating the Analytics property comes before it is fine, since the server reported both.
 
       FAIL if either is missing.
+  - name: marks-plugin-use
+    type: tool_used
+    # Counts get_org_context calls whose input lacks source "claude-plugin", the
+    # marker AdCopilot reads to record plugin use; any such call fails. Exact
+    # registered name, as in setup-signed-out. An input not shaped as JSON counts
+    # as unmarked, so a format change fails this rather than passing it.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin")'
+    min: 0
+    max: 0
+    arm: with-only
   - name: read-the-server-first
     type: regex
     target: mock_calls
