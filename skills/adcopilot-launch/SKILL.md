@@ -105,3 +105,16 @@ What is genuinely not readable from here is the wording of the alert banner acro
 ## Prices
 
 This file names no prices. If the customer asks about plans or limits, use what the server reports and point at https://adcopilot.cloud/pricing.
+
+## The daily habit
+
+This block is repeated verbatim in every AdCopilot skill and command a person runs; change all seven together.
+
+After the value is delivered, close with one offer to make a morning check of this account a daily habit — the last line of the reply, at most once in a conversation — when all three hold: Google Ads is connected and readable, the account has a campaign to check, and `get_org_context` reports no schedule. It reports one when `routine.daily.status` is `user_set` (a schedule they set up in their own assistant), when a `routine` row's `surface` is `claude_scheduled`, or when `routine.scheduled_last_seen_at` holds a date (a scheduled run has checked in). AdCopilot's emailed check-in, `routine.daily.status` `in_app`, is not a schedule. Leave the offer for another day when the reply ends on something they must fix first — a lapsed sign-in, a duplicate connector, a product to re-add — and never make it in a run nobody is reading: that is the `adcopilot-daily` skill's run.
+
+Word it for where they are. If they have said, believe them. Otherwise the tell is the one `/adcopilot:setup` uses: Claude Code is where `claude mcp list` runs, and `/schedule` makes a routine there; everywhere else — claude.ai, Cowork, the desktop and mobile apps — it is a Claude scheduled task. In these words:
+
+- Claude Code: "If you'd like a check of this account every weekday morning without having to ask, say "schedule it" and I'll set it up as a Claude Code routine with /schedule."
+- Everywhere else: "If you'd like a check of this account every weekday morning without having to ask, say "schedule it" and I'll walk you through saving it as a Claude scheduled task — about two minutes."
+
+It is an offer, not a second question: any question the reply ends on comes just before it. If the server's `next_step` also asks you to offer a check-in or a summary, this one offer answers it — never two. A no ends it for this conversation. On a yes, follow the `adcopilot-daily` skill's set-up.

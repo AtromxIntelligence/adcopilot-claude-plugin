@@ -40,4 +40,5 @@ working, not a fault: the Google products are connected inside AdCopilot at
 rather than letting them hunt for a broken connector.
 
 End as the skill's step 5 does: the one next step, `/adcopilot:launch` or
-`/adcopilot:measure`, and why it fits their situation.
+`/adcopilot:measure`, and why it fits their situation — then the skill's
+daily-habit offer, when its conditions hold.

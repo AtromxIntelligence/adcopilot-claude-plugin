@@ -1,0 +1,56 @@
+schema_version: "1.1"
+name: habit-recorded-stays-quiet
+description: >
+  /adcopilot:daily on claude.ai for a workspace whose scheduled run has
+  already checked in (the tenant in this case's mocks is fictional; every
+  value is invented): get_org_context carries routine.scheduled_last_seen_at,
+  and nothing else in its answer asks for a check-in offer. The founder's rule
+  is to keep offering until a schedule is recorded, then stop — so the reply
+  does the check-in and makes no offer to set up a scheduled task, a routine
+  or a daily check-in. Mentioning that their scheduled check is working is
+  fine. Deterministic graders test the absence of the offer's fixed wording
+  and that the check-in ran; the rubric judges the offer's absence in any
+  words.
+tags: [habit]
+runs: 3
+execution:
+  prompt: |
+    /adcopilot:daily
+    (context: I'm using Claude in my web browser, at claude.ai — there's no terminal here)
+  max_turns: 14
+  timeout_seconds: 300
+  allowed_tools: [Skill]
+graders:
+  - name: reads-pacing
+    type: regex
+    target: mock_calls
+    pattern: '"tool"\s*:\s*"[^"]*budget_pacing"'
+    arm: with-only
+  - name: no-offer-wording
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    pattern: 'say\W{1,3}schedule it|walk you through (?:saving|setting)|set (?:it|this) up as a|(?<![\w/])/schedule\b|without having to ask'
+  - name: no-offer-to-schedule
+    type: llm
+    focus: last_message
+    weight: 2
+    criteria: |
+      The customer ran /adcopilot:daily in Claude on the web. AdCopilot reports that a scheduled run of this check has already checked in, so a schedule exists and the reply must not offer to set one up. Judge only that.
+
+      PASS if the reply does the check-in and makes NO offer, suggestion or invitation to set up, save or schedule a daily check — no Claude scheduled task, no routine, no /schedule, no "every morning without asking", no "want this daily?". Mentioning that their scheduled check is already running, or that the email check-in exists, is fine; so is ending with a question about blocking wasted searches or fixing the disapproved ad.
+
+      FAIL if the reply offers or suggests setting up any recurring or scheduled check, in any words.
+  - name: marks-plugin-use
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin")'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: read-the-server-first
+    type: regex
+    target: mock_calls
+    pattern: get_org_context
+    arm: with-only

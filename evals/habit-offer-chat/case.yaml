@@ -1,0 +1,122 @@
+schema_version: "1.1"
+name: habit-offer-chat
+description: >
+  /adcopilot:daily on claude.ai, one month into the first campaign (the tenant
+  in this case's mocks is fictional; every value is invented). AdCopilot's
+  emailed check-in is on and no schedule is reported, so the plugin owes its
+  daily-habit offer; the server's next_step also asks for a check-in offer, as
+  the current server does while the weekly is off. The run must do the
+  check-in on the four reads 0.2.4 names — pacing, seven days of search terms,
+  disapprovals, change history — add nothing without a yes, and end with ONE
+  short offer worded for Claude chat: a scheduled task, never /schedule or a
+  routine, and no steps until the customer says yes. The customer's own line
+  says where they are, because the eval harness runs in Claude Code.
+  Deterministic graders test the four reads by their inputs in the call log,
+  the absence of a write and of the unattended skill, and where the offer sits
+  in the reply; meaning is two rubrics at weight 2 — the check-in, and the
+  offer — so either dead fails the case.
+tags: [habit]
+runs: 3
+execution:
+  prompt: |
+    /adcopilot:daily
+    (context: I'm using Claude in my web browser, at claude.ai — there's no terminal here)
+  max_turns: 14
+  timeout_seconds: 300
+  allowed_tools: [Skill]
+graders:
+  - name: reads-pacing
+    type: regex
+    target: mock_calls
+    pattern: '"tool"\s*:\s*"[^"]*budget_pacing"'
+    arm: with-only
+  - name: reads-seven-days-of-search-terms
+    type: regex
+    target: mock_calls
+    # Anchored on the call's own input: the lens's output carries "days" too.
+    pattern: '"tool"\s*:\s*"[^"]*analyze_search_terms"\s*,\s*"input"\s*:\s*"?\{[^{}]*?\\?"days\\?"\s*:\s*7(?!\d)'
+    arm: with-only
+  - name: reads-disapprovals
+    type: regex
+    target: mock_calls
+    pattern: '"tool"\s*:\s*"[^"]*__search"\s*,\s*"input"\s*:\s*"?\{[^{}]*?(?:approval_status|policy_summary)'
+    arm: with-only
+  - name: reads-change-history
+    type: regex
+    target: mock_calls
+    pattern: '"tool"\s*:\s*"[^"]*__search"\s*,\s*"input"\s*:\s*"?\{[^{}]*?change_event'
+    arm: with-only
+  - name: adds-nothing-without-a-yes
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__add_negative_keywords
+    min: 0
+    max: 0
+    arm: with-only
+  - name: not-the-unattended-skill
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-daily"'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: offer-is-a-scheduled-task-at-the-end
+    type: regex
+    target: last_message
+    flags: i
+    pattern: 'scheduled task[\s\S]{0,300}$'
+  - name: not-the-claude-code-wording
+    type: regex
+    target: last_message
+    match: not_contains
+    pattern: '(?<![\w/])/schedule\b|Claude Code routine|\bcron\b'
+  - name: no-raw-fields-or-json
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    pattern: '\b(cost_micros|amount_micros|approval_status|policy_topic_entries|change_resource_type|client_type|customer_id|campaign_id|recommended_actions|check_id|reason_code)\b|"(status|name|tool|args|results?)"\s*:|\{\s*"'
+  - name: the-check-in
+    type: llm
+    focus: last_message
+    weight: 2
+    criteria: |
+      The customer ran /adcopilot:daily, the daily check-in. The reads returned: this month's pacing on track (about $585 projected against $600); four searches in the last seven days that took clicks and converted nothing — people looking for bakery jobs, a free wedding cake recipe, how to stack a wedding cake — about $24.50 in all, with ready never-show-for (negative keyword) words for each theme; one ad disapproved because Google says its landing page does not work (destination not working); and two changes on the last day — a person (maria@…) raised the campaign's daily budget from $20 to $30 in Google Ads, and Google's recommendations auto-apply added the broad keyword "custom cakes". Judge the reply's meaning only, as someone who has never opened Google Ads; how it closes is judged by another rubric.
+
+      PASS only if all four hold:
+
+      1. It reads as a check-in: it opens with a one-line verdict (all clear, or what needs a look) and then covers pacing, the wasted searches, the disapproved ad with Google's reason, and the changes with who made them. Dates may be described relative to the data; a reply that notes the data's dates is fine.
+      2. The searches are reported as wasted money in plain words, with the never-show-for words proposed — not added. A reply that says they were added or blocked FAILS.
+      3. The ad Google stopped is named as disapproved with its reason (the landing page not working), and the budget change and the auto-applied keyword are attributed to who made them (a person in Google Ads; Google's auto-apply).
+      4. Prose: money in dollars, no API field names, no account numbers, nothing pasted as the server returned it. A short list or table in plain words is fine.
+
+      FAIL if any of the four is missing.
+  - name: one-offer-for-claude-chat-at-the-end
+    type: llm
+    focus: last_message
+    weight: 2
+    criteria: |
+      The customer ran /adcopilot:daily in Claude on the web (claude.ai) and said there is no terminal. No schedule is set up yet, so the reply should close with one short offer to make this check a daily habit as a Claude scheduled task. Judge only the offer — the check-in itself is judged by another rubric.
+
+      PASS only if all five hold:
+
+      1. There is exactly one such offer, and it comes at the end of the reply, after the check-in's findings — as the last line, or followed by nothing but a closing line. A question about blocking the searches may come just before it. Two offers (for example, one for a daily check-in and another for a weekly summary, or the same offer twice) FAIL.
+      2. It is worded for Claude chat: a Claude scheduled task (or Claude's Scheduled feature). It does NOT tell them to use /schedule, a terminal, a cron job or a Claude Code routine.
+      3. It is short — one or two sentences — and it is an offer: it does not give the set-up steps, the instructions to paste or any screen-by-screen path before the customer has said yes.
+      4. No sales, plan, price or upgrade wording, no urgency ("today only", "don't miss"), and no claim that every change waits for their approval.
+      5. It offers a check that arrives on its own (every morning, every weekday, daily), not merely "run this again tomorrow".
+
+      FAIL if any of the five is missing, or if there is no offer at all.
+  - name: marks-plugin-use
+    type: tool_used
+    # Counts get_org_context calls whose input lacks source "claude-plugin";
+    # any such call fails (see setup-signed-out).
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin")'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: read-the-server-first
+    type: regex
+    target: mock_calls
+    pattern: get_org_context
+    arm: with-only

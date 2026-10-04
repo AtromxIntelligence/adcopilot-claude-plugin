@@ -85,6 +85,16 @@ jobs:
           [ "$rc" -eq 0 ] && echo "ok  all skills and commands carry name + description"
           exit "$rc"
 
+      # The plugin's own text, checked without a model: the daily-habit block
+      # identical in every flow that carries it, its stop condition naming the
+      # server's fields, the unattended run read-only and marked
+      # claude-scheduled, the instructions it hands over equal to AdCopilot's
+      # recipe, the eval graders matching the offer they look for, no sales
+      # wording where the model reads it, and every listed command present.
+      # Stdlib only; the runner's python3 is enough.
+      - name: Structural tests
+        run: python3 -m unittest discover -s tests -v
+
       # The regression guard on the thing that cost this repository its CI. The
       # directory scanner holds a download-and-execute pattern ANYWHERE in the
       # repo — including, as we found on 2026-09-26, a README quoting the

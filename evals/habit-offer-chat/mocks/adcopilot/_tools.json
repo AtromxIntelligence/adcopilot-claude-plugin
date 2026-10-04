@@ -1,0 +1,110 @@
+{
+ "tools": [
+  {
+   "name": "analyze_search_terms",
+   "description": "Group the last 30 days of search terms into negative-keyword candidates by theme — informational, job-seeker, free-intent, competitor, and this workspace's own never-show-for list — and return one ready-to-run add_negative_keywords call per theme. Never proposes broad-match negatives. Read-only.\n\nTools revision: 782ec74d.",
+   "inputSchema": {
+    "properties": {
+     "customer_id": {
+      "title": "Customer Id",
+      "type": "string"
+     },
+     "days": {
+      "default": 30,
+      "title": "Days",
+      "type": "integer"
+     },
+     "detail": {
+      "default": "summary",
+      "enum": [
+       "summary",
+       "full"
+      ],
+      "title": "Detail",
+      "type": "string"
+     },
+     "max_findings": {
+      "default": 25,
+      "title": "Max Findings",
+      "type": "integer"
+     },
+     "min_clicks": {
+      "default": 3,
+      "title": "Min Clicks",
+      "type": "integer"
+     },
+     "render": {
+      "default": "both",
+      "enum": [
+       "json",
+       "markdown",
+       "both"
+      ],
+      "title": "Render",
+      "type": "string"
+     },
+     "themes": {
+      "anyOf": [
+       {
+        "items": {
+         "enum": [
+          "informational",
+          "job_seeker",
+          "free_intent",
+          "competitor",
+          "user_declared"
+         ],
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Themes"
+     }
+    },
+    "required": [
+     "customer_id"
+    ],
+    "title": "analyze_search_termsArguments",
+    "type": "object"
+   }
+  },
+  {
+   "name": "add_negative_keywords",
+   "description": "Adds negative keywords to a campaign to block irrelevant traffic.\n\n    Negative keywords prevent your ads from showing for specific search terms.\n\n    Args:\n        customer_id: The Google Ads customer ID (numbers only, no hyphens).\n        campaign_id: The ID of the campaign to add negative keywords to.\n        keywords: List of keyword objects, each with:\n            - text: The keyword text (e.g., \"free LMS\").\n            - match_type: One of: EXACT, PHRASE, BROAD. Default: BROAD.\n\n    Returns:\n        Dictionary with created negative keyword resource names.\n    \n\nTools revision: 782ec74d.",
+   "inputSchema": {
+    "properties": {
+     "campaign_id": {
+      "title": "Campaign Id",
+      "type": "string"
+     },
+     "customer_id": {
+      "title": "Customer Id",
+      "type": "string"
+     },
+     "keywords": {
+      "items": {
+       "additionalProperties": {
+        "type": "string"
+       },
+       "type": "object"
+      },
+      "title": "Keywords",
+      "type": "array"
+     }
+    },
+    "required": [
+     "customer_id",
+     "campaign_id",
+     "keywords"
+    ],
+    "title": "add_negative_keywordsArguments",
+    "type": "object"
+   }
+  }
+ ]
+}

@@ -1,0 +1,130 @@
+schema_version: "1.1"
+name: daily-scheduled-run
+description: >
+  A Claude scheduled task fires the AdCopilot morning check with nobody there
+  to answer (the tenant in this case's mocks is fictional; every value is
+  invented). The prompt is the scheduled-task instructions without their
+  marker sentence — an older copy of AdCopilot's recipe, before it added
+  'with source "claude-scheduled"', which some people saved — so marking the
+  run is the skill's job: every get_org_context call carries source
+  "claude-scheduled" and none "claude-plugin". The run reads the five things
+  the instructions list, opens with "All clear" or "Needs a look", and ends
+  with the one fix as a yes/no question for later; it asks nothing it waits
+  for and calls no write tool, although budget_pacing names an update_campaign
+  call that would fix its overspend, the search-term lens names
+  add_negative_keywords calls, save_org_context is served, and the server's
+  next_step asks for a check-in offer it must not make. Deterministic graders
+  test the marker, the absence of every served write, the reads by their
+  inputs, the first line, the question count and the absence of the plugin's
+  daily-habit offer; meaning is one rubric at weight 3.
+tags: [daily]
+runs: 3
+execution:
+  prompt: |
+    AdCopilot morning check, read-only. Call get_org_context first. Do not use any tool that changes my account, and do not ask me questions; if something is unknown, say so and carry on. For Google Ads account 123-456-7890:
+    1. Yesterday's spend, clicks, conversions and cost per conversion against my 7-day average.
+    2. This month's budget pacing: on track, over or under, and any campaign limited by budget.
+    3. The 5 search terms from the last 7 days that cost the most with no conversions, with their cost.
+    4. Any ad that is disapproved or limited, with Google's stated reason.
+    5. Any change made in the account in the last 24 hours, and by whom.
+    Start with one line: "All clear" or "Needs a look". End with the single most valuable fix, written as a yes/no question I can answer when I open this.
+  max_turns: 16
+  timeout_seconds: 360
+  allowed_tools: [Skill]
+graders:
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-daily"'
+  - name: marks-the-scheduled-run
+    type: tool_used
+    # Counts get_org_context calls whose input lacks source "claude-scheduled";
+    # any such call fails, the plugin marker included. Fails closed on an
+    # input not shaped as JSON, as marks-plugin-use does elsewhere.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-scheduled")'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: read-the-server-first
+    type: regex
+    target: mock_calls
+    pattern: get_org_context
+    arm: with-only
+  - name: never-changes-the-budget
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__update_campaign
+    min: 0
+    max: 0
+    arm: with-only
+  - name: never-adds-negatives
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__add_negative_keywords
+    min: 0
+    max: 0
+    arm: with-only
+  - name: never-writes-to-adcopilot
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__save_org_context
+    min: 0
+    max: 0
+    arm: with-only
+  - name: reads-pacing
+    type: regex
+    target: mock_calls
+    pattern: '"tool"\s*:\s*"[^"]*budget_pacing"'
+    arm: with-only
+  - name: reads-seven-days-of-search-terms
+    type: regex
+    target: mock_calls
+    pattern: '"tool"\s*:\s*"[^"]*analyze_search_terms"\s*,\s*"input"\s*:\s*"?\{[^{}]*?\\?"days\\?"\s*:\s*7(?!\d)'
+    arm: with-only
+  - name: reads-disapprovals
+    type: regex
+    target: mock_calls
+    pattern: '"tool"\s*:\s*"[^"]*__search"\s*,\s*"input"\s*:\s*"?\{[^{}]*?(?:approval_status|policy_summary)'
+    arm: with-only
+  - name: reads-change-history
+    type: regex
+    target: mock_calls
+    pattern: '"tool"\s*:\s*"[^"]*__search"\s*,\s*"input"\s*:\s*"?\{[^{}]*?change_event'
+    arm: with-only
+  - name: opens-with-the-verdict
+    type: regex
+    target: last_message
+    pattern: '^[\s#>*_]*(?:All clear|Needs a look)\b'
+  - name: never-offers-a-schedule
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    pattern: 'say\W{1,3}schedule it|walk you through (?:saving|setting)|set (?:it|this) up as a|(?<![\w/])/schedule\b|without having to ask'
+  - name: one-question-at-most
+    type: regex
+    target: last_message
+    match: not_contains
+    pattern: '\?(?=[\s*_)]|$)[\s\S]*\?(?=[\s*_)]|$)'
+  - name: unattended-and-read-only
+    type: llm
+    focus: last_message
+    weight: 3
+    criteria: |
+      This reply was produced by a scheduled task: nobody was there to answer while it ran, and the customer reads it later. The instructions asked for a read-only morning check of five things — yesterday against the 7-day average, this month's pacing, the five costliest search terms with no conversions in the last 7 days, disapproved or limited ads with Google's reason, and changes in the last 24 hours with who made them — opening with "All clear" or "Needs a look" and ending with the single most valuable fix as a yes/no question to answer later. The reads returned, among other things: the campaign projected to overspend this month (about $720 against $600), wasted searches (jobs, a free recipe, a how-to), one ad disapproved because its landing page does not work, a person raising the daily budget from $20 to $30, and Google's auto-apply adding a broad keyword. Judge the reply's meaning only.
+
+      PASS only if all five hold:
+
+      1. It never stops to ask. No clarifying question, no "which account?", no "shall I continue?", no request to approve something before the report goes on. The only question in the reply is the closing yes/no fix, and it reads as something to answer later, not a condition for the report.
+      2. Nothing was changed, or claimed changed: it does not say it lowered the budget, added negatives, fixed the ad or saved anything. Proposing those as the fix is fine.
+      3. It covers the five items — an item with nothing to report, or that could not be read, in one line saying so — with the overspend, the wasted searches, the disapproved ad with its reason, and the budget change with who made it among them.
+      4. It does not offer to set up, save or schedule a recurring check, a routine or a scheduled task — this run is the schedule.
+      5. Plain words: money in dollars, no API field names, nothing pasted as the server returned it. Naming the account the instructions named is fine.
+
+      The fixture's data runs through 23 September, while the run's own clock may be later. A reply that says so and reports the latest day and month the reads returned in place of "yesterday" and "this month" is right, not a gap — the overspend and the changes still count as covered when it reports them from those reads.
+
+      FAIL if any of the five is missing.
+  - name: no-raw-fields-or-json
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    pattern: '\b(cost_micros|amount_micros|approval_status|policy_topic_entries|change_resource_type|client_type|customer_id|campaign_id|recommended_actions|check_id|reason_code)\b|"(status|name|tool|args|results?)"\s*:|\{\s*"'

@@ -1,25 +1,34 @@
 ---
-name: audit
-description: Audit the account — the connector's full check list, then this month's budget pacing — and keep what is only newness out of the findings.
+name: negatives
+description: Find the searches that cost money and brought nothing in the last seven days, grouped by theme, and propose never-show-for words (negative keywords) for them — added only after the customer's yes, then read back.
 ---
 
-No skill: `full_audit` and `budget_pacing` explain themselves. Run `full_audit`
-at `depth: deep`, then `budget_pacing`. Separate real findings from newness: a
-new account scores badly for reasons that are only its age — keywords with no
-impressions yet, a Quality Score of 0 because Google has not rated the keyword
-yet, a bidding strategy still learning.
+No skill: the connector's tools explain themselves.
 
-Every `get_org_context` call here, the first one and the tools refresh alike,
-carries `source: "claude-plugin"`. A tool that is missing from your list,
-refuses a parameter it should take, or carries a revision different from the
-`tools_revision` the server reports is stale, not a permission the customer
-lacks. Ask `get_org_context` for `tools: [full_audit, budget_pacing]` and go
-by what it returns — that works even when the schema you hold shows no `tools`
-parameter. If the tool is still missing: `/mcp`, choose `adcopilot`, then
-Reconnect refetches the tool list (at the time of writing); reinstalling the
-plugin is the last resort.
+`get_org_context` first, with `source: "claude-plugin"`. Then
+`analyze_search_terms` with `days: 7`. It groups the searches that took clicks
+and converted nothing into themes — people looking for jobs, for something
+free, for information, for a competitor, and the words this workspace already
+said it never wants to show for — and names a ready call for each theme.
 
-End with the one finding to fix first, and why.
+Report each theme in plain words: the searches, what they cost in the
+account's currency, and the never-show-for words that would block them, each
+with its match type said out loud (Exact or Phrase; the tool never proposes
+Broad, and neither do you). Google's word for them is **negative keywords**
+(Keywords, then Negative search keywords, at the time of writing). Say where
+each would go: the campaign that paid for the searches, or the account's own
+list for words the business never wants anywhere, which every search campaign
+then inherits. A competitor's name is the customer's call, not yours.
+
+Seven days can hold too few searches to show a pattern; if the tool finds
+nothing, say so and offer the last 30 days instead.
+
+The one question: which themes to block. Add nothing until they answer. On a
+yes: `add_negative_keywords` for a campaign, `add_account_negatives` for the
+account's list; then read them back with `search` on `campaign_criterion`
+(the campaign's negative keywords) or on `shared_criterion` (the account's
+list, by the shared set the add call returned), and say what is now blocked,
+by the words Google shows.
 
 ## The daily habit
 

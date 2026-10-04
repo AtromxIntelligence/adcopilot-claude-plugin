@@ -54,26 +54,36 @@ If you had already added the connector by hand before installing (Claude Code on
 
 ## What you get
 
-Five commands, which you type:
+Seven commands, which you type:
 
 - `/adcopilot:setup` — checks the connector is connected and signed in, says what each connected product unlocks, and catches the two ways a fresh install goes wrong: a lapsed sign-in, and, in Claude Code, a copy of the connector you added by hand before installing.
 - `/adcopilot:launch` — a first Search campaign, through the `adcopilot-launch` skill below.
 - `/adcopilot:measure` — conversion tracking, through the `adcopilot-measure` skill below.
-- `/adcopilot:daily` — the daily check-in: what was spent since yesterday, the searches the ads showed for, and what changed in the account — in that order, as far as the connector's read cap for the day allows.
+- `/adcopilot:daily` — the daily check-in: this month's budget pacing, the last seven days' searches that cost money and brought nothing, any ad Google has disapproved or limited, and what changed in the account since yesterday and who changed it — in that order, as far as the connector's read cap for the day allows.
+- `/adcopilot:weekly` — last Monday to Sunday against the week before: spend, conversions and cost per conversion, the three biggest changes, and three things to do this week, written to be forwarded.
+- `/adcopilot:negatives` — the last seven days' searches that cost money and brought nothing, grouped by theme, with the never-show-for words (negative keywords) that would block them; added only after your yes, then read back.
 - `/adcopilot:audit` — the connector's full audit and this month's budget pacing, with the findings that are only a symptom of a brand-new account kept separate.
 
-Three skills, which Claude draws on when the conversation calls for them:
+Four skills, which Claude draws on when the conversation calls for them:
 
 - **adcopilot-connect** — sets up AdCopilot, connects your Google products and links them to each other in the order that works, saying what each step bought you as it happens.
 - **adcopilot-measure** — sets up conversion tracking end to end: the Analytics property and data stream, the Tag Manager tags, the key event, the Analytics-to-Ads link and the import, and ends with exactly one Primary conversion, proven by a real click.
 - **adcopilot-launch** — builds a first Search campaign switched off, on the budget and bid you name: locations, never-show-for words, ad groups, keywords with their match types, ads and assets; verifies the settings that leak money by reading the campaign back; hands you the go-live switch; and runs the first week's checks, reading why a switched-on campaign is not delivering before it sends you to any screen.
+- **adcopilot-daily** — the morning check a Claude scheduled task or a Claude Code routine runs while nobody is there: it only reads, never asks a question, opens with "All clear" or "Needs a look" and ends with the one fix worth doing, as a yes/no question for when you open it. It also holds the steps for setting that schedule up.
 
 Together with the connector registration above, the commands and skills above are what the plugin ships at this version.
+
+### Every morning, without asking
+
+Every command above, and the connect, launch and measure skills, once it has done its job on an account with a campaign to check, ends with one short offer to make a morning check of that account a daily habit: in claude.ai, Cowork or the desktop app, a Claude **scheduled task**; in Claude Code, a **routine** made with `/schedule`, which it offers to create for you. Say "schedule it" and it walks you through the steps; say no and it does not offer again in that conversation. The offer stops for good once AdCopilot reports a schedule — one you recorded with it, or a scheduled run that has checked in.
+
+The instructions you save are AdCopilot's own morning-check recipe, the same text AdCopilot's emails and docs give you, filled in with your account. A run reads about five times, and each read counts toward your workspace's daily operations. It changes nothing: its instructions say read-only, and a routine in Claude Code runs its tools without asking, which is why. Scheduled tasks need a Claude plan that has them; on Claude's Free plan, AdCopilot's emailed daily check-in is the morning check.
 
 ## What it will not do
 
 - **Switch a campaign on.** Every campaign it builds is created paused. You switch it on in Google Ads yourself.
 - **Delete anything.** The connector refuses a REMOVED status server-side: the campaign, ad group, ad and keyword tools accept only ENABLED or PAUSED, and the asset tools refuse a remove outright. Pausing is as far as it goes, and it is the server that enforces that rather than the assistant's good manners.
+- **Change anything in a scheduled run.** `adcopilot-daily` and the instructions it gives you for a scheduled task or routine are read-only and ask no questions; a fix it finds is a question for when you open the report.
 - **Change your account unasked, while the write tools need approval.** Reads run freely. Your AI client asks before each change while the write tools stay on **Needs approval** (claude.ai, Cowork and the desktop app) or, in Claude Code, while it still prompts for them: the tools are not allowlisted and the session is not in `auto` or `bypassPermissions` mode. Take the question away and changes to what already exists, a budget or a switched-on campaign among them, apply without it; only a new campaign is still built paused.
 
 ## Support
@@ -83,7 +93,7 @@ Together with the connector registration above, the commands and skills above ar
 
 ## AdCopilot version
 
-Written against AdCopilot **v2.29.0**. The tool snapshot the eval suite mocks against (`evals/mocks/adcopilot/_tools.json`) is frozen at connector tools revision `0066a60e`, taken 2026-09-23 under v2.14.1, except its `get_org_context` entry, which is the live schema at revision `782ec74d` (read 2026-10-03) so that the eval model is offered `source` as a real client is — every case that reads the server fails its `marks-plugin-use` grader on a `get_org_context` call without `source: "claude-plugin"`; the live revision moves independently of this plugin, and a difference between the two is not a fault. `/adcopilot:audit` relies on the `tools_revision` that `get_org_context` reports from v2.14.1 on, to refresh a stale tool description in-conversation. The skills and `/adcopilot:audit` call `get_org_context` with `source: "claude-plugin"`, which AdCopilot reads from v2.29.0 on to record plugin use per workspace; calls without it behave as before.
+Written against AdCopilot **v2.30.1**. The tool snapshot the eval suite mocks against (`evals/mocks/adcopilot/_tools.json`) is frozen at connector tools revision `0066a60e`, taken 2026-09-23 under v2.14.1, except its `get_org_context` entry, which is the live schema at revision `782ec74d` (read 2026-10-03) so that the eval model is offered `source` as a real client is — every case that reads the server fails its `marks-plugin-use` grader on a `get_org_context` call without `source: "claude-plugin"`; the live revision moves independently of this plugin, and a difference between the two is not a fault. `/adcopilot:audit` relies on the `tools_revision` that `get_org_context` reports from v2.14.1 on, to refresh a stale tool description in-conversation. The skills and `/adcopilot:audit` call `get_org_context` with `source: "claude-plugin"`, which AdCopilot reads from v2.29.0 on to record plugin use per workspace; calls without it behave as before. `adcopilot-daily`'s unattended run passes `source: "claude-scheduled"` instead, and the daily-habit offer stops when `get_org_context` reports `routine.daily.status` `user_set`, a routine row on `surface` `claude_scheduled`, or a date in `routine.scheduled_last_seen_at`. AdCopilot records that marker, and reports `routine.scheduled_last_seen_at`, `routine.daily.customer_id` (the account its own check-in reads) and `latest_check_in`, from the release that reads `claude-scheduled` on; before it, the value is ignored and those fields are absent, so the offer stops only for a schedule recorded with `save_org_context`, which AdCopilot refuses while its own emailed check-in (`in_app`) holds the routine — until then the offer keeps coming, once a conversation. The instructions the set-up hands over are AdCopilot's recipe (`SCHEDULED_CHECKIN`) word for word, and `tests/test_structure.py` holds the skill's copy to it. The new cases for `/adcopilot:daily` and the scheduled run add case-level `_tools.json` entries for `analyze_search_terms`, `add_negative_keywords`, `update_campaign` and `save_org_context`, read live at revision `782ec74d` on 2026-10-04, and their `get_org_context` mocks carry the new fields; the suite-wide snapshot is unchanged.
 
 ## Evals, and how a skill earns its place
 
@@ -98,8 +108,9 @@ Before a version tag is pushed, in a fresh Claude Code — a profile with no han
 3. `/mcp` — choose `adcopilot` and sign in with the Google account that owns the ad account.
 4. `/adcopilot:setup` on a real account: it reports what is connected, in prose, and one next step.
 5. `/adcopilot:audit` on the same account: the full audit and this month's pacing, with the brand-new-account findings kept separate.
-6. `claude plugin validate . --strict` and `claude plugin validate .claude-plugin/plugin.json --strict` both pass; the suite passes at 0.8; the tools-only ablation is green — every skill's delta over the connector plus its own frontmatter description (the tools-only arm keeps the frontmatter so the skill still fires), on its mean and on its weakest case among the cases that baseline does not already carry, is at least 0.05 (`ABLATION_FAIL_BELOW=0.05 evals/ablation/tools-only.sh`). A case the tools-only arm passes at 0.8 is a regression guard on the connector's own behaviour: it must still pass at 0.8 with the skill, and it is left out of the skill's delta. A red ablation blocks the tag: the skill it names is fixed or deleted first.
-7. Record the AdCopilot version and `tools_revision` the steps above ran against, in the release notes and in the section above — **and the `claudeVersion` the suite ran under**, which `evals/results/<run>/aggregate-result.json` already stores. A score is only comparable to another score from the same build: on 2026-09-23 under `2.1.280` these cases scored `audit-stale-tools` 1.00, `connect-teaches` 1.00, `measure-teaches` 1.00 and `setup-duplicate-server` 1.00; on 2026-10-02 under `2.1.288`, with the plugin byte-identical (`plugins[0].version` 0.1.0 in both) and the same judge alias, they scored 0.67, 0.83, 0.67 and 0.77. Nothing in the plugin had changed. So a case that drops is a question — plugin, harness, or the `sonnet` alias resolving to a new snapshot — and not yet an answer: diff the two runs' `claudeVersion` before editing a skill, or you will fit the prompts to one build and refit them on the next.
+6. The scheduled run, on the same account: say "schedule it" at the end of `/adcopilot:daily`, follow the steps it gives for the surface you are on, and **Run now** once — the run finishes without stopping to ask, calls no tool that changes anything, and the next `/adcopilot:daily` makes no offer once AdCopilot reports the run. If a scheduled run of the plugin's own skill does not finish unattended on a surface, the pasted instructions alone are what the steps give there.
+7. `claude plugin validate . --strict` and `claude plugin validate .claude-plugin/plugin.json --strict` both pass; the suite passes at 0.8; the tools-only ablation is green — every skill's delta over the connector plus its own frontmatter description (the tools-only arm keeps the frontmatter so the skill still fires), on its mean and on its weakest case among the cases that baseline does not already carry, is at least 0.05 (`ABLATION_FAIL_BELOW=0.05 evals/ablation/tools-only.sh`). A case the tools-only arm passes at 0.8 is a regression guard on the connector's own behaviour: it must still pass at 0.8 with the skill, and it is left out of the skill's delta. A red ablation blocks the tag: the skill it names is fixed or deleted first.
+8. Record the AdCopilot version and `tools_revision` the steps above ran against, in the release notes and in the section above — **and the `claudeVersion` the suite ran under**, which `evals/results/<run>/aggregate-result.json` already stores. A score is only comparable to another score from the same build: on 2026-09-23 under `2.1.280` these cases scored `audit-stale-tools` 1.00, `connect-teaches` 1.00, `measure-teaches` 1.00 and `setup-duplicate-server` 1.00; on 2026-10-02 under `2.1.288`, with the plugin byte-identical (`plugins[0].version` 0.1.0 in both) and the same judge alias, they scored 0.67, 0.83, 0.67 and 0.77. Nothing in the plugin had changed. So a case that drops is a question — plugin, harness, or the `sonnet` alias resolving to a new snapshot — and not yet an answer: diff the two runs' `claudeVersion` before editing a skill, or you will fit the prompts to one build and refit them on the next.
 
 ## Licence
 
@@ -115,7 +126,11 @@ installs Claude Code from npm at a pinned version (`2.1.288`) and runs both
 `--strict` validations, `claude plugin validate . --strict` and
 `claude plugin validate .claude-plugin/plugin.json --strict`, which read local
 files and need no sign-in. It also checks that the three manifests parse, that
-every skill and command carries a `name:` and a `description:`, that no
+every skill and command carries a `name:` and a `description:`, that the
+structural tests in `tests/` pass (the daily-habit block identical in every
+flow that carries it, the unattended run read-only and marked
+`claude-scheduled`, the instructions it hands over equal to AdCopilot's
+recipe, and the eval graders able to see the offer they grade), that no
 download-and-execute pattern is back anywhere in the repository, and that the
 manifest version is not behind the latest tag.
 

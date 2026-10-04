@@ -1,25 +1,37 @@
 ---
-name: audit
-description: Audit the account — the connector's full check list, then this month's budget pacing — and keep what is only newness out of the findings.
+name: weekly
+description: The week in one summary — last Monday to Sunday against the week before: spend, conversions and cost per conversion, the three biggest changes, and three things to do this week, in plain words ready to forward.
 ---
 
-No skill: `full_audit` and `budget_pacing` explain themselves. Run `full_audit`
-at `depth: deep`, then `budget_pacing`. Separate real findings from newness: a
-new account scores badly for reasons that are only its age — keywords with no
-impressions yet, a Quality Score of 0 because Google has not rated the keyword
-yet, a bidding strategy still learning.
+No skill: the connector's tools explain themselves.
 
-Every `get_org_context` call here, the first one and the tools refresh alike,
-carries `source: "claude-plugin"`. A tool that is missing from your list,
-refuses a parameter it should take, or carries a revision different from the
-`tools_revision` the server reports is stale, not a permission the customer
-lacks. Ask `get_org_context` for `tools: [full_audit, budget_pacing]` and go
-by what it returns — that works even when the schema you hold shows no `tools`
-parameter. If the tool is still missing: `/mcp`, choose `adcopilot`, then
-Reconnect refetches the tool list (at the time of writing); reinstalling the
-plugin is the last resort.
+`get_org_context` first, with `source: "claude-plugin"`; the account's
+currency and time zone come from its answer, and the week runs Monday to Sunday
+in that time zone. Then three reads, in this order, stopping at the read cap it
+sets and saying which you did not reach:
 
-End with the one finding to fix first, and why.
+1. **The two weeks** — `search` on `campaign` with `start_date` and `end_date`
+   spanning last week and the week before, `segments.date` and the cost,
+   clicks and conversions metrics: each week's spend, conversions and cost per
+   conversion, per campaign and in total.
+2. **What changed** — `search` on `change_event` for last week, with
+   `start_date`, `end_date` and a `limit`: who changed what.
+3. **This month** — `budget_pacing`: whether the month is on track.
+
+Then the summary, in this order, in plain words someone could forward without
+editing:
+
+- **The week** — spend, conversions and cost per conversion, each against the
+  week before, money in the account's currency, rounded.
+- **The three biggest changes** — the largest moves in the numbers (a campaign
+  whose spend or conversions moved most), and the changes someone made, with
+  who made them. Say which is which.
+- **Three things to do this week** — each one concrete, each tied to a number
+  above, the most valuable first.
+
+No account numbers and no field names. A week with no spend says so in one
+line, and says what that means. Change nothing: every one of the three is
+proposed, and the one question, if any, is which to start with.
 
 ## The daily habit
 
