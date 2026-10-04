@@ -1,0 +1,67 @@
+schema_version: "1.1"
+name: habit-offer-untold
+description: >
+  The same tenant and command as habit-offer-code (fictional; every value is
+  invented), typed the way a real customer types it: the bare command, with
+  no line saying where they are. Every other habit case says, and the
+  daily-habit block believes what they say, so the tell it falls back on
+  (Claude Code is where `claude mcp list` runs) is only exercised here. The
+  eval harness is Claude Code, so the offer must be worded for Claude Code —
+  a routine made with /schedule — not a claude.ai scheduled task, even though
+  get_org_context reports "surface": "claude", which the server reports for
+  Claude Code too. The claude.ai side of the tell cannot be run in this
+  harness. The check-in itself is habit-offer-chat's to judge; here only the
+  reads that prove it ran are checked deterministically, and the offer is the
+  rubric's.
+tags: [habit]
+runs: 2
+execution:
+  prompt: |
+    /adcopilot:daily
+  max_turns: 14
+  timeout_seconds: 300
+  allowed_tools: [Skill]
+graders:
+  - name: reads-pacing
+    type: regex
+    target: mock_calls
+    pattern: '"tool"\s*:\s*"[^"]*budget_pacing"'
+    arm: with-only
+  - name: adds-nothing-without-a-yes
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__add_negative_keywords
+    min: 0
+    max: 0
+    arm: with-only
+  - name: offer-names-schedule-at-the-end
+    type: regex
+    target: last_message
+    pattern: '(?<![\w/])/schedule\b[\s\S]{0,300}$'
+  - name: not-the-claude-chat-wording
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    pattern: 'Claude scheduled task|Scheduled page|Set up manually'
+  - name: one-offer-for-claude-code-at-the-end
+    type: llm
+    focus: last_message
+    weight: 2
+    criteria: |
+      The customer typed /adcopilot:daily and said nothing about where they are. They are in Claude Code. No schedule is set up yet, so the reply should close with one short offer to make this check a daily habit as a Claude Code routine made with /schedule. Judge only the offer.
+
+      PASS only if all four hold:
+
+      1. There is exactly one such offer, at the end of the reply, after the check-in's findings — as the last line, or followed by nothing but a closing line. A question about blocking the searches may come just before it.
+      2. It is worded for Claude Code: a routine, /schedule, and an offer to set it up (run /schedule) for them. It does NOT send them to claude.ai's Scheduled page or describe a claude.ai scheduled task, and it does not offer both.
+      3. It is short — one or two sentences — and it is an offer: no set-up steps or instructions to paste before they say yes.
+      4. No sales, plan, price or upgrade wording, and no urgency.
+
+      FAIL if any of the four is missing, or if there is no offer at all.
+  - name: marks-plugin-use
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin")'
+    min: 0
+    max: 0
+    arm: with-only

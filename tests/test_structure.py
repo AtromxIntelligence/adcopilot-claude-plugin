@@ -13,18 +13,27 @@ What it pins, and why each one is here:
   surface the plugin runs on (an eval run has no Read tool at all). A copy
   that drifts is a flow that offers differently, or stops offering, so the
   copies are compared byte for byte.
-- The stop condition names the three fields the server reports a schedule
-  with. If AdCopilot renames one, the offer never stops; this is where that
-  shows first.
+- The stop condition is the server's own (`situations.schedule_offer` on
+  feat/v2302-t3): `routine.daily.status` `user_set` or a date in
+  `routine.scheduled_last_seen_at`, and nothing else. If AdCopilot renames a
+  field the offer never stops; if the plugin stops on more than the server
+  does, the plugin is silent while the server's next_step asks for the offer.
 - The unattended run. `adcopilot-daily` passes `claude-scheduled`, never
   `claude-plugin`, and its instructions say read-only and ask-nothing — the
-  two properties a scheduled run with nobody to answer depends on.
+  two properties a scheduled run with nobody to answer depends on. With no
+  account named it never falls back to a manager account, which Google
+  refuses metrics for.
+- Honesty about what keeps a run to reads (D71's family). Nothing on the
+  server makes a scheduled run read-only; on Automatically approve, or in a
+  Claude Code routine, the instructions are all that does. Neither the skill
+  nor the README may call that a guarantee.
 - Directory policy (plan D7). Nothing the model is told by the habit block or
   the run carries sales or upgrade wording.
 - The instructions the set-up hands over are AdCopilot's own recipe, word for
   word (`ads_mcp_cloud/schedule_recipe.py`, SCHEDULED_CHECKIN, as of server
-  commit 11cc4469 on feat/v2302-t3): the server's emails, docs and dashboard
-  give people the same text, and its first sentence is what marks the run.
+  commit 11cc4469 on feat/v2302-t3); its first sentence is what marks the run.
+  The server's emails, docs and dashboard do not all carry it yet, so nothing
+  here says they do.
 - The eval graders and the offer agree: the regexes that look for the offer
   (or for its absence) match the two sentences the block prescribes, so a
   reword cannot silently turn a grader blind.
@@ -180,13 +189,28 @@ class DailyHabitBlock(unittest.TestCase):
 
     def test_stop_condition_names_the_servers_fields(self):
         # The names get_org_context reports a schedule by (server
-        # feat/v2302-t3: tenants.ROUTINE_STATUSES / ROUTINE_SURFACES, and
-        # tools_adcopilot's routine["scheduled_last_seen_at"]).
+        # feat/v2302-t3: tenants.ROUTINE_STATUSES, and tools_adcopilot's
+        # routine["scheduled_last_seen_at"]).
         block = self.blocks()[HABIT_CARRIERS[0]] or ""
-        for field in ("`routine.daily.status` is `user_set`", "`claude_scheduled`",
+        for field in ("`routine.daily.status` is `user_set`",
                       "`routine.scheduled_last_seen_at`", "`in_app`"):
             with self.subTest(field=field):
                 self.assertIn(field, block)
+
+    def test_stop_condition_is_no_wider_than_the_servers(self):
+        # situations.schedule_offer stops on user_set or a scheduled run seen,
+        # never on a row's surface: a row switched off keeps surface
+        # claude_scheduled, and Recipe A writes a weekly-only one. Stopping on
+        # surface leaves the plugin silent while next_step asks for the offer.
+        block = self.blocks()[HABIT_CARRIERS[0]] or ""
+        self.assertNotIn("claude_scheduled", block)
+        self.assertNotIn("`surface`", block)
+
+    def test_offered_only_for_a_running_account(self):
+        # The server offers only in ADS_ACTIVE_* situations: a campaign that
+        # is switched on. /launch ends on a campaign built paused.
+        block = self.blocks()[HABIT_CARRIERS[0]] or ""
+        self.assertIn("a campaign switched on", block)
 
     def test_the_offer_is_not_a_second_question(self):
         # Every flow already ends on at most one question; the offer is a
@@ -303,6 +327,50 @@ class UnattendedRun(unittest.TestCase):
         self.assertIn("`latest_check_in.account`", run)
         self.assertIn("`routine.daily.customer_id`", run)
 
+    def test_the_fallback_skips_manager_accounts(self):
+        # Google refuses metric reads on a manager (MCC) account
+        # (REQUESTED_METRICS_FOR_MANAGER); the server's own check-in learned
+        # that in v2.30.1 (orgs 32 and 43). get_org_context flags each account
+        # `manager`. Both the run's fallback and the set-up's fill-in skip it.
+        run = section(self.skill(), "## The run") or ""
+        self.assertIn("`manager`", run)
+        self.assertIn("only manager accounts", run)
+        setup = section(self.skill(), "## The set-up") or ""
+        self.assertIn("manager", setup)
+
+    def test_automatic_approval_is_not_called_read_only(self):
+        # Automatically approve approves every call, writes included; nothing
+        # on the server refuses a write in a claude-scheduled session. The
+        # instructions are what keep the run to reads, and the skill says so.
+        setup = section(self.skill(), "## The set-up") or ""
+        self.assertNotIn("only reads run", setup)
+        team = setup[setup.find("**Automatically approve**"):]
+        team = team[:team.find("\n\n")]
+        self.assertIn("changes included", team)
+        self.assertIn("keep them exactly as written", team)
+        self.assertIn("**Blocked**", team)
+
+    def test_a_routine_is_kept_to_reads_by_its_instructions(self):
+        setup = section(self.skill(), "## The set-up") or ""
+        self.assertIn("A routine runs its tools without asking, so the read-only "
+                      "instructions are what keep it to reads", setup)
+
+    def test_no_claim_the_recipe_is_already_everywhere(self):
+        # The emails, docs and dashboard do not all carry SCHEDULED_CHECKIN
+        # until the server's one-recipe release (plan B9) is deployed.
+        setup = section(self.skill(), "## The set-up") or ""
+        self.assertNotIn("same text", setup)
+        self.assertNotIn("emails, docs", setup)
+
+    def test_an_emailed_check_in_keeps_coming_and_they_are_told(self):
+        # While routine.daily.status is in_app the set-up records nothing and
+        # the server's refusal (MSG_ROUTINE_RUN_BY_ADCOPILOT) never reaches
+        # them, so the skill tells them both arrive and where to pause one.
+        setup = section(self.skill(), "## The set-up") or ""
+        record = setup[setup.find("**Then record it.**"):]
+        self.assertIn("keeps coming as well", record)
+        self.assertIn("Routine card", record)
+
     def test_no_sales_wording_in_the_run(self):
         run = section(self.skill(), "## The run") or ""
         self.assertIsNone(SALES.search(run))
@@ -343,6 +411,32 @@ class Commands(unittest.TestCase):
         self.assertIn("adcopilot-daily", readme)
 
 
+class Readme(unittest.TestCase):
+
+    def test_will_not_do_lists_only_what_is_enforced_or_qualified(self):
+        # "What it will not do" is the server's limits and the approval
+        # prompt's. A scheduled run's read-only instructions are neither, so
+        # they are described where the schedule is, with what keeps them.
+        will_not = section(read("README.md"), "## What it will not do") or ""
+        self.assertNotIn("scheduled run", will_not)
+
+    def test_the_schedule_section_says_what_keeps_a_run_to_reads(self):
+        morning = section(read("README.md"), "### Every morning, without asking") or ""
+        self.assertNotIn("It changes nothing", morning)
+        self.assertIn("Nothing on AdCopilot's side stops a change", morning)
+        self.assertIn("**Automatically approve**", morning)
+        self.assertIn("**Blocked**", morning)
+
+    def test_no_claim_the_recipe_is_already_everywhere(self):
+        readme = read("README.md")
+        self.assertNotIn("same text", readme)
+        self.assertNotIn("emails and docs give", readme)
+
+    def test_the_emailed_check_in_is_the_morning_check_only_when_on(self):
+        morning = section(read("README.md"), "### Every morning, without asking") or ""
+        self.assertIn("emailed daily check-in, when it is on,", morning)
+
+
 class EvalGraders(unittest.TestCase):
     """The deterministic graders and the offer they look for agree."""
 
@@ -359,8 +453,26 @@ class EvalGraders(unittest.TestCase):
         self.assertRegex(OFFER_CODE, re.compile(pattern, flags))
 
     def test_code_case_finds_the_code_offer_at_the_end(self):
-        pattern, flags = grader("habit-offer-code", "offer-names-schedule-at-the-end")
-        self.assertRegex(self.REPLY + OFFER_CODE, re.compile(pattern, flags))
+        for case in ("habit-offer-code", "habit-offer-untold"):
+            with self.subTest(case=case):
+                pattern, flags = grader(case, "offer-names-schedule-at-the-end")
+                self.assertRegex(self.REPLY + OFFER_CODE, re.compile(pattern, flags))
+                self.assertNotRegex(self.REPLY + OFFER_CHAT, re.compile(pattern, flags))
+
+    def test_untold_case_refuses_the_chat_wording_and_not_the_code_offer(self):
+        pattern, flags = grader("habit-offer-untold", "not-the-claude-chat-wording")
+        self.assertNotRegex(OFFER_CODE, re.compile(pattern, flags))
+        self.assertRegex(OFFER_CHAT, re.compile(pattern, flags))
+
+    def test_untold_case_says_nothing_about_where_they_are(self):
+        # Every other habit case tells the model where it is, and the block
+        # believes them, so the tell itself (`claude mcp list`) was never
+        # exercised. This one is the bare command a real user types; the
+        # harness is Claude Code, so the Claude Code wording is owed.
+        text = read("evals/habit-offer-untold/case.yaml")
+        m = re.search(r"^  prompt: \|\n((?:    .*\n)+)", text, re.M)
+        self.assertIsNotNone(m)
+        self.assertEqual(m.group(1).strip(), "/adcopilot:daily")
 
     def test_quiet_cases_would_catch_either_offer(self):
         for case, name in (("habit-recorded-stays-quiet", "no-offer-wording"),
@@ -393,7 +505,8 @@ class EvalGraders(unittest.TestCase):
     def test_mocks_carry_the_servers_schedule_fields(self):
         # The shape get_org_context answers with from the release that reads
         # "claude-scheduled": routine.scheduled_last_seen_at, latest_check_in.
-        owed = ("habit-offer-chat", "habit-offer-code", "daily-scheduled-run")
+        owed = ("habit-offer-chat", "habit-offer-code", "habit-offer-untold",
+                "daily-scheduled-run")
         for case in owed + ("habit-recorded-stays-quiet",):
             ctx = mock(case, "get_org_context")
             with self.subTest(case=case):

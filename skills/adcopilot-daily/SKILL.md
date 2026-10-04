@@ -19,7 +19,7 @@ Nobody reads this until it has finished, so a question is a run that stops half-
 3. Ask nothing. Never stop for an answer and never end on a request for one. If something is unknown — which account, a read refused, a product to re-add, the day's operations used up — say so in one line and carry on with the rest.
 4. Never offer to schedule anything. This is the schedule.
 
-The account is the one the instructions name. If they name none: the account AdCopilot's own check-in reads (`latest_check_in.account`, or `routine.daily.customer_id`); else the only enabled account `get_org_context` reports; else the first enabled one. Say which, by the name Google Ads shows, right after the first line.
+The account is the one the instructions name. If they name none: the account AdCopilot's own check-in reads (`latest_check_in.account`, or `routine.daily.customer_id`); else the only enabled account `get_org_context` reports that is not a manager account (`manager` true: a manager account has no campaigns of its own, and Google refuses its figures); else the first such one. If only manager accounts are enabled, say so in one line and read nothing more. Say which account, by the name Google Ads shows, right after the first line.
 
 Five reads, in this order — when the instructions list their own, theirs win:
 
@@ -39,7 +39,7 @@ The report:
 
 ## The set-up
 
-First, the instructions they will save. They are AdCopilot's own recipe, word for word — the same text AdCopilot's emails, docs and dashboard give — and their first sentence is what marks each run:
+First, the instructions they will save. They are AdCopilot's own recipe, word for word, and their first sentence is what marks each run:
 
 ```text
 AdCopilot morning check, read-only. Call get_org_context first, with source "claude-scheduled". Do not use any tool that changes my account, and do not ask me questions; if something is unknown, say so and carry on. For {account}:
@@ -51,7 +51,7 @@ AdCopilot morning check, read-only. Call get_org_context first, with source "cla
 Start with one line: "All clear" or "Needs a look". End with the single most valuable fix, written as a yes/no question I can answer when I open this.
 ```
 
-Fill in `{account}` from `get_org_context`: "Google Ads account " and the ID of the account they want checked, written 123-456-7890 — the one AdCopilot's check-in reads unless they say otherwise; or, when you cannot tell which, "the Google Ads account I have switched on in AdCopilot". The ID goes in the instructions only, because a run with nobody to ask has to know which account; say the account by its name everywhere else.
+Fill in `{account}` from `get_org_context`: "Google Ads account " and the ID of the account they want checked, written 123-456-7890 — the one AdCopilot's check-in reads unless they say otherwise, and never a manager account (`manager` true), which has no figures of its own; or, when you cannot tell which, "the Google Ads account I have switched on in AdCopilot". The ID goes in the instructions only, because a run with nobody to ask has to know which account; say the account by its name everywhere else.
 
 Say what it costs before they save it: about five reads a run, each counted toward the workspace's daily operations. It runs at 8:07, not 8:00, because runs set exactly on the hour can start late. Then the steps for where they are, one at a time, waiting for each to be done. The screens' labels are as of October 2026; if one reads differently, go by what it says.
 
@@ -61,15 +61,17 @@ Say what it costs before they save it: about five reads a run, each counted towa
 2. Make the task. Either, in a new chat: "Schedule a task for every weekday at 8:07 AM my time with these instructions:" followed by the instructions, then confirm. Or, in the sidebar, **Scheduled**, then **Set up manually**: name it "AdCopilot morning check", paste the instructions, approval mode **Manually approve**, frequency weekdays at 08:07, **Save**.
 3. **Run now** once, and check that it finished without stopping to ask.
 
-On Claude Team or Enterprise, if every read in the run waits for approval, switch the task to **Automatically approve**: the instructions change nothing, so only reads run. Claude's Free plan has no scheduled tasks; say so plainly — there, AdCopilot's emailed daily check-in, when it is on, is the morning check.
+On Claude Team or Enterprise, if every read in the run waits for approval, the task can be switched to **Automatically approve**. Say plainly what that does before they switch: it stops asking before each tool, changes included, so the read-only instructions are what keep the run to reads — keep them exactly as written. Setting AdCopilot's **Write/delete tools** to **Blocked** stops a change outright, but then no chat can make one either; that is their call.
+
+Claude's Free plan has no scheduled tasks; say so plainly — there, AdCopilot's emailed daily check-in, when it is on, is the morning check.
 
 **Claude Code — a routine:**
 
 1. A routine runs in Anthropic's cloud, where this plugin's own connector is not available: AdCopilot has to be added there once, at claude.ai/customize/connectors, signed in with the same Google account.
 2. Show them the instructions and the schedule — weekdays at 8:07am — and offer to create the routine now. On their yes, use the `schedule` skill with both. If it is not in your list, they type `/schedule weekdays at 8:07am` followed by the instructions.
-3. Leave the routine only the connectors it needs. A routine runs its tools without asking, which is why the instructions are read-only.
+3. Leave the routine only the connectors it needs. A routine runs its tools without asking, so the read-only instructions are what keep it to reads: keep them exactly as written.
 4. Run it once, and check that it finished without stopping.
 
 A local task, or a `claude -p` line in cron, runs only while the computer is awake: a fallback, not the recommendation.
 
-**Then record it.** Once they say it is saved, call `save_org_context` with `routine.daily` set to `status` `user_set`, `surface` `claude_scheduled`, `hour_local` 8 and `tz` the account's time zone — except while `routine.daily.status` is `in_app`: AdCopilot keeps its emailed check-in as it is and would refuse the change, so record nothing; the first scheduled run records itself. Either way the offer stops once `get_org_context` reports the schedule.
+**Then record it.** Once they say it is saved, call `save_org_context` with `routine.daily` set to `status` `user_set`, `surface` `claude_scheduled`, `hour_local` 8 and `tz` the account's time zone — except while `routine.daily.status` is `in_app`: AdCopilot keeps its emailed check-in as it is and would refuse the change, so record nothing; the first scheduled run records itself. Tell them AdCopilot's emailed check-in keeps coming as well, and that if they want only one, the Routine card on AdCopilot's Home page pauses the email. Either way the offer stops once `get_org_context` reports the schedule.
