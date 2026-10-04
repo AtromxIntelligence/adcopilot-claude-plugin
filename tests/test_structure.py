@@ -30,8 +30,8 @@ What it pins, and why each one is here:
 - Directory policy (plan D7). Nothing the model is told by the habit block or
   the run carries sales or upgrade wording.
 - The instructions the set-up hands over are AdCopilot's own recipe, word for
-  word (`ads_mcp_cloud/schedule_recipe.py`, SCHEDULED_CHECKIN, as of server
-  commit 11cc4469 on feat/v2302-t3); its first sentence is what marks the run.
+  word (`ads_mcp_cloud/schedule_recipe.py`, SCHEDULED_CHECKIN, as of
+  AdCopilot v2.30.2); its first sentence is what marks the run.
   The server's emails, docs and dashboard do not all carry it yet, so nothing
   here says they do.
 - The eval graders and the offer agree: the regexes that look for the offer
@@ -76,7 +76,7 @@ OFFER_CODE = ("If you'd like a check of this account every weekday morning "
               "as a Claude Code routine with /schedule.")
 
 # AdCopilot's own recipe (server: ads_mcp_cloud/schedule_recipe.py,
-# SCHEDULED_CHECKIN, commit 11cc4469 on feat/v2302-t3). `{account}` is filled
+# SCHEDULED_CHECKIN, AdCopilot v2.30.2). `{account}` is filled
 # in by the set-up. Change it there first, then here and in the skill.
 SCHEDULED_CHECKIN = (
     "AdCopilot morning check, read-only. Call get_org_context first, with "
