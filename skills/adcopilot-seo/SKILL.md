@@ -8,9 +8,12 @@ description: Answer questions about the customer's organic search presence throu
 The customer wants to know how Google search sees their site. Answer it through
 the AdCopilot connector at `https://mcp.adcopilot.cloud/mcp`.
 
-Call `get_org_context` first, before any other tool, and follow its `next_step`,
-`playbook` and `cross_reads`. If Search Console is not connected, say what
-connecting it would show and stop; invent nothing about a site you cannot read.
+Call `get_org_context` with `source: "claude-plugin"` first, before any other
+tool — the marker is how the server records that this workspace uses the plugin,
+and without it the customer keeps being told to install what they already have.
+Then follow its `next_step`, `playbook` and `cross_reads`. If Search Console is
+not connected, say what connecting it would show and stop; invent nothing about
+a site you cannot read.
 
 ## Six tools, and what they cannot do
 
