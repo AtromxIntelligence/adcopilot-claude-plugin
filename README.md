@@ -64,7 +64,7 @@ Seven commands, which you type:
 - `/adcopilot:negatives` — the last seven days' searches that cost money and brought nothing, grouped by theme, with the never-show-for words (negative keywords) that would block them; added only after your yes, then read back.
 - `/adcopilot:audit` — the connector's full audit and this month's budget pacing, with the findings that are only a symptom of a brand-new account kept separate.
 
-Six skills, which Claude draws on when the conversation calls for them:
+Seven skills, which Claude draws on when the conversation calls for them:
 
 - **adcopilot-connect** — sets up AdCopilot, connects your Google products and links them to each other in the order that works, saying what each step bought you as it happens.
 - **adcopilot-measure** — sets up conversion tracking end to end: the Analytics property and data stream, the Tag Manager tags, the key event, the Analytics-to-Ads link and the import, and ends with exactly one Primary conversion, proven by a real click.
@@ -72,6 +72,7 @@ Six skills, which Claude draws on when the conversation calls for them:
 - **adcopilot-daily** — the morning check a Claude scheduled task or a Claude Code routine runs while nobody is there: it is written to read only and never ask a question, opens with "All clear" or "Needs a look" and ends with the one fix worth doing, as a yes/no question for when you open it. It also holds the steps for setting that schedule up.
 - **adcopilot-review** — the everyday one: reads the account and says what happened, what it cost, what is wasting money and what to change, then proposes the change and applies it when you say yes. It opens with `full_audit`, because one lens is one read and answers what a dozen hand-written queries would, and it treats the read ceiling as something to spend rather than stay under.
 - **adcopilot-docs** — answers questions about AdCopilot itself from your live workspace rather than from memory: which products it reaches, how many look-ups are left today and what happens when they run out, which plan you are on, what it is allowed to change, where data goes, and what to do when a call fails. Plans and prices are linked, never quoted.
+- **adcopilot-seo** — answers what Google search makes of your site, through Search Console: which pages earn clicks and which earn nothing, what people typed to find you, whether a sitemap is being read, and when a page was last crawled. It is written around the readings that mislead — the sitemap's dead "indexed" column, an average position that is not a rank, impressions that are not demand — and it says plainly what it cannot see: there is no site-wide coverage list and no penalty read, so it asks you for Search Console's Pages export rather than guessing.
 
 One agent, which Claude hands a job to when it is too big for the conversation:
 
