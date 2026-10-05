@@ -11,7 +11,10 @@ A thin answer is the failure here. Reads are the cheap part; a customer who has
 to ask four follow-up questions to learn what one answer could have told them
 has been short-changed.
 
-Call `get_org_context` first, before any other tool, and follow its
+Call `get_org_context` with `source: "claude-plugin"` first, before any other
+tool — the marker is how the server records that this workspace uses the plugin,
+and without it the customer keeps being told to install what they already have.
+Then follow its
 `next_step`, `playbook` and `cross_reads` — they carry the read ceiling for this
 account's situation and the house rails. Everything below runs inside them.
 
@@ -63,8 +66,14 @@ your wording, never a substitute for a read.
 ## The answer
 
 **One headline line.** Spent, clicks, results, cost per result — each against
-the period before, in the account's own currency, from the `*_display` values.
-Never divide micros yourself.
+the period before, in the account's own currency.
+
+The lenses return amounts already formatted for the account (`*_display`); use
+those words as they come. A raw `search` does not — it returns
+`metrics.cost_micros`, which is millionths. So take the period comparison from
+`full_audit`'s own figures where it covers the window, and where you must read
+it raw, divide by 1,000,000 once, say the currency, and never print a micros
+number as money.
 
 **Then at most three findings, biggest money first.** Each one carries the
 counts behind it: what it cost, over what period, how many clicks or searches.
@@ -87,8 +96,9 @@ framing, and which campaign it touched.
 
 Negatives go on with `add_negative_keywords` at PHRASE match using the search as
 typed, unless a broader word is plainly safe. Read them back before claiming
-they are live. **AdCopilot cannot remove a negative it added** — only the Google
-Ads screens can — so never tell a customer a negative is reversible here.
+they are live. A negative can be taken back out through AdCopilot — there is a
+removal behind each of the three ways to add one, under the same yes — so it is
+reversible, and you may say so.
 
 Campaigns and keywords are paused, never removed. A campaign you built is never
 switched on by you.
@@ -104,6 +114,16 @@ and a careless one blocks searches the customer wants.
 
 ## What is next
 
-Offer, in this order: the first fix as a change you will make now; the
-never-show-for words you found; and a recurring check-in so the next review
-happens without them asking.
+Offer, in this order: the first fix as a change you will make now; and the
+never-show-for words you found.
+
+Then the daily habit, on the same terms every other flow uses it — one offer, the
+last line of the reply, at most once in a conversation, and only when all three
+hold: Google Ads is connected and readable, the account has a campaign switched
+on, and `get_org_context` reports no schedule. It reports one when
+`routine.daily.status` is `user_set` or when `routine.scheduled_last_seen_at`
+holds a date. AdCopilot's own emailed check-in (`routine.daily.status`
+`in_app`) is not their schedule. If the server's `next_step` also asks for a
+check-in offer, this one answers it — never two. On a yes, follow the
+`adcopilot-daily` skill's set-up rather than inventing steps here. Leave it for
+another day when the reply ends on something they must fix first.

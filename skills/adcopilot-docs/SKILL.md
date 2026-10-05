@@ -10,7 +10,7 @@ never from memory. The product changes; this file does not move with it, so
 every number in your answer comes from a live read or from the documentation
 site, and nothing comes from recall.
 
-Call `get_org_context` first. Its answer carries the facts most of these
+Call `get_org_context` (with `source: "claude-plugin"`) first. Its answer carries the facts most of these
 questions want:
 
 - `org.plan`, `org.ops_today_used`, `org.ops_today_cap`, `org.accounts_cap`,
@@ -41,7 +41,10 @@ allowance. A `null` cap means no daily limit on that plan.
 costs.** The honest version is short: name what the reads established — the
 spend, the waste found, the change proposed — then say the allowance is used up
 for today, when it resets, and that a paid plan raises it. Send them to
-`org.upgrade_url`. Never dress the limit up as an error, and never imply the
+`org.upgrade_url` — but only to someone who can act on it. Where the server
+says the workspace is reached through a teammate's login, or tells a member to
+ask their owner, pass that on instead of sending them to a billing page they
+cannot use. Never dress the limit up as an error, and never imply the
 work was lost: what was found is still true tomorrow.
 
 Do not quote prices from memory. Plans and prices live at
@@ -53,8 +56,11 @@ Do not quote prices from memory. Plans and prices live at
 Worth stating plainly, because it is the question behind most hesitation:
 
 - Every change is proposed first and applied only after the customer says yes
-  in that conversation. Nothing is applied unattended.
-- Nothing is ever deleted. Campaigns and keywords are paused instead, so an
+  in that conversation. AdCopilot proposes the change and your AI client asks
+  before it runs, while the write tools stay on Needs approval — that approval
+  lives in the client, not in AdCopilot, so say it that way.
+- Nothing is deleted except a negative keyword. Campaigns, ad groups, keywords
+  and ads are paused instead, so an
   instruction that was not meant cannot cost an account its history.
 - A campaign AdCopilot builds is created paused. Switching it on is the
   customer's click, in Google Ads.
@@ -72,6 +78,16 @@ For a product the connector reports as needing to be signed in again, say so
 and send them to `app_urls.accounts`. For one it flags as unreachable, the
 connector has to be removed and re-added in the customer's AI client — say that
 plainly; no amount of retrying fixes it.
+
+## Where the answers live
+
+For anything about privacy, data handling, security or what AdCopilot is allowed
+to change, the written answer is on the docs site and the customer can be sent
+to it: `https://adcopilot.cloud/docs` — the concepts pages cover approval-gated
+writes, what can never be deleted, read versus write, account scope and where
+data travels. Every docs page has a plain-text copy you can read, so read it and
+quote it rather than answering from memory. `get_org_context`'s `help` field
+carries the troubleshooting address for the same reason.
 
 ## What breaks
 
