@@ -11,21 +11,37 @@ the AdCopilot connector at `https://mcp.adcopilot.cloud/mcp`.
 Call `get_org_context` with `source: "claude-plugin"` first, before any other
 tool — the marker is how the server records that this workspace uses the plugin,
 and without it the customer keeps being told to install what they already have.
-Then follow its `next_step`, `playbook` and `cross_reads`. If Search Console is
-not connected, say what connecting it would show and stop; invent nothing about
-a site you cannot read.
+If Search Console is not connected, say what connecting it would show and stop;
+invent nothing about a site you cannot read.
+
+**One thing to get right about `cross_reads`.** It budgets reads made OUTSIDE
+Google Ads *in service of an ads answer* — on a live account it often says
+"make no cross-product read" and offers zero Search Console allowance. That is
+not a refusal of this skill. When the customer's question IS organic search,
+Search Console is the answer and the reads below are the work; the ads ceiling
+in `cross_reads` does not cap them. Follow `next_step` and the `playbook` as
+usual, and read `cross_reads` for what it is: guidance for the other direction.
 
 ## Six tools, and what they cannot do
 
 `gsc_list_sites`, `gsc_list_sitemaps`, `gsc_search_analytics`,
-`gsc_inspect_url` read. `gsc_submit_sitemap` and `gsc_request_indexing` write.
+`gsc_inspect_url` read. `gsc_submit_sitemap` and `gsc_request_indexing` write —
+so both are proposed first and sent only after an explicit yes in the session,
+like every other write. Note that resubmitting a sitemap is **not** the fix for
+a URL Google has merely discovered: it already has the URL.
 
 That is the whole surface, and the gaps matter more than the tools:
 
-- **There is no index-coverage read.** You cannot list which pages Google has
-  indexed, or why one is not. Ask the customer to open Search Console →
-  Indexing → Pages and use **Export**, then read the CSV they send you. Until
-  they do, say you cannot tell them their coverage, rather than inferring it.
+- **There is no SITE-WIDE coverage list — but there is a per-URL verdict.** You
+  cannot ask for every page Google has not indexed, or a count. For any single
+  URL, `gsc_inspect_url` returns exactly why: `coverageState` in Google's own
+  words ("Submitted and indexed", "Discovered - currently not indexed",
+  "Crawled - currently not indexed", "Excluded by 'noindex' tag"), plus
+  `robotsTxtState`, `indexingState`, `pageFetchState`, both canonicals and
+  `lastCrawlTime`. Read the whole block, not just the crawl date. For a
+  site-wide count, ask the customer to open Search Console → Indexing → Pages
+  and use **Export**, then read the CSV they send you — and until they do, say
+  you have checked N pages rather than implying you know the site.
 - **There is no manual-actions or security-issues read.** You cannot tell
   whether a site has a Google penalty or is flagged as hacked. Never say a site
   has no penalty — say you cannot see penalties and that the customer should
@@ -48,9 +64,12 @@ Each of these has been read wrongly in a real review. Do not repeat them.
 2. **"Average position" is not a rank.** It is averaged across every country,
    device and query where the page appeared at all. A site can show average
    position 3.6 for its own brand name and appear nowhere in the first thirty
-   results in its own market. If the customer asks "where do we rank?", say the
-   honest thing: this is an average over everywhere it appeared, and a real rank
-   needs a per-country check that AdCopilot cannot make.
+   results in its own market. When the customer asks "where do we rank?", do not
+   read the average out — narrow it: call `gsc_search_analytics` again with
+   `dimensions: ["query", "country"]` (or `["page", "country"]`) and report the
+   row for the market that matters to them. That is still their average position
+   in that country rather than a live rank, so say which it is; a true rank
+   needs a search from that country, which AdCopilot does not do.
 3. **Impressions are not demand.** A page can take half a site's impressions on
    queries with no measurable search volume, at position 40-90, earning nothing.
    Before calling any page a performer, look at its clicks and its position, not
@@ -59,6 +78,12 @@ Each of these has been read wrongly in a real review. Do not repeat them.
    indexed tells you nothing about the rest. Sample across page families — a
    product page, a blog post, a docs page, a newer page — or say you only
    checked one.
+
+5. **The data is two to three days behind.** Search Console has not finished
+   counting the last few days, and the missing days come back as absent rows,
+   not zeros. So a seven-day window is really four or five days of data, and
+   "clicks fell off a cliff this week" is usually the lag. End the window three
+   days before today, and say which dates you actually read.
 
 ## The sequence
 
@@ -70,9 +95,12 @@ Work in this order, stopping when `cross_reads` says the ceiling is reached.
    submitted, when Google last downloaded it, and whether it reports errors.
    Ignore the indexed column.
 3. **Which pages earn anything.** `gsc_search_analytics` with
-   `dimensions: ["page"]` over 28 days. Compare the number of pages that got a
-   single impression against the number submitted. That ratio is usually the
-   story.
+   `dimensions: ["page"]` over 28 days, and pass `row_limit` explicitly — the
+   default is 1,000 and the tool cannot paginate, so a bigger site comes back
+   silently cut. If the row count equals the limit you asked for, say the list
+   is truncated and that the ratio is a floor, not the figure. Compare the pages
+   that got a single impression against the number submitted; that ratio is
+   usually the story.
 4. **What people typed.** The same call with `dimensions: ["query"]`. Read it
    for two things: the queries worth winning, and the queries the site is
    attracting but cannot serve.
@@ -85,24 +113,37 @@ Work in this order, stopping when `cross_reads` says the ceiling is reached.
 
 Two rows decide the diagnosis, and they mean opposite things.
 
-- **"Discovered – currently not indexed"** — Google learned the URL exists and
-  chose not to spend a crawl on it. It has never fetched the page. This is not
-  a judgement about the writing. It is a judgement about whether the site has
-  earned the crawl.
+- **"Discovered – currently not indexed"** — never fetched. Google's own words:
+  "The page was found by Google, but not crawled yet. Typically, Google wanted
+  to crawl the URL but this was expected to overload the site; therefore Google
+  rescheduled the crawl." So the first cause to consider is the SITE's capacity,
+  not the page's quality — how fast the host answers, and how much Google thinks
+  it can take. Do not tell a customer their content was judged and found
+  wanting; nothing has been read.
 - **"Crawled – currently not indexed"** — Google fetched the page and decided
   against indexing it. That one is about the page.
 
-So say which it is before proposing anything. For *Discovered*, the levers are
-links pointing at the page from pages Google already crawls often, `lastmod` in
-the sitemap, and fewer thin URLs competing for the same crawl budget. Submitting
-the sitemap again changes nothing — Google already has the URL. For *Crawled*,
-the page itself has to become worth indexing.
+So say which it is before proposing anything, and quote Google's wording rather
+than paraphrasing a cause.
+
+For *Discovered*, in this order: how quickly the host answers and whether it is
+under load (Google's own stated reason for rescheduling); then fewer thin URLs
+competing for the same crawl, since a site asking Google to fetch hundreds of
+near-empty pages gets less of what matters fetched; then links to the page from
+pages Google already crawls often; then `lastmod` in the sitemap so a changed
+page announces itself. Submitting the sitemap again changes nothing — Google
+already has the URL, which is what "discovered" means.
+
+For *Crawled*, Google adds "no need to resubmit this URL for crawling" — it has
+been read and not chosen, so the page itself has to become worth indexing.
 
 ## The check almost nobody makes
 
 For any page ranking far down on a query it should own: **does the page contain
-the query?** Read the page's own words — its title, its heading, its opening
-sentence — and look for the phrase people actually typed. A page can be long,
+the query?** AdCopilot cannot fetch a page, so use the client's own web-fetch
+tool where it has one, and otherwise ask the customer for the title, the heading
+and the opening sentence. Never describe a page's wording you have not read.
+Then look for the phrase people actually typed. A page can be long,
 well-built and entirely about the subject while never once writing the sentence
 the searcher wrote, and position 60-80 is exactly where Google puts a page it
 finds topically close but not an answer. No amount of linking fixes a phrase the
@@ -130,7 +171,11 @@ for and already rank for. Three buckets: paying and ranking well, where the paid
 click may be buying what they get free; paying with no organic presence, where
 paid is the only route; ranking well without bidding, which is often the
 cheapest thing on the list. Read the Ads keywords with `search` over
-`keyword_view` and set them beside the Search Console queries. Say which bucket
+`keyword_view` and set them beside the Search Console queries. If you quote what
+a term costs, mind the money rule the rest of the plugin carries: a raw `search`
+returns `metrics.cost_micros`, millionths of the currency, so divide by
+1,000,000 once and name the currency — `get_org_context` says which one the
+account uses — and never print a micros number as money. Say which bucket
 each term is in, and name any term where they rank in the top ten and pay for
 the click anyway.
 
