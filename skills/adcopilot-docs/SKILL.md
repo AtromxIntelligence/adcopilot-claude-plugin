@@ -55,13 +55,25 @@ Do not quote prices from memory. Plans and prices live at
 
 Worth stating plainly, because it is the question behind most hesitation:
 
-- Every change is proposed first and applied only after the customer says yes
-  in that conversation. AdCopilot proposes the change and your AI client asks
-  before it runs, while the write tools stay on Needs approval — that approval
-  lives in the client, not in AdCopilot, so say it that way.
-- Nothing is deleted except a negative keyword. Campaigns, ad groups, keywords
-  and ads are paused instead, so an
-  instruction that was not meant cannot cost an account its history.
+- **Nothing is deleted except a negative keyword, and the server enforces it.**
+  The campaign, ad group, ad and keyword tools accept only ENABLED or PAUSED and
+  refuse a REMOVED status outright; the asset tools refuse a remove. Pausing is
+  as far as it goes. This is the strongest guarantee the product has, because it
+  does not depend on the assistant behaving — say it first. (A negative keyword
+  is the exception, and it is deliberate: each of the three ways to add one has
+  a removal behind it, so a negative can be taken back out. Setting a campaign's
+  languages also replaces the list it had.)
+- **The approval lives in your AI client, not in AdCopilot.** Reads run freely.
+  AdCopilot proposes a change and the client asks before it runs — while the
+  write tools stay on **Needs approval** in claude.ai, Cowork and the desktop
+  app, or, in Claude Code, while it still prompts for them: the tools are not
+  allowlisted and the session is not in `auto` or `bypassPermissions` mode. Take
+  that question away — allowlist the tools, or run in an auto-approving mode or
+  an unattended routine — and changes to things that already exist, a budget or
+  a switched-on campaign among them, apply without being asked. Only a new
+  campaign is still built paused regardless. Never state the approval as
+  unconditional: name the condition, because a customer who has turned it off
+  deserves to know what they turned off.
 - A campaign AdCopilot builds is created paused. Switching it on is the
   customer's click, in Google Ads.
 - It reads only the ad accounts switched on in the workspace, and never sees a

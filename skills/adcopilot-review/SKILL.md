@@ -30,13 +30,19 @@ carry one over from an earlier turn as if it were fresh.
 
 ## The sequence
 
-**Open with `full_audit`.** One lens is ONE read and answers what a dozen
-hand-written queries would: it ranks the wasted spend, names the
-negative-keyword candidates and finds the disapprovals, from the account's own
-numbers. The shipped audit prompt says the same thing — "if the connector
-exposes `full_audit`, call it instead of computing this yourself; quote its
-numbers" — so steps 2, 3 and 5 below are usually already answered when it
-returns. Read them yourself only for what it did not cover.
+**Open with `full_audit`, with `depth="deep"` and `days` set to the window you
+are reporting.** Its default is `quick`, which scores three of the
+seventy-three checks over the month to date — not an audit, and not what the
+customer asked for. Deep attempts all seventy-three over your window and reports
+how many it could actually evaluate; say that number rather than letting an
+unevaluated check pass as a pass.
+
+One lens is ONE read and answers what a dozen hand-written queries would. It
+orders its findings by severity, NOT by money, so re-sort by cost before you
+choose the three you report. For the cost ranking itself, `analyze_waste` is the
+read; `analyze_search_terms` groups the searches into negative-keyword
+candidates by theme, which is a different job. Together they usually answer
+steps 3 and 5 below, so read those yourself only for what they did not cover.
 
 Then, in this order, stopping only when the ceiling is reached:
 

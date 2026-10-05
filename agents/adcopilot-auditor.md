@@ -41,7 +41,11 @@ guesses is worse than no report.
 1. **Results are being counted at all.** If nothing is counted, say so first —
    every other number below is unanchored without it.
 2. **The period against the one before.** Spend, clicks, impressions, results,
-   cost per result, in the account's own currency from the `*_display` values.
+   cost per result, in the account's own currency. Amounts come already written
+   from `get_org_context`'s probe and from each lens's own figures; a raw
+   `search` does not — it returns `metrics.cost_micros`, millionths of the
+   currency. Where the comparison can only come from a raw read, divide by
+   1,000,000 once, name the currency, and never print a micros number as money.
 3. **Where the money went.** Campaigns, then ad groups, then keywords — which
    carried the spend and which carried the results. Name the ones doing neither.
 4. **What was paid for and should not have been.** Search terms with cost and
@@ -52,7 +56,9 @@ guesses is worse than no report.
 6. **Structure worth saying out loud.** One keyword or one campaign taking
    nearly all the spend while the rest get none is a finding, not a detail.
 
-Call `full_audit` with `depth="deep"`. Its default is `quick`, which scores
+Call `full_audit` with `depth="deep"` and `days` set to the same window the
+report's period comparison uses, so the audit and the comparison cannot disagree;
+say that window in the report's first line. Its default is `quick`, which scores
 three of the seventy-three checks over the month to date — not an audit, and not
 what you promised. Deep walks the whole registry over the window you ask for, in
 one read.
@@ -72,8 +78,12 @@ a number.
 
 Then the proposals, ordered by money saved, each with what it costs to act and
 what it costs to do nothing. Mark any proposal that cannot be undone through
-AdCopilot — a negative keyword is one: AdCopilot can add it and cannot remove
-it.
+AdCopilot. A negative keyword is NOT one — each of the three ways to add one has
+a removal behind it, under the same yes. The genuine one-way action is attaching
+a shared negative-keyword list: `attach_negative_keyword_list` says in its own
+description that there is no matching detach tool on purpose, and a list is
+detached in Google Ads under Tools, Shared library, Exclusion lists. If nothing
+in the report is one-way, say so.
 
 Close with what you could not check and why, so nobody mistakes a gap for a
 clean bill of health.

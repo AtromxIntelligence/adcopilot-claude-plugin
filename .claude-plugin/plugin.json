@@ -1,7 +1,7 @@
 {
   "name": "adcopilot",
   "version": "0.2.4",
-  "description": "Google Ads, Analytics, Search Console and Tag Manager from your AI client — audit wasted spend, build campaigns, fix conversion tracking. Your AI client asks before each change while the write tools stay on Needs approval, and AdCopilot can never delete.",
+  "description": "Google Ads, Analytics, Search Console and Tag Manager from your AI client — audit wasted spend, build campaigns, fix conversion tracking. Your AI client asks before each change while the write tools stay on Needs approval, and AdCopilot never deletes anything but a negative keyword.",
   "author": {
     "name": "Atromx Intelligence",
     "url": "https://adcopilot.cloud"

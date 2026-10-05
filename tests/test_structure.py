@@ -386,9 +386,48 @@ class Commands(unittest.TestCase):
                 self.assertRegex(fm, r"(?m)^description: \S")
 
     def test_interactive_reads_carry_the_plugin_marker(self):
+        """A skill or agent that calls `get_org_context` stamps plugin use.
+
+        The skills and agents are globbed from disk, not listed, because the
+        0.2.5 review found three new components omitting the marker while this
+        test passed — it only looked at four commands, so "all 49 tests pass"
+        was no evidence for the thing it was quoted as proving. Without the
+        marker the server never stamps `orgs.plugin_first_seen_at`, and the
+        customer keeps being asked to install what they already use.
+
+        Commands are the four that read directly; the rest legitimately
+        delegate to a skill (`commands/launch.md` only names the tool while
+        `adcopilot-launch` makes the call), and a test that cannot tell a
+        delegation from a read would fail on prose.
+
+        `adcopilot-daily` is the one exception: its run is unattended, so it
+        passes `source: "claude-scheduled"` instead.
+        """
         for name in ("audit", "daily", "weekly", "negatives"):
             with self.subTest(command=name):
                 self.assertIn('source: "claude-plugin"', read("commands/%s.md" % name))
+
+        readers = ["skills/%s/SKILL.md" % d
+                   for d in sorted(os.listdir(os.path.join(ROOT, "skills")))]
+        agents_dir = os.path.join(ROOT, "agents")
+        if os.path.isdir(agents_dir):
+            readers += ["agents/%s" % f for f in sorted(os.listdir(agents_dir))
+                        if f.endswith(".md")]
+        checked = 0
+        for rel in readers:
+            text = read(rel)
+            if "get_org_context" not in text:
+                continue
+            checked += 1
+            with self.subTest(surface=rel):
+                marker = ('source: "claude-scheduled"'
+                          if "adcopilot-daily" in rel
+                          else 'source: "claude-plugin"')
+                self.assertIn(
+                    marker, text,
+                    "%s calls get_org_context without %s" % (rel, marker))
+        self.assertGreaterEqual(checked, 7, "expected every reading skill and "
+                                            "agent to be checked, saw %d" % checked)
 
     def test_daily_runs_the_four_reads(self):
         text = read("commands/daily.md")
@@ -521,9 +560,40 @@ class EvalGraders(unittest.TestCase):
 
 class Copy(unittest.TestCase):
 
+    def test_readme_lists_every_skill_and_agent_that_ships(self):
+        """The README's count and its list both come from what is on disk.
+
+        "Four skills" survived a branch that shipped six, and then "Six skills"
+        survived one that shipped seven — twice, because the count was prose.
+        A component nobody documents is a component nobody finds."""
+        words = {1: "One", 2: "Two", 3: "Three", 4: "Four", 5: "Five",
+                 6: "Six", 7: "Seven", 8: "Eight", 9: "Nine", 10: "Ten"}
+        readme = read("README.md")
+
+        skills = sorted(os.listdir(os.path.join(ROOT, "skills")))
+        self.assertIn("%s skills, which Claude draws on" % words[len(skills)],
+                      readme,
+                      "the README's skill count does not match the %d skills on "
+                      "disk: %s" % (len(skills), skills))
+        for name in skills:
+            with self.subTest(skill=name):
+                self.assertIn("**%s**" % name, readme)
+
+        agents_dir = os.path.join(ROOT, "agents")
+        if os.path.isdir(agents_dir):
+            agents = sorted(f[:-3] for f in os.listdir(agents_dir)
+                            if f.endswith(".md"))
+            for name in agents:
+                with self.subTest(agent=name):
+                    self.assertIn("**%s**" % name, readme)
+
     def test_no_banned_words_anywhere_the_model_reads(self):
         files = ["README.md"] + ["commands/%s" % f for f in os.listdir(os.path.join(ROOT, "commands"))]
         files += ["skills/%s/SKILL.md" % d for d in os.listdir(os.path.join(ROOT, "skills"))]
+        agents_dir = os.path.join(ROOT, "agents")
+        if os.path.isdir(agents_dir):
+            files += ["agents/%s" % f for f in os.listdir(agents_dir)
+                      if f.endswith(".md")]
         for rel in files:
             with self.subTest(file=rel):
                 self.assertIsNone(BANNED.search(read(rel)))
