@@ -42,6 +42,7 @@ What it pins, and why each one is here:
 
 import json
 import os
+import subprocess
 import re
 import unittest
 
@@ -560,6 +561,42 @@ class EvalGraders(unittest.TestCase):
 
 class Copy(unittest.TestCase):
 
+    def test_the_delete_claim_names_its_one_exception(self):
+        """Wherever the plugin says it does not delete, it names the exception.
+
+        This sentence has now been wrong in four places across two review
+        rounds — the docs skill, the review skill, the auditor, the manifest
+        description — and each time it was corrected where the reviewer pointed
+        and left standing in the file beside it. README.md was the fourth, and
+        the only one a customer reads unprompted. A negative keyword IS deleted,
+        by three tools that each describe themselves as the inverse of their
+        add, so an unqualified "never deletes" is false everywhere it appears."""
+        import re
+        files = ["README.md", ".claude-plugin/plugin.json"]
+        files += ["skills/%s/SKILL.md" % d
+                  for d in sorted(os.listdir(os.path.join(ROOT, "skills")))]
+        agents_dir = os.path.join(ROOT, "agents")
+        if os.path.isdir(agents_dir):
+            files += ["agents/%s" % f for f in sorted(os.listdir(agents_dir))
+                      if f.endswith(".md")]
+        # a sentence asserting no deletion, without "negative" within 220 chars
+        # Only the GENERAL claim. "the asset tools refuse a remove" is a true,
+        # narrow statement about one tool family and needs no exception; what
+        # must never stand unqualified is a blanket "it does not delete".
+        claim = re.compile(
+            r"(never delet\w*|cannot delet\w*|does not delet\w*|"
+            r"nothing is (?:ever )?deleted|Delete anything)", re.I)
+        for rel in files:
+            text = read(rel)
+            for m in claim.finditer(text):
+                window = text[m.start():m.start() + 400]
+                with self.subTest(file=rel, claim=m.group(0)):
+                    self.assertRegex(
+                        window, r"(?i)negativ",
+                        "%s says %r without naming the negative-keyword "
+                        "exception within the next 400 characters"
+                        % (rel, m.group(0)))
+
     def test_readme_lists_every_skill_and_agent_that_ships(self):
         """The README's count and its list both come from what is on disk.
 
@@ -602,7 +639,28 @@ class Copy(unittest.TestCase):
 class Manifest(unittest.TestCase):
 
     def test_version(self):
-        self.assertEqual(json.loads(read(".claude-plugin/plugin.json"))["version"], "0.2.4")
+        """The manifest's version, checked against the newest tag rather than a
+        literal.
+
+        It was `"0.2.4"` written out, which makes every release a two-sided
+        edit: leave the manifest alone and checks.yml's "Manifest version is
+        not behind the latest tag" step fails once the tag exists; bump it and
+        this assertion fails instead. Neither branch could be tagged green.
+        Derived from `git tag` the way that CI step derives it, the manifest may
+        equal the newest tag or be ahead of it (an unreleased bump), and never
+        behind."""
+        manifest = json.loads(read(".claude-plugin/plugin.json"))["version"]
+        tags = subprocess.run(["git", "tag", "--sort=-v:refname"],
+                              cwd=ROOT, capture_output=True, text=True).stdout.split()
+        newest = next((x[1:] for x in tags if x.startswith("v")), None)
+        if newest is None:
+            self.skipTest("no version tags yet")
+        def parts(v):
+            return tuple(int(n) for n in v.split("."))
+        self.assertGreaterEqual(
+            parts(manifest), parts(newest),
+            "the manifest (%s) is behind the newest tag (v%s) — bump "
+            ".claude-plugin/plugin.json before tagging" % (manifest, newest))
 
 
 if __name__ == "__main__":
