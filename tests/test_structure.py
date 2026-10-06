@@ -591,11 +591,14 @@ class Copy(unittest.TestCase):
             for m in claim.finditer(text):
                 window = text[m.start():m.start() + 400]
                 with self.subTest(file=rel, claim=m.group(0)):
+                    # From AdCopilot v2.35.0 the true line is "never deletes
+                    # in one step" (a campaign, an ad or a keyword only in
+                    # two calls): that qualifier is the exception named.
                     self.assertRegex(
-                        window, r"(?i)negativ",
-                        "%s says %r without naming the negative-keyword "
-                        "exception within the next 400 characters"
-                        % (rel, m.group(0)))
+                        window, r"(?i)negativ|in one step|two calls",
+                        "%s says %r without naming the exception (a negative "
+                        "keyword, or deletion only in two calls) within the "
+                        "next 400 characters" % (rel, m.group(0)))
 
     def test_readme_lists_every_skill_and_agent_that_ships(self):
         """The README's count and its list both come from what is on disk.
