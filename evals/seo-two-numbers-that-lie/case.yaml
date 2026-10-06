@@ -75,8 +75,12 @@ graders:
     type: tool_used
     # Counts get_org_context calls whose input lacks source "claude-plugin", the
     # marker AdCopilot reads to record plugin use; any such call fails. The
-    # marker is in the skill body alone, so it is scored on the with-skills arm
-    # only and never counts towards the delta.
+    # marker is in the skill body alone. `arm: with-only` matters under the
+    # harness's own `--ablation with-without`, where it marks a plugin-fired
+    # indicator rather than part of the score; the tools-only ablation runs
+    # both of its arms under `--ablation none`, where it is inert and this
+    # grader is scored in both. It passed on the baseline arm anyway, so it
+    # contributes nothing to the delta either way.
     tool: mcp__plugin_adcopilot_adcopilot__get_org_context
     input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin")'
     min: 0
