@@ -4,9 +4,16 @@ type: fixed
 # counted, $4,318 over the last thirty days. Field names and nesting follow the
 # live get_org_context answer and every value is invented.
 # situation ADS_ACTIVE_TRACKED, so cross_reads offers six reads in Google Ads
-# and no cross-product allowance, and the playbook is that situation's text as
-# the current server sends it - including "biggest money first", which is why
-# the money order is NOT what this case measures the skill by. The daily
+# and no cross-product allowance. The playbook is that situation's text
+# including "biggest money first", which is why the money order is NOT what
+# this case measures the skill by - the server says it, so the skill does not
+# earn it. Read live on 2026-10-06, the server still says "At most four reads
+# in Google Ads" and does not name the lenses: the six and the lens-first
+# sentence are what adcopilot#658 introduces, and this fixture is written to
+# that. The direction is deliberate and conservative - it hands the
+# tools-only arm MORE help than today's server does, which makes the measured
+# delta smaller, never larger - and it means the fixture does not go stale the
+# day #658 ships. The daily
 # check-in is the customer's own (routine.daily.status user_set, with
 # scheduled_last_seen_at set), so no habit offer is owed and next_step does not
 # ask for one.

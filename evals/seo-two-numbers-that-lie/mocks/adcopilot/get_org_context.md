@@ -3,11 +3,16 @@ type: fixed
 # The same fictional tenant with Search Console connected and healthy; every
 # value is invented. The situation is ADS_ACTIVE_TRACKED because the ads are
 # running, so cross_reads carries this account's real answer for an ADS
-# question - "make no cross-product read", search_console allowance zero - and
+# question - "make no cross-product read", search_console allowance zero,
+# read live on 2026-10-06 - and
 # the customer's question here is not an ads question. Reading that ceiling as
 # a refusal to open Search Console is the trap: the skill says cross_reads
 # budgets reads made outside Google Ads in service of an ADS answer, and does
 # not cap the skill whose subject IS organic search.
+# The playbook's ads block carries six reads and names the lenses, which is
+# what adcopilot#658 introduces; the live server still says four and names
+# none. It is not what this case measures either way - the question is not an
+# ads question - and the same fixture serves both cases.
 ---
 {
   "org": {
