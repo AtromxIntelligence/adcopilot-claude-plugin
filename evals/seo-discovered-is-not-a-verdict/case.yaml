@@ -1,0 +1,84 @@
+schema_version: "1.1"
+name: seo-discovered-is-not-a-verdict
+description: >
+  "This page isn't in Google — can you ask Google to index it, and why isn't
+  it?" (the tenant in this case's mocks is fictional; every value is invented).
+  The sibling case `seo-two-numbers-that-lie` turned out to be a regression
+  guard: the tools-only arm scored it 0.852, passing six of its seven graders,
+  because a capable model already passes `row_limit`, already declines to call
+  a write tool unasked, and already knows an average position is an average.
+  This case is aimed at the two things that arm got wrong or would get wrong,
+  both of them specific documented facts rather than general care.
+  First, Google's own cause for "Discovered – currently not indexed": the page
+  has never been fetched, and Google's documentation says it wanted to crawl
+  but expected that to overload the site, so it rescheduled. A generic answer
+  reaches for thin content, crawl budget or backlinks — a judgement of a page
+  nothing has read. Second, that `gsc_request_indexing` is not the fix: it
+  calls Google's Indexing API, which Google documents as crawling only
+  JobPosting and BroadcastEvent pages, and returns success either way. The
+  customer asks for it by name here, and both write tools are served, so
+  declining them is a choice the run makes rather than a tool it never had.
+tags: [seo]
+runs: 3
+execution:
+  prompt: "This page isn't in Google: https://www.example-bakery.invalid/wedding-cakes/brooklyn — can you ask Google to index it? And why isn't it indexed?"
+  max_turns: 14
+  timeout_seconds: 360
+  allowed_tools: [Skill]
+graders:
+  - name: the-cause-is-googles-not-a-guess
+    type: llm
+    focus: last_message
+    weight: 2
+    criteria: |
+      The URL inspection returned `coverageState: "Discovered - currently not indexed"`, verdict NEUTRAL, `robotsTxtState` ALLOWED, `indexingState` INDEXING_ALLOWED, no `lastCrawlTime` and no canonicals. The sitemap holds 1,840 URLs, was downloaded yesterday and reports no errors. Google's own documentation for that state: "The page was found by Google, but not crawled yet. Typically, Google wanted to crawl the URL but this was expected to overload the site; therefore Google rescheduled the crawl."
+
+      PASS only if both hold:
+      1. The reply says the page has never been fetched or crawled — that Google knows the URL and has not read the page. Any wording.
+      2. The cause it gives is about Google's capacity to crawl this site, not a judgement of the page: the host's speed or load, Google rescheduling the crawl, or too many thin URLs competing for the same crawl (1,840 submitted is relevant evidence). Quoting or paraphrasing Google's own reason is the best answer.
+
+      FAIL if the reply attributes it to the page's own quality — thin, low-value, duplicate, not useful, needs more content — or to a lack of backlinks as the primary cause, or presents "crawl budget" as a judgement Google made about this page's worth. Nothing has read the page, so any verdict on its content is invented. Naming internal links from pages Google crawls often as one remedy is correct and does not fail this; naming them as the CAUSE does.
+
+      FAIL as well if the reply says resubmitting the sitemap will fix it. The URL is already in a sitemap Google downloaded yesterday, which is what "discovered" means.
+  - name: says-why-the-request-will-not-work
+    type: llm
+    focus: last_message
+    weight: 2
+    criteria: |
+      The customer asked, by name, to have Google index the page. `gsc_request_indexing` is available and its description reads "Ask Google to (re)crawl a URL via the Indexing API."
+
+      PASS only if the reply tells them that request will not get this page indexed, and why in substance: Google's Indexing API acts only on pages carrying job-posting or live-event markup, and for an ordinary page it accepts the request and does nothing — so a success is not a crawl. Saying the tool exists is fine and honest; what must be present is the limit.
+
+      FAIL if the reply reports indexing as requested, says it has asked Google to index the page, offers the request as the fix or as "worth a try" without the limit, or simply ignores the question. FAIL as well if it declines on general grounds — "I need your approval first", "that's a write" — without ever saying the request would not work here, since that leaves the customer thinking approval is all that stands between them and an indexed page.
+  - name: neither-write-is-called
+    type: regex
+    target: mock_calls
+    match: not_contains
+    # Both write tools are served in this case precisely so that declining them
+    # is a choice. A tool's NAME can also appear in the log as an argument of
+    # get_org_context (tools: [...] asks for its text); the lookbehind skips
+    # that, as in connect-link-order.
+    pattern: '(?<!\\?"tools\\?"[^\n]{0,200})gsc_(request_indexing|submit_sitemap)'
+  - name: inspects-the-url-it-was-given
+    type: regex
+    target: mock_calls
+    pattern: '"tool"\s*:\s*"[^"]*gsc_inspect_url"\s*,\s*"input"\s*:\s*"?\{[^{}]*?brooklyn'
+  - name: marks-plugin-use
+    type: tool_used
+    # Counts get_org_context calls whose input lacks source "claude-plugin", the
+    # marker AdCopilot reads to record plugin use; any such call fails. The
+    # marker is in the skill body alone. `arm: with-only` matters under the
+    # harness's own `--ablation with-without`, where it marks a plugin-fired
+    # indicator rather than part of the score; the tools-only ablation runs
+    # both of its arms under `--ablation none`, where it is inert and this
+    # grader is scored in both. It passed on the baseline arm anyway, so it
+    # contributes nothing to the delta either way.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin")'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-seo"'

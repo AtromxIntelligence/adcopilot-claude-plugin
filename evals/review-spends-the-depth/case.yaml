@@ -1,0 +1,86 @@
+schema_version: "1.1"
+name: review-spends-the-depth
+description: >
+  "How are my ads doing?" on a running account (the tenant in this case's mocks
+  is fictional; every value is invented). What is measured here is only what the
+  skill's body adds over the connector plus its own frontmatter: the server's
+  playbook for this situation already says to open with `full_audit` and to
+  report the biggest money first, and the lens's own description already says
+  its findings come back by severity rather than impact — so neither of those is
+  this case's question. The body's additions are that `full_audit` defaults to a
+  quick run scoring three of seventy-three checks month-to-date and must be
+  asked for `deep` over the window being reported; that the number of checks
+  actually scored is said out loud rather than letting the unscored ones pass as
+  passes; that a raw `search` returns millionths and must never be printed as
+  money; and that the recommendation carries the cost of acting AND the cost of
+  doing nothing. `full_audit` is pinned here at its live description (revision
+  `6145d0b5`, read 2026-10-06) because the suite-wide snapshot's copy is older
+  and says the opposite about ordering.
+tags: [review]
+runs: 3
+execution:
+  prompt: "How are my ads doing?"
+  max_turns: 14
+  timeout_seconds: 360
+  allowed_tools: [Skill]
+graders:
+  - name: asks-for-the-deep-audit
+    type: regex
+    target: mock_calls
+    # The call log writes each call as "tool": "<name>", "input": "{...}", the
+    # input either as an object or as an escaped JSON string; [^{}] keeps the
+    # match inside the one call's own input, as in daily-scheduled-run.
+    pattern: '"tool"\s*:\s*"[^"]*full_audit"\s*,\s*"input"\s*:\s*"?\{[^{}]*?\\?"depth\\?"\s*:\s*\\?"deep'
+  - name: audits-over-the-window-it-reports
+    type: regex
+    target: mock_calls
+    # `days` passed rather than left to the tool's 30-day default.
+    pattern: '"tool"\s*:\s*"[^"]*full_audit"\s*,\s*"input"\s*:\s*"?\{[^{}]*?\\?"days\\?"\s*:\s*\d'
+  - name: says-what-it-could-not-score-and-costs-both-ways
+    type: llm
+    focus: trace
+    weight: 2
+    criteria: |
+      Judge the whole run: the tool calls and the final reply. The audit answered as a deep run and reported `coverage`: 73 checks in the registry, 61 scored, 12 not scored for want of data in the window.
+
+      PASS only if both hold:
+      1. Coverage is stated. The reply says, in substance, that the audit scored 61 of 73 checks (or that 12 could not be scored because the window held no data for them). Any wording is fine. FAIL if the reply presents the audit as complete, says "all 73 checks passed", or gives a health score with no mention that part of the registry went unscored. A reply that names the number only as "most checks" without the figure is a FAIL; "61 of 73" or "12 it could not score" is a PASS.
+      2. The recommendation carries both prices. Whatever single change is recommended, the reply says what acting costs or involves AND what leaving it alone costs — the money that keeps going out, in dollars, if nothing is done. A recommendation with only one side of that (just the fix, or just the waste figure with no mention of what the fix costs or takes) is a FAIL. The change must be put as a proposal to accept or decline, not applied: no write tool is called in this run.
+
+      Ignore ordering and wording of the findings themselves; another grader covers those.
+  - name: never-prints-micros-as-money
+    type: regex
+    target: last_message
+    match: not_contains
+    # The amounts in the mocks as the connector returns them. Each has a
+    # *_display twin in the same payload, so printing one of these as money is
+    # a choice the skill rules out; 1284000000 and 2149000000 are the two a
+    # careless reply reaches for first.
+    pattern: '(4318000000|1284000000|2149000000|1442000000|96000000|62000000|611000000)'
+  - name: biggest-money-first
+    type: llm
+    focus: last_message
+    weight: 1
+    criteria: |
+      The account has three faults. By money over thirty days they are: searches that brought nothing, $1,284; one ad group holding 31 keywords, $96; search partners and Display on for a Search campaign, $62. By severity the order is the reverse at the top — the partner/Display setting is the critical one and the cheapest.
+
+      PASS if the reply leads on the $1,284 of searches that brought nothing as the biggest item, with its figure. Naming the partner/Display setting as serious too is correct and does not fail this. FAIL if the reply presents the critical-but-$62 setting as the account's biggest problem, or gives the three findings in severity order as though that were the money order, or gives no figures.
+  - name: marks-plugin-use
+    type: tool_used
+    # Counts get_org_context calls whose input lacks source "claude-plugin", the
+    # marker AdCopilot reads to record plugin use; any such call fails. The
+    # marker is in the skill body alone. `arm: with-only` matters under the
+    # harness's own `--ablation with-without`, where it marks a plugin-fired
+    # indicator rather than part of the score; the tools-only ablation runs
+    # both of its arms under `--ablation none`, where it is inert and this
+    # grader is scored in both. It passed on the baseline arm anyway, so it
+    # contributes nothing to the delta either way.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin")'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-review"'
