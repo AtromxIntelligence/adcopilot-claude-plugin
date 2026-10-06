@@ -79,8 +79,9 @@ a number.
 Then the proposals, ordered by money saved, each with what it costs to act and
 what it costs to do nothing. Mark any proposal that cannot be undone through
 AdCopilot. A negative keyword is NOT one — each of the three ways to add one has
-a removal behind it, under the same yes. The genuine one-way action is attaching
-a shared negative-keyword list: `attach_negative_keyword_list` says in its own
+a removal behind it, under the same yes. A removal is one-way: never propose
+`remove_campaign`, `remove_ad` or `remove_keyword`; propose a pause instead. The
+other one-way action is attaching a shared negative-keyword list: `attach_negative_keyword_list` says in its own
 description that there is no matching detach tool on purpose, and a list is
 detached in Google Ads under Tools, Shared library, Exclusion lists. If nothing
 in the report is one-way, say so.

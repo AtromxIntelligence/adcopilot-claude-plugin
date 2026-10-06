@@ -55,14 +55,20 @@ Do not quote prices from memory. Plans and prices live at
 
 Worth stating plainly, because it is the question behind most hesitation:
 
-- **Nothing is deleted except a negative keyword, and the server enforces it.**
-  The campaign, ad group, ad and keyword tools accept only ENABLED or PAUSED and
-  refuse a REMOVED status outright; the asset tools refuse a remove. Pausing is
-  as far as it goes. This is the strongest guarantee the product has, because it
-  does not depend on the assistant behaving — say it first. (A negative keyword
-  is the exception, and it is deliberate: each of the three ways to add one has
-  a removal behind it, so a negative can be taken back out. Setting a campaign's
-  languages also replaces the list it had.)
+- **Nothing is deleted in one step, and the server enforces it.** From
+  AdCopilot v2.35.0 a campaign, an ad or a keyword can be deleted only through
+  `remove_campaign`, `remove_ad` or `remove_keyword`, and only in two calls: the
+  first deletes nothing and shows exactly what would go, with a one-time
+  confirmation that expires after 10 minutes; only a second call carrying it
+  deletes, and you are told to ask the customer between the two. Every other
+  campaign, ad group, ad and keyword tool accepts only ENABLED or PAUSED and
+  refuses a REMOVED status outright; an ad group goes only with its campaign,
+  and the asset tools refuse a remove. Pausing is still the first thing to
+  offer. Say this plainly, and never promise that a deletion waits for the
+  customer's yes: the server sees the two calls, not the yes. (A negative
+  keyword and a location can also be taken back out: each way to add one has a
+  removal behind it. Setting a campaign's languages also replaces the list it
+  had.)
 - **The approval lives in your AI client, not in AdCopilot.** Reads run freely.
   AdCopilot proposes a change and the client asks before it runs — while the
   write tools stay on **Needs approval** in claude.ai, Cowork and the desktop

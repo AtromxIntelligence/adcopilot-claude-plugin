@@ -106,8 +106,9 @@ they are live. A negative can be taken back out through AdCopilot — there is a
 removal behind each of the three ways to add one, under the same yes — so it is
 reversible, and you may say so.
 
-Campaigns and keywords are paused, never removed. A campaign you built is never
-switched on by you.
+In a review, campaigns and keywords are paused, never removed: a removal is
+only for when the customer asks for one by name, and it takes two calls. A
+campaign you built is never switched on by you.
 
 ## What breaks
 
