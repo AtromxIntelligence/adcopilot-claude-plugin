@@ -1,0 +1,116 @@
+{
+ "tools": [
+  {
+   "name": "gsc_list_sites",
+   "description": "List the Search Console properties this Google account can reach.\n\nTools revision: 7016a0aa.",
+   "inputSchema": {
+    "properties": {},
+    "title": "gsc_list_sitesArguments",
+    "type": "object"
+   }
+  },
+  {
+   "name": "gsc_list_sitemaps",
+   "description": "List submitted sitemaps for a site.\n\nTools revision: 7016a0aa.",
+   "inputSchema": {
+    "properties": {
+     "siteUrl": {
+      "title": "Siteurl",
+      "type": "string"
+     }
+    },
+    "title": "gsc_list_sitemapsArguments",
+    "type": "object",
+    "required": [
+     "siteUrl"
+    ]
+   }
+  },
+  {
+   "name": "gsc_search_analytics",
+   "description": "Query Search Console performance (clicks, impressions, CTR, position) for a verified site.\n\nTools revision: 7016a0aa.",
+   "inputSchema": {
+    "properties": {
+     "dimensions": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Dimensions"
+     },
+     "end_date": {
+      "title": "End Date",
+      "type": "string"
+     },
+     "row_limit": {
+      "default": 1000,
+      "title": "Row Limit",
+      "type": "integer"
+     },
+     "siteUrl": {
+      "title": "Siteurl",
+      "type": "string"
+     },
+     "start_date": {
+      "title": "Start Date",
+      "type": "string"
+     }
+    },
+    "title": "gsc_search_analyticsArguments",
+    "type": "object",
+    "required": [
+     "siteUrl",
+     "start_date",
+     "end_date"
+    ]
+   }
+  },
+  {
+   "name": "gsc_inspect_url",
+   "description": "URL Inspection: index status / coverage for a URL under a verified site.\n\nTools revision: 7016a0aa.",
+   "inputSchema": {
+    "properties": {
+     "inspectionUrl": {
+      "title": "Inspectionurl",
+      "type": "string"
+     },
+     "siteUrl": {
+      "title": "Siteurl",
+      "type": "string"
+     }
+    },
+    "title": "gsc_inspect_urlArguments",
+    "type": "object",
+    "required": [
+     "inspectionUrl",
+     "siteUrl"
+    ]
+   }
+  },
+  {
+   "name": "gsc_request_indexing",
+   "description": "Ask Google to (re)crawl a URL via the Indexing API. Additive \u2014 never deletes.\n\nTools revision: 7016a0aa.",
+   "inputSchema": {
+    "properties": {
+     "url": {
+      "title": "Url",
+      "type": "string"
+     }
+    },
+    "title": "gsc_request_indexingArguments",
+    "type": "object",
+    "required": [
+     "url"
+    ]
+   }
+  }
+ ]
+}

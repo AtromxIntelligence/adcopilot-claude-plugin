@@ -5,7 +5,8 @@ Usage: delta.py WITH.json TOOLS_ONLY.json [--markdown] [--fail-below X]
 
 Both files are `claude plugin eval --json` results for the same cases. A case
 belongs to the skill its `tool_used: Skill` grader names (the skill that fired),
-and is OWNED by the skill whose tag it carries (connect, measure, launch, daily); the
+and is OWNED by the skill whose tag it carries (connect, measure, launch, daily, review,
+docs, seo); the
 setup-* cases are the setup command's and fire adcopilot-connect, so they count
 towards "fired" but not "owned". The deletion rule in the spec reads on owned.
 
@@ -31,7 +32,8 @@ import re
 import sys
 
 TAG_TO_SKILL = {"connect": "adcopilot-connect", "measure": "adcopilot-measure", "launch": "adcopilot-launch",
-                "daily": "adcopilot-daily"}
+                "daily": "adcopilot-daily", "review": "adcopilot-review", "docs": "adcopilot-docs",
+                "seo": "adcopilot-seo"}
 
 
 UNREADABLE = []

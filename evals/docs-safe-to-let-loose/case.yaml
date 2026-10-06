@@ -1,0 +1,80 @@
+schema_version: "1.1"
+name: docs-safe-to-let-loose
+description: >
+  The three questions asked before anyone connects an ad account: can it delete
+  things, will it always ask first, and what does it cost. This case reads the
+  suite-wide fictional tenant (`evals/mocks/adcopilot/get_org_context.md`;
+  every value is invented), whose answer carries the plan, the caps and a
+  billing URL — and whose playbook says "propose every change and apply it only
+  after a yes", which is where a baseline gets the UNCONDITIONAL version of the
+  approval answer from. Everything graded here is in the skill's body: that the
+  no-delete guarantee is enforced by the server rather than by the assistant
+  behaving, and has exactly one deliberate exception; that the approval lives
+  in the AI client and disappears when its tools are allowlisted or the session
+  auto-approves, so it must never be stated unconditionally; and that a price
+  is never quoted from memory but pointed to.
+tags: [docs]
+runs: 3
+execution:
+  prompt: "Before I let this loose on my ad account — can it delete anything, will it always ask me before it changes something, and what does the paid plan cost?"
+  max_turns: 10
+  timeout_seconds: 300
+  allowed_tools: [Skill]
+graders:
+  - name: the-delete-answer-names-its-one-exception
+    type: llm
+    focus: last_message
+    weight: 2
+    criteria: |
+      The customer asked whether AdCopilot can delete anything. The true answer: nothing is deleted except a negative keyword, and the server enforces it — the campaign, ad group, ad and keyword tools accept only ENABLED or PAUSED and refuse a REMOVED status outright, so pausing is as far as it goes. The negative keyword is the deliberate exception, and it is reversible: each way of adding one has a removal behind it.
+
+      PASS only if both hold:
+      1. The reply says nothing can be deleted — campaigns, ad groups, ads and keywords are paused rather than removed. Crediting that to the server, the tools, or the connector refusing it, rather than to the assistant's own good behaviour, is better and is what the body asks for, but its absence alone does not fail this.
+      2. The claim is not made absolute. The reply must name the exception: that negative keywords are the one thing that can be removed (and that this is deliberate and reversible). A flat "nothing is ever deleted", with no exception named anywhere in the reply, is a FAIL — it is the false version of this answer.
+
+      Mentioning that setting a campaign's languages replaces the list it had is a correct extra and neither required nor penalised.
+  - name: the-approval-answer-names-its-condition
+    type: llm
+    focus: last_message
+    weight: 2
+    criteria: |
+      The customer asked whether it will always ask before changing something. The true answer is conditional: reads run freely, AdCopilot proposes a change and the AI CLIENT asks — while the write tools are still gated. Allowlist those tools, or run in an auto-approving mode (Claude Code's `auto` or `bypassPermissions`) or an unattended scheduled run, and changes to things that already exist apply without being asked. Only a newly built campaign is created paused regardless.
+
+      PASS only if both hold:
+      1. The reply says the approval prompt comes from the AI client / the tool-permission layer, not from AdCopilot's own code — in substance; exact words are free.
+      2. The reply states the condition under which it would NOT ask: approving the tools once, allowlisting them, an auto-accept or bypass-permissions mode, or an unattended/scheduled run. A reply that says "it always asks first", "every change needs your approval" or "nothing happens without your permission" with no such condition anywhere is a FAIL, however well it is written.
+
+      Saying that a campaign AdCopilot builds is created paused and that switching it on is the customer's own click in Google Ads is a correct extra, not required.
+  - name: never-quotes-a-price
+    type: regex
+    target: last_message
+    match: not_contains
+    # The server's answer carries the plan name and the caps, and no price at
+    # all: any amount of money in this reply was invented or remembered. "$0"
+    # is deliberately not matched — the account really has spent nothing.
+    pattern: '([$€£₹]\s?[1-9]|\b\d+\s*(?:dollars|USD|usd)\b|\b(?:USD|usd)\s*[1-9])'
+  - name: points-at-where-the-price-lives
+    type: regex
+    target: last_message
+    # Either destination is right: the published pricing page, or this
+    # workspace's own billing URL as the server reported it.
+    pattern: '(adcopilot\.cloud/pricing|app\.example\.invalid/plan)'
+  - name: reads-the-server-rather-than-reciting
+    type: regex
+    target: mock_calls
+    pattern: '"tool"\s*:\s*"[^"]*get_org_context"'
+  - name: marks-plugin-use
+    type: tool_used
+    # Counts get_org_context calls whose input lacks source "claude-plugin", the
+    # marker AdCopilot reads to record plugin use; any such call fails. The
+    # marker is in the skill body alone, so it is scored on the with-skills arm
+    # only and never counts towards the delta.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin")'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-docs"'

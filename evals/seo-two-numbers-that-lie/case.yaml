@@ -1,0 +1,88 @@
+schema_version: "1.1"
+name: seo-two-numbers-that-lie
+description: >
+  "Are my pages indexed, and where do we rank for our own name?" (the tenant in
+  this case's mocks is fictional; every value is invented). The four Search
+  Console tool descriptions say what each call returns and nothing about how to
+  read it, so everything graded here is in the skill's body: that the sitemap's
+  `"indexed": "0"` is a field Google stopped filling and is never evidence; that
+  a site-wide count has to come from the customer's own Indexing > Pages export
+  because no tool here returns one; that `gsc_request_indexing` calls an API
+  Google documents as crawling only JobPosting and BroadcastEvent pages, so it
+  is never the fix for an unindexed page; that an average position is averaged
+  across every country and device and is not a rank; and that `cross_reads`
+  saying "make no cross-product read" budgets reads in service of an ADS
+  answer and does not close Search Console when the question IS organic search.
+  The server's own answer in these mocks tells the model to make no
+  cross-product read, which is what the live server says for this situation.
+tags: [seo]
+runs: 3
+execution:
+  prompt: "Are my pages indexed? And where do we rank for 'example bakery'?"
+  max_turns: 16
+  timeout_seconds: 360
+  allowed_tools: [Skill]
+graders:
+  - name: reads-search-console-despite-the-ads-ceiling
+    type: regex
+    target: mock_calls
+    # cross_reads in this case's get_org_context says "make no cross-product
+    # read" and offers a search_console allowance of zero. That budget is for
+    # reads in service of an ads answer; the question here is organic search.
+    pattern: '"tool"\s*:\s*"[^"]*gsc_search_analytics"'
+  - name: asks-for-a-row-limit
+    type: regex
+    target: mock_calls
+    # The tool's default is 1,000 and it cannot paginate, so a bigger site comes
+    # back silently cut. The skill says pass it explicitly; the tool's own
+    # description does not.
+    pattern: '"tool"\s*:\s*"[^"]*gsc_search_analytics"\s*,\s*"input"\s*:\s*"?\{[^{}]*?\\?"row_limit\\?"\s*:\s*\d'
+  - name: never-requests-indexing
+    type: regex
+    target: mock_calls
+    match: not_contains
+    # gsc_request_indexing is served in this case precisely so that refusing it
+    # is a choice. A tool's NAME can also appear in the log as an argument of
+    # get_org_context (tools: [...] asks for its text); the lookbehind skips
+    # that, as in connect-link-order.
+    pattern: '(?<!\\?"tools\\?"[^\n]{0,200})gsc_request_indexing'
+  - name: indexed-count-comes-from-the-right-source
+    type: llm
+    focus: trace
+    weight: 2
+    criteria: |
+      Judge the whole run: the tool calls and the final reply. The sitemap read returned 227 URLs submitted and `"indexed": "0"`. Every URL inspection returned "Submitted and indexed". There is no site-wide coverage tool in this tool set.
+
+      PASS only if all three hold:
+      1. The sitemap's zero is not treated as evidence. The reply must NOT say or imply that none of the pages are indexed, that 0 of 227 are indexed, or that there is an indexing problem on the strength of that field. Saying the field is empty for every site and means nothing is correct and is a PASS; silently ignoring it is also a PASS.
+      2. The inspections are not generalised to the whole site. Where the reply says pages are indexed, it must be clear that this covers the pages that were actually inspected — a count, a list, or words like "the pages I checked" — rather than asserting the site or all 227 pages are indexed.
+      3. A site-wide count is asked for from the right place: the reply asks the customer to open Search Console's Indexing > Pages report and use Export (or otherwise says the site-wide count can only come from that export), rather than claiming a count it cannot read.
+
+      FAIL as well if the reply offers to request indexing, or presents requesting indexing as a way to get pages indexed, for an ordinary page. The reply may say that the request tool exists and explain that Google acts on it only for job-posting or live-event pages.
+  - name: the-average-position-is-not-a-rank
+    type: llm
+    focus: last_message
+    weight: 2
+    criteria: |
+      The question asked where the site ranks for "example bakery". The data read: by query alone that term shows average position 3.4 over 28 days. Split by country it is 1.8 in Germany on 812 impressions and 28.6 in the United States on 41 impressions — and the business is a Brooklyn, New York bakery, so the United States is the market that matters.
+
+      PASS only if both hold:
+      1. The reply does not present 3.4 (or "third", "top three", "page one") as where the site ranks, full stop. Either it gives the US figure of about 28.6 as the answer for their market, or it says plainly that 3.4 is an average across every country and device and therefore not their rank. Both together is the best answer.
+      2. It says what the figure is: an average position over the window rather than a live rank. Wording is free — "average position", "on average over these 28 days", "not a live rank" all count.
+
+      Mentioning Germany, or that the German impressions are what lift the average, is correct and welcome but not required. FAIL if the reply answers "3.4" or "around 3" as the rank with no such qualification, or if it reports no position at all.
+  - name: marks-plugin-use
+    type: tool_used
+    # Counts get_org_context calls whose input lacks source "claude-plugin", the
+    # marker AdCopilot reads to record plugin use; any such call fails. The
+    # marker is in the skill body alone, so it is scored on the with-skills arm
+    # only and never counts towards the delta.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin")'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-seo"'
