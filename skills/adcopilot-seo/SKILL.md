@@ -181,7 +181,10 @@ the click anyway.
 
 ## What breaks
 
-Reporting average position as a rank. Calling a high-impression page a good page.
+Reporting average position as a rank. Turning the rows into a verdict — "Google
+shows you at the top", "your name wins" — when a row exists only for a search where
+the site was shown, so the data cannot say where people searched and did not see you.
+Calling a high-impression page a good page.
 Telling a customer their pages are indexed on the strength of one inspection, or
 not indexed on the strength of the sitemap's dead column. Offering to request
 indexing as though it worked. Promising a site has no penalty when you cannot

@@ -663,5 +663,62 @@ class Manifest(unittest.TestCase):
             ".claude-plugin/plugin.json before tagging" % (manifest, newest))
 
 
+class AuditorToolList(unittest.TestCase):
+    """The auditor subagent reaches the live connector with nobody watching
+    its individual calls, so the founder's rule is that it calls NO write
+    tool. Its own text says it changes nothing, but text is not a constraint —
+    the frontmatter `tools:` list is, and nothing held it to reads. This bans
+    write VERBS rather than listing the reads, so a new read tool added later
+    passes and any write fails, however the server names it."""
+
+    WRITE_VERBS = ("add", "create", "update", "set", "remove", "link",
+                   "attach", "pause", "save", "submit", "request", "delete",
+                   "enable", "apply", "upload")
+    # Product prefixes that sit in front of the verb.
+    PRODUCTS = ("ga4_", "gtm_", "gsc_")
+    # Non-connector tools the agent is allowed. Read only; no Bash, no Write.
+    HOST_TOOLS = {"Read"}
+    MCP = "mcp__plugin_adcopilot_adcopilot__"
+
+    def tools(self):
+        fm = frontmatter(read("agents/adcopilot-auditor.md"))
+        m = re.search(r"^tools:\s*\[(.*?)\]\s*$", fm, re.S | re.M)
+        self.assertIsNotNone(m, "the auditor has no `tools:` list to check")
+        return [t.strip().strip('"\'') for t in m.group(1).split(",") if t.strip()]
+
+    def test_every_connector_tool_is_a_read(self):
+        offenders = []
+        for tool in self.tools():
+            if not tool.startswith(self.MCP):
+                continue
+            name = tool[len(self.MCP):]
+            for prefix in self.PRODUCTS:
+                if name.startswith(prefix):
+                    name = name[len(prefix):]
+                    break
+            if name.split("_", 1)[0] in self.WRITE_VERBS:
+                offenders.append(tool)
+        self.assertEqual(
+            [], offenders,
+            "the auditor runs unattended and must call no write tool; "
+            "these look like writes: %s" % offenders)
+
+    def test_no_wildcard_and_no_host_write_tools(self):
+        for tool in self.tools():
+            if tool.startswith(self.MCP):
+                continue
+            self.assertNotIn("*", tool, "a wildcard would admit every write tool")
+            self.assertIn(
+                tool, self.HOST_TOOLS,
+                "%s is not an allowed host tool for the auditor (Write, Edit "
+                "and Bash would each give it a way around the read-only "
+                "tool list)" % tool)
+
+    def test_it_can_attribute_a_change(self):
+        # Cover item 7 asks who changed a budget; without this read the
+        # answer is always "unknown". read-only on the server side.
+        self.assertIn(self.MCP + "change_history", self.tools())
+
+
 if __name__ == "__main__":
     unittest.main()

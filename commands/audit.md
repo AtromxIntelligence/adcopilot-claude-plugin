@@ -9,6 +9,13 @@ new account scores badly for reasons that are only its age — keywords with no
 impressions yet, a Quality Score of 0 because Google has not rated the keyword
 yet, a bidding strategy still learning.
 
+Read the account, never the profile's memory of it. A saved note is context for your
+wording, never a substitute for a read. The decisions `get_org_context` carries say
+what was approved on a date, not what is set now: a budget, a split or a setting you
+did not read this run is not yours to state, and a thirty-day share of impressions
+lost to budget describes the budgets of those thirty days, not today's — say the
+window, or read the latest day.
+
 Every `get_org_context` call here, the first one and the tools refresh alike,
 carries `source: "claude-plugin"`. A tool that is missing from your list,
 refuses a parameter it should take, or carries a revision different from the
