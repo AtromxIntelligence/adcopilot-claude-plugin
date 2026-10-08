@@ -38,6 +38,12 @@ What it pins, and why each one is here:
   (or for its absence) match the two sentences the block prescribes, so a
   reword cannot silently turn a grader blind.
 - The manifest is 0.2.4 and every command the README lists exists.
+- The plugin marker says its version (#696): every interactive
+  `get_org_context` call passes `source: "claude-plugin/<version>"` with
+  the manifest's own version, so a release bump that misses one copy
+  fails here; no bare `"claude-plugin"` is left; the version is the
+  X.Y.Z the server reads; and every eval grader that checks the marker
+  fails the bare value and passes the versioned one.
 """
 
 import json
@@ -107,6 +113,19 @@ BANNED = re.compile(r"\b(seamless(ly)?|effortless(ly)?|magic(al)?)\b", re.I)
 def read(rel):
     with open(os.path.join(ROOT, rel), encoding="utf-8") as fh:
         return fh.read()
+
+
+def manifest_version():
+    return json.loads(read(".claude-plugin/plugin.json"))["version"]
+
+
+def plugin_marker():
+    """The marker every interactive `get_org_context` call passes (#696):
+    the plugin and its version, which the server reads from the slash on."""
+    return 'source: "claude-plugin/%s"' % manifest_version()
+
+
+BARE_MARKER = 'source: "claude-plugin"'
 
 
 def section(text, heading):
@@ -269,7 +288,7 @@ class UnattendedRun(unittest.TestCase):
         run = section(self.skill(), "## The run")
         self.assertIsNotNone(run, "adcopilot-daily has no '## The run' section")
         self.assertIn('source: "claude-scheduled"', run)
-        self.assertNotIn('source: "claude-plugin"', run)
+        self.assertNotIn('source: "claude-plugin', run)
 
     def test_read_only_and_asks_nothing(self):
         run = section(self.skill(), "## The run") or ""
@@ -406,7 +425,7 @@ class Commands(unittest.TestCase):
         """
         for name in ("audit", "daily", "weekly", "negatives"):
             with self.subTest(command=name):
-                self.assertIn('source: "claude-plugin"', read("commands/%s.md" % name))
+                self.assertIn(plugin_marker(), read("commands/%s.md" % name))
 
         readers = ["skills/%s/SKILL.md" % d
                    for d in sorted(os.listdir(os.path.join(ROOT, "skills")))]
@@ -423,7 +442,7 @@ class Commands(unittest.TestCase):
             with self.subTest(surface=rel):
                 marker = ('source: "claude-scheduled"'
                           if "adcopilot-daily" in rel
-                          else 'source: "claude-plugin"')
+                          else plugin_marker())
                 self.assertIn(
                     marker, text,
                     "%s calls get_org_context without %s" % (rel, marker))
@@ -634,6 +653,121 @@ class Copy(unittest.TestCase):
         for rel in files:
             with self.subTest(file=rel):
                 self.assertIsNone(BANNED.search(read(rel)))
+
+
+class PluginVersionMarker(unittest.TestCase):
+    """#696: the plugin says which version it is on the marker itself.
+
+    The marker without a version can come from any plugin release, 0.1.0
+    included, so the server can only hand a turn to the skills every release
+    ships. With `source: "claude-plugin/<version>"` it can tell an install
+    that has `adcopilot-review` from one that does not, and route the counted
+    account's review to it. A skill cannot read the manifest at run time —
+    claude.ai has no shell and SKILL.md no templating — so the version is a
+    literal in every file, and these tests are what keep the copies equal to
+    `.claude-plugin/plugin.json`: a release bump that misses one fails here.
+    The server reads the version only as X.Y.Z, and treats anything else as
+    no version, which is safe but silent."""
+
+    MARKER_VALUE = re.compile(r'"claude-plugin/([^"\s]*)"')
+    # The README may write the marker with a placeholder, `<version>`; a
+    # literal there is a version and is held to the manifest like the rest.
+    README_MARKER_VALUE = re.compile(r'"claude-plugin/(\d[^"\s]*)"')
+
+    def model_read(self):
+        files = ["skills/%s/SKILL.md" % d
+                 for d in sorted(os.listdir(os.path.join(ROOT, "skills")))]
+        files += ["commands/%s" % f
+                  for f in sorted(os.listdir(os.path.join(ROOT, "commands")))]
+        agents_dir = os.path.join(ROOT, "agents")
+        if os.path.isdir(agents_dir):
+            files += ["agents/%s" % f for f in sorted(os.listdir(agents_dir))
+                      if f.endswith(".md")]
+        return files
+
+    def test_the_manifest_version_is_what_the_server_reads(self):
+        # situations.plugin_version reads ^\d+\.\d+\.\d+$ only; a "-rc1" or
+        # a "+build" would be read as no version.
+        self.assertRegex(manifest_version(), r"^\d+\.\d+\.\d+$")
+
+    def test_every_marker_names_the_manifest_version(self):
+        seen = 0
+        for rel in self.model_read() + ["README.md"]:
+            values = (self.README_MARKER_VALUE if rel == "README.md"
+                      else self.MARKER_VALUE)
+            for m in values.finditer(read(rel)):
+                seen += 1
+                with self.subTest(file=rel, value=m.group(0)):
+                    self.assertEqual(
+                        m.group(1), manifest_version(),
+                        "%s marks plugin use as %s but the manifest is %s — move "
+                        "every copy with the bump" % (rel, m.group(0), manifest_version()))
+        self.assertGreaterEqual(seen, 14, "expected the 14 marker sites, saw %d" % seen)
+
+    def test_no_bare_marker_is_left(self):
+        for rel in self.model_read():
+            with self.subTest(file=rel):
+                self.assertNotIn(BARE_MARKER, read(rel),
+                                 "%s still passes the marker without the version" % rel)
+
+    def test_every_marked_file_says_to_keep_the_version(self):
+        # The server's own `source` description names the bare value and says
+        # any other value is ignored; a model left to itself may "correct"
+        # the suffix away. One sentence per file, the same in each.
+        keep = ("Send `source` exactly as written, the version included: it "
+                "tells AdCopilot which of this plugin's steps are installed here.")
+        for rel in self.model_read():
+            text = read(rel)
+            if plugin_marker() not in text:
+                continue
+            with self.subTest(file=rel):
+                self.assertEqual(" ".join(text.split()).count(keep), 1)
+
+    def test_the_marker_graders_need_the_version(self):
+        """Each case's marks-plugin-use grader counts the calls it fails on, so
+        its pattern must match a call without the versioned marker and must
+        not match one with it, wherever `source` sits in the input."""
+        def input_match(case):
+            text = read("evals/%s/case.yaml" % case)
+            start = text.find("  - name: marks-plugin-use\n")
+            if start < 0:
+                return None
+            end = text.find("\n  - name: ", start + 1)
+            block = text[start:end if end > 0 else len(text)]
+            m = re.search(r"^\s+input_match: '((?:[^']|'')*)'\s*$", block, re.M)
+            self.assertIsNotNone(m, "%s/marks-plugin-use has no input_match" % case)
+            return re.compile(m.group(1).replace("''", "'"))
+
+        v = manifest_version()
+        counted = ['{}', '{"source":"claude-plugin"}', '{"source": "claude-plugin"}',
+                   '{"source":"claude-plugin/"}', '{"source":"claude-plugin/latest"}',
+                   '{"source":"chatgpt"}', '{"tools":["full_audit"]}', 'not json']
+        passed = ['{"source":"claude-plugin/%s"}' % v,
+                  '{"source": "claude-plugin/%s"}' % v,
+                  '{"tools":["full_audit","budget_pacing"],"source":"claude-plugin/%s"}' % v]
+        graded = 0
+        for case in sorted(os.listdir(os.path.join(ROOT, "evals"))):
+            if not os.path.isfile(os.path.join(ROOT, "evals", case, "case.yaml")):
+                continue
+            pattern = input_match(case)
+            if pattern is None:
+                continue
+            graded += 1
+            for call in counted:
+                with self.subTest(case=case, call=call):
+                    self.assertRegex(call, pattern)
+            for call in passed:
+                with self.subTest(case=case, call=call):
+                    self.assertNotRegex(call, pattern)
+        self.assertGreaterEqual(graded, 19)
+
+    def test_the_ablation_stub_carries_the_marker(self):
+        # Otherwise the tools-only arm fails the marker on every case and each
+        # skill's delta is the marker's weight, not what its body teaches.
+        script = read("evals/ablation/tools-only.sh")
+        self.assertIn('source: \\"claude-plugin/$VERSION\\"', script)
+        self.assertIn(".claude-plugin/plugin.json", script)
+        self.assertIn("*/adcopilot-daily/SKILL.md) ;;", script)
 
 
 class Manifest(unittest.TestCase):

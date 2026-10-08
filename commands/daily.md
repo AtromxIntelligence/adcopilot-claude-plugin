@@ -8,9 +8,10 @@ person asks for. If this conversation was started by a schedule — a Claude
 scheduled task or a Claude Code routine, with nobody there to answer — follow
 the `adcopilot-daily` skill's run instead, and none of what follows.
 
-`get_org_context` first, with `source: "claude-plugin"`. Then four reads, in
-this order, stopping at the read cap it sets and saying which you did not reach
-and why:
+`get_org_context` first, with `source: "claude-plugin/0.2.6"`. Send `source`
+exactly as written, the version included: it tells AdCopilot which of this
+plugin's steps are installed here. Then four reads, in this order, stopping at
+the read cap it sets and saying which you did not reach and why:
 
 1. **Pacing** — `budget_pacing`: whether this month's spend is on track against
    each daily budget, and any campaign limited by budget.

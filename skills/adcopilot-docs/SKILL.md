@@ -10,8 +10,10 @@ never from memory. The product changes; this file does not move with it, so
 every number in your answer comes from a live read or from the documentation
 site, and nothing comes from recall.
 
-Call `get_org_context` (with `source: "claude-plugin"`) first. Its answer carries the facts most of these
-questions want:
+Call `get_org_context` (with `source: "claude-plugin/0.2.6"`) first. Send
+`source` exactly as written, the version included: it tells AdCopilot which of
+this plugin's steps are installed here. Its answer carries the facts most of
+these questions want:
 
 - `org.plan`, `org.ops_today_used`, `org.ops_today_cap`, `org.accounts_cap`,
   `org.trial_days_left`, `org.upgrade_url`
