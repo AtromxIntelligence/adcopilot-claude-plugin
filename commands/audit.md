@@ -27,7 +27,13 @@ even when the schema you hold shows no `tools` parameter. If the tool is still
 missing: `/mcp`, choose `adcopilot`, then Reconnect refetches the tool list (at
 the time of writing); reinstalling the plugin is the last resort.
 
-End with the one finding to fix first, and why.
+End with the one finding to fix first, and why, as a proposal: the exact
+change, what acting costs and what leaving it costs, in the account's currency,
+for a yes or a no. Change nothing until they say yes, here. On a yes: apply it,
+read back only what its own result does not show, say how to undo it, record
+it with `save_org_context` as a decision, and propose the next finding's fix
+the same way. For two to three weeks after anything went live, propose no
+bidding change.
 
 ## The daily habit
 

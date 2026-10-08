@@ -198,3 +198,15 @@ customer the wrong way.
 Offer, in this order: the one-line page edit you found; the links that would get
 the uncrawled pages crawled; and the Pages export, so the next review can say
 what is actually indexed.
+
+Once they say the edit is live, offer to inspect that page again in a few days:
+`lastCrawlTime` says whether Google has fetched the new version, and the
+coverage verdict whether it changed anything. That second look is how they
+learn whether the edit worked.
+
+If Google Ads is connected and this reply has not already compared paid and
+organic, offer it as a question: which of the searches they pay for already
+bring them organic clicks, how many, and what those paid clicks cost — the
+comparison in "When they also run ads". Propose a change from it only where
+the Ads numbers for those searches show no results, with the money both ways,
+applied only on their yes.

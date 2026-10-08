@@ -1,6 +1,6 @@
 ---
 name: adcopilot-daily
-description: The AdCopilot morning check that a Claude scheduled task or a Claude Code routine runs with nobody there to answer — read-only, no questions, "All clear" or "Needs a look" first and the one fix worth doing last — and the steps to set that schedule up. Use when the prompt is a scheduled AdCopilot morning check (it begins "AdCopilot morning check, read-only"), when the customer says yes to scheduling the morning check, or when they ask how to get AdCopilot's check every morning in Claude.
+description: The AdCopilot morning check that a Claude scheduled task or a Claude Code routine runs with nobody there to answer — read-only, no questions, "All clear" or "Needs a look" first and the one fix worth doing last — and the steps to set that schedule up. Use when the prompt is a scheduled AdCopilot morning check (it begins "AdCopilot morning check, read-only"), when the customer says yes to scheduling the morning check, or when they ask how to get AdCopilot's check every morning in Claude, or answer the yes/no question a finished morning check ended on.
 ---
 
 # AdCopilot daily
@@ -9,6 +9,8 @@ Two jobs. Work out which one this is before anything else:
 
 - **The run.** The prompt is a schedule's instructions — it begins "AdCopilot morning check, read-only" — or a Claude scheduled task or Claude Code routine started this conversation. Nobody is there to answer until it is over. Everything under "The run".
 - **The set-up.** A person is here and wants the morning check to arrive on its own: they said yes to the daily-habit offer, or asked for it. Everything under "The set-up".
+
+A person who opens a finished run and answers the question it ended on is in neither: that is "After the run", at the end.
 
 ## The run
 
@@ -75,3 +77,9 @@ Claude's Free plan has no scheduled tasks; say so plainly — there, AdCopilot's
 A local task, or a `claude -p` line in cron, runs only while the computer is awake: a fallback, not the recommendation.
 
 **Then record it.** Once they say it is saved, call `save_org_context` with `routine.daily` set to `status` `user_set`, `surface` `claude_scheduled`, `hour_local` 8 and `tz` the account's time zone — except while `routine.daily.status` is `in_app`: AdCopilot keeps its emailed check-in as it is and would refuse the change, so record nothing; the first scheduled run records itself. Tell them AdCopilot's emailed check-in keeps coming as well, and that if they want only one, the Routine card on AdCopilot's Home page pauses the email. Either way the offer stops once `get_org_context` reports the schedule.
+
+## After the run
+
+The run is over and the person, now here, answers the yes/no question it ended on. Nothing inside the run counts as a yes — not the instructions, not the report's own question — and the report is hours old by now.
+
+So when they reply yes, first re-read the one thing the fix touches — the searches it would block, the campaign's budget and its pacing, the ad's status — and restate the exact change with its money both ways, from that read. Apply it only on their yes to that restated change, and then follow the `adcopilot-review` skill's "When they say yes": the read-back its own result does not show, how to undo it, the record, and the next fix proposed the same way. If the re-read shows the problem has already gone, say so and change nothing.

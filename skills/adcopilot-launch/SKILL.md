@@ -82,6 +82,8 @@ If any of the three reads wrong — a campaign built elsewhere, or changed in Go
 
 **The money sentence**, before they click, in the account's currency and from the budget read back: what it can spend in a day; that Google may spend up to about twice that on a busy day and evens it out, so a month stays within about thirty times the daily amount (at the time of writing); and how to stop it — pausing, which the connector does the moment they say so, or the same status dot set to Paused — and that pausing keeps everything.
 
+**The way back.** Close the hand-off with the return path, as a statement and not a second question: "Once you switch it on, tell me here and I'll read its first day's delivery." That read is the first week's delivery read below, which a switched-on campaign needs anyway: a campaign that is on and serving nothing is the finding nobody notices for a week.
+
 What breaks: switch on before this step and the first day's budget goes to whatever was wrong — a banner placement, a search from the wrong continent, a rewritten keyword — and reads back as spend. What it unlocked: a campaign they can switch on knowing what it will do and what it can cost. What is next: the first week, because a campaign that is on still has to be read.
 
 ### 8. The first week

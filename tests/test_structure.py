@@ -770,6 +770,68 @@ class PluginVersionMarker(unittest.TestCase):
         self.assertIn("*/adcopilot-daily/SKILL.md) ;;", script)
 
 
+class WhatTheServerDefersTo(unittest.TestCase):
+    """From plugin 0.2.7 the server stops sending its own steps for a running,
+    counted account and names `adcopilot-review` instead (#696), and drops
+    its schedule offer for the skill's. That is only safe while the skill
+    carries what the server's branch said: every yes closes a loop (read back
+    what the result does not show, the undo, the record, the next fix), no
+    bidding change in the weeks after something went live, and the habit
+    offer. These pin those, and the two other places a yes now lands: the
+    reply to a finished scheduled run, and /adcopilot:audit's first fix."""
+
+    def review(self):
+        return read("skills/adcopilot-review/SKILL.md")
+
+    def test_review_closes_the_loop_on_a_yes(self):
+        yes = section(self.review(), "## When they say yes")
+        self.assertIsNotNone(yes)
+        for part in ("read back only what its own result does not show",
+                     "how to\nundo it", "`save_org_context` as a decision",
+                     "propose the next finding's fix the same way",
+                     "nothing carries over", "proposed and not applied"):
+            with self.subTest(part=part):
+                self.assertIn(" ".join(part.split()), " ".join(yes.split()))
+
+    def test_review_carries_the_bidding_rule_the_server_drops(self):
+        text = " ".join(self.review().split())
+        self.assertIn("For two to three weeks after anything went live", text)
+        self.assertIn("recommend no bidding change", text)
+        self.assertIn("Maximize Clicks with a per-click cap", text)
+
+    def test_review_carries_the_habit_offer(self):
+        nxt = section(self.review(), "## What is next") or ""
+        self.assertIn("`routine.scheduled_last_seen_at`", nxt)
+        self.assertIn("`adcopilot-daily`", nxt)
+
+    def test_review_spends_a_sized_day_on_the_fix(self):
+        self.assertIn("`reads_left_today`", self.review())
+
+    def test_a_yes_to_a_finished_run_is_re_read_first(self):
+        after = section(read("skills/adcopilot-daily/SKILL.md"), "## After the run")
+        self.assertIsNotNone(after)
+        flat = " ".join(after.split())
+        self.assertIn("Nothing inside the run counts as a yes", flat)
+        self.assertIn("first re-read the one thing the fix touches", flat)
+        self.assertIn("`adcopilot-review` skill's \"When they say yes\"", flat)
+        # and the run itself still asks nothing and changes nothing
+        run = section(read("skills/adcopilot-daily/SKILL.md"), "## The run") or ""
+        self.assertNotIn("After the run", run.split("\n", 1)[1])
+
+    def test_audit_proposes_the_first_fix_and_waits(self):
+        text = " ".join(read("commands/audit.md").split())
+        self.assertIn("as a proposal", text)
+        self.assertIn("Change nothing until they say yes", text)
+        self.assertIn("propose the next finding's fix the same way", text)
+
+    def test_docs_offers_no_read_after_a_question_about_the_limits(self):
+        nxt = " ".join((section(read("skills/adcopilot-docs/SKILL.md"),
+                                "## What is next") or "").split())
+        self.assertIn("Skip it after a question about look-ups", nxt)
+        self.assertIn("privacy or safety", nxt)
+        self.assertIn("uses one of them", nxt)
+
+
 class Manifest(unittest.TestCase):
 
     def test_version(self):
