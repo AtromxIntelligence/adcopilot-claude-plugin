@@ -36,7 +36,7 @@ What breaks: pick a Google account that is not on the ad account and the connect
 
 ### 2. Read the situation
 
-Call `get_org_context` with `source: "claude-plugin/0.2.7"`. Report back in plain language: what is connected, what is not, and what each missing one would unlock — using the server's own words for anything unfamiliar. Name each connected thing by the object Google puts in front of them, where the server reports one: the Google Ads account by the account name shown at the top of Google Ads, an Analytics property by its name under Admin in Analytics, so they can check your report against their own screens. If the server names a situation or a next step, lead with it. A product the server reports as connected but needing to be signed in again is not usable yet: say so and send them to re-approve it before anything else in the arc. Do not add products from memory and do not drop any the server reports.
+Call `get_org_context` with `source: "claude-plugin/0.2.7"`. Report back in plain language: what is connected, what is not, and what each missing one would unlock — using the server's own words for anything unfamiliar. Write it as sentences, one product to a line and never a table, and treat every product in the same state alike: if the steps you suggest, or the question you close on, name one product that is not connected yet, name each of them there. Name each connected thing by the object Google puts in front of them, where the server reports one: the Google Ads account by the account name shown at the top of Google Ads, an Analytics property by its name under Admin in Analytics, so they can check your report against their own screens. If the server names a situation or a next step, lead with it. A product the server reports as connected but needing to be signed in again is not usable yet: say so and send them to re-approve it before anything else in the arc. Do not add products from memory and do not drop any the server reports.
 
 This is an example of the shape only; the products are whatever the server names:
 
@@ -70,7 +70,7 @@ What breaks: an inventory written from what you intended rather than what you re
 
 ## A product you do not recognise
 
-If `get_org_context` reports a product this skill does not mention, that is expected — it means AdCopilot connected something after this plugin was written. Describe it from the server's own description, offer it in the same shape as the rest, and do not apologise for it or call it new.
+If `get_org_context` reports a product this skill does not mention, that is expected — it means AdCopilot connected something after this plugin was written. Describe it from the server's own description, offer it in the same shape as the rest — wherever the reply names another product in its state, it is named there too — and do not apologise for it or call it new.
 
 ## Prices
 
