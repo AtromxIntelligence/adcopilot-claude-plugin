@@ -61,7 +61,7 @@ graders:
   - name: marks-plugin-use
     type: tool_used
     tool: mcp__plugin_adcopilot_adcopilot__get_org_context
-    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin")'
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin/\d+\.\d+\.\d+")'
     min: 0
     max: 0
     arm: with-only

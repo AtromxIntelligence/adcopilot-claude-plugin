@@ -47,11 +47,23 @@ command -v python3 >/dev/null || { echo "python3 is not on PATH" >&2; exit 1; }
 command -v rsync >/dev/null || { echo "rsync is not on PATH" >&2; exit 1; }
 
 # 1. The tools-only copy: everything the plugin ships except the skill bodies.
+#    The plugin marker's version ("claude-plugin/<version>", #696) is written in
+#    the skill bodies alone, and every marks-plugin-use grader needs it, so the
+#    stub keeps that one sentence: without it the baseline arm would fail the
+#    marker on every case and each skill's delta would be the marker's weight,
+#    not what its body teaches. adcopilot-daily's stub stays bare: its run is
+#    marked claude-scheduled, which the server's own instructions already give.
 rsync -a --exclude .git --exclude 'evals/results' "$ROOT/" "$COPY/"
+VERSION="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$ROOT/.claude-plugin/plugin.json")"
 for skill in "$COPY"/skills/*/SKILL.md; do
   fm="$(awk 'NR==1 && $0=="---"{print; inside=1; next} inside{print; if($0=="---") exit}' "$skill")"
   if [ -z "$fm" ]; then echo "no frontmatter in $skill" >&2; exit 1; fi
-  { printf '%s\n\n' "$fm"; printf 'Help the customer with this through the AdCopilot connector.\n'; } > "$skill"
+  marker=""
+  case "$skill" in
+    */adcopilot-daily/SKILL.md) ;;
+    *) marker=" Call \`get_org_context\` with \`source: \"claude-plugin/$VERSION\"\`, exactly as written." ;;
+  esac
+  { printf '%s\n\n' "$fm"; printf 'Help the customer with this through the AdCopilot connector.%s\n' "$marker"; } > "$skill"
 done
 echo "tools-only copy at $COPY; stubbed skills:"
 for skill in "$COPY"/skills/*/SKILL.md; do echo "  $(basename "$(dirname "$skill")"): $(wc -l < "$skill") lines"; done

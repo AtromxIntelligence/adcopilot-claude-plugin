@@ -5,11 +5,17 @@ description: Find the searches that cost money and brought nothing in the last s
 
 No skill: the connector's tools explain themselves.
 
-`get_org_context` first, with `source: "claude-plugin"`. Then
-`analyze_search_terms` with `days: 7`. It groups the searches that took clicks
-and converted nothing into themes — people looking for jobs, for something
-free, for information, for a competitor, and the words this workspace already
-said it never wants to show for — and names a ready call for each theme.
+`get_org_context` first, with `source: "claude-plugin/0.2.7"`. Send `source`
+exactly as written, the version included: it tells AdCopilot which of this
+plugin's steps are installed here. When the answer's `plugin.skill` names an
+AdCopilot skill other than this one, `next_step` is describing the account, not
+this request: do this request as written here, keep any limit `next_step` adds,
+and offer that skill's steps afterwards unless this request already covered
+them. Then `analyze_search_terms` with `days: 7`. It groups the searches that
+took clicks and converted nothing into themes — people looking for jobs, for
+something free, for information, for a competitor, and the words this workspace
+already said it never wants to show for — and names a ready call for each
+theme.
 
 Report each theme in plain words: the searches, what they cost in the
 account's currency, and the never-show-for words that would block them, each
@@ -34,7 +40,7 @@ by the words Google shows.
 
 This block is repeated verbatim in every AdCopilot skill and command a person runs; change all seven together.
 
-After the value is delivered, close with one offer to make a morning check of this account a daily habit — the last line of the reply, at most once in a conversation — when all three hold: Google Ads is connected and readable, the account has a campaign switched on, and `get_org_context` reports no schedule. It reports one when `routine.daily.status` is `user_set` (a schedule they set up in their own assistant) or when `routine.scheduled_last_seen_at` holds a date (a scheduled run has checked in). AdCopilot's emailed check-in, `routine.daily.status` `in_app`, is not a schedule. Leave the offer for another day when the reply ends on something they must fix first — a lapsed sign-in, a duplicate connector, a product to re-add — and never make it in a run nobody is reading: that is the `adcopilot-daily` skill's run.
+After the value is delivered, close with one offer to make a morning check of this account a daily habit — the last line of the reply, at most once in a conversation — when all three hold: Google Ads is connected and readable, the account has a campaign switched on, and `get_org_context` reports no schedule. It reports one when `routine.daily.status` is `user_set` (a schedule they set up in their own assistant), when `routine.scheduled_last_seen_at` holds a date (a scheduled run has checked in), or when `routine.own_schedule` is `saved` or `unavailable` (recorded once they saved it, or once their Claude turned out to have no scheduled tasks). AdCopilot's emailed check-in, `routine.daily.status` `in_app`, is not a schedule. Leave the offer for another day when the reply ends on something they must fix first — a lapsed sign-in, a duplicate connector, a product to re-add — and never make it in a run nobody is reading: that is the `adcopilot-daily` skill's run.
 
 Word it for where they are. If they have said, believe them. Otherwise the tell is the one `/adcopilot:setup` uses: Claude Code is where `claude mcp list` runs, and `/schedule` makes a routine there; everywhere else — claude.ai, Cowork, the desktop and mobile apps — it is a Claude scheduled task. In these words:
 

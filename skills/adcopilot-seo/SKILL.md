@@ -8,11 +8,16 @@ description: Answer questions about the customer's organic search presence throu
 The customer wants to know how Google search sees their site. Answer it through
 the AdCopilot connector at `https://mcp.adcopilot.cloud/mcp`.
 
-Call `get_org_context` with `source: "claude-plugin"` first, before any other
-tool — the marker is how the server records that this workspace uses the plugin,
-and without it the customer keeps being told to install what they already have.
-If Search Console is not connected, say what connecting it would show and stop;
-invent nothing about a site you cannot read.
+Call `get_org_context` with `source: "claude-plugin/0.2.7"` first, before any
+other tool — the marker is how the server records that this workspace uses the
+plugin, and without it the customer keeps being told to install what they
+already have. Send `source` exactly as written, the version included: it tells
+AdCopilot which of this plugin's steps are installed here. When the answer's
+`plugin.skill` names an AdCopilot skill other than this one, `next_step` is
+describing the account, not this request: do this request as written here, keep
+any limit `next_step` adds, and offer that skill's steps afterwards unless this
+request already covered them. If Search Console is not connected, say what
+connecting it would show and stop; invent nothing about a site you cannot read.
 
 **One thing to get right about `cross_reads`.** It budgets reads made OUTSIDE
 Google Ads *in service of an ads answer* — on a live account it often says
@@ -196,3 +201,15 @@ customer the wrong way.
 Offer, in this order: the one-line page edit you found; the links that would get
 the uncrawled pages crawled; and the Pages export, so the next review can say
 what is actually indexed.
+
+Once they say the edit is live, offer to inspect that page again in a few days:
+`lastCrawlTime` says whether Google has fetched the new version, and the
+coverage verdict whether it changed anything. That second look is how they
+learn whether the edit worked.
+
+If Google Ads is connected and this reply has not already compared paid and
+organic, offer it as a question: which of the searches they pay for already
+bring them organic clicks, how many, and what those paid clicks cost — the
+comparison in "When they also run ads". Propose a change from it only where
+the Ads numbers for those searches show no results, with the money both ways,
+applied only on their yes.

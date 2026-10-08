@@ -65,16 +65,19 @@ graders:
     pattern: '"tool"\s*:\s*"[^"]*get_org_context"'
   - name: marks-plugin-use
     type: tool_used
-    # Counts get_org_context calls whose input lacks source "claude-plugin", the
-    # marker AdCopilot reads to record plugin use; any such call fails. The
+    # Counts get_org_context calls whose input lacks source
+    # "claude-plugin/<version>", the marker AdCopilot reads to record plugin
+    # use and, from the version, which skills are installed; any such call fails. The
     # marker is in the skill body alone. `arm: with-only` matters under the
     # harness's own `--ablation with-without`, where it marks a plugin-fired
     # indicator rather than part of the score; the tools-only ablation runs
     # both of its arms under `--ablation none`, where it is inert and this
-    # grader is scored in both. It passed on the baseline arm anyway, so it
+    # grader is scored in both. The version is in the skill body alone, so
+    # the tools-only stub carries the same versioned marker
+    # (evals/ablation/tools-only.sh): it passes on the baseline arm too and
     # contributes nothing to the delta either way.
     tool: mcp__plugin_adcopilot_adcopilot__get_org_context
-    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin")'
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin/\d+\.\d+\.\d+")'
     min: 0
     max: 0
     arm: with-only

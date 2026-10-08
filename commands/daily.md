@@ -8,9 +8,14 @@ person asks for. If this conversation was started by a schedule — a Claude
 scheduled task or a Claude Code routine, with nobody there to answer — follow
 the `adcopilot-daily` skill's run instead, and none of what follows.
 
-`get_org_context` first, with `source: "claude-plugin"`. Then four reads, in
-this order, stopping at the read cap it sets and saying which you did not reach
-and why:
+`get_org_context` first, with `source: "claude-plugin/0.2.7"`. Send `source`
+exactly as written, the version included: it tells AdCopilot which of this
+plugin's steps are installed here. When the answer's `plugin.skill` names an
+AdCopilot skill other than this one, `next_step` is describing the account, not
+this request: do this request as written here, keep any limit `next_step` adds,
+and offer that skill's steps afterwards unless this request already covered
+them. Then four reads, in this order, stopping at the read cap it sets and
+saying which you did not reach and why:
 
 1. **Pacing** — `budget_pacing`: whether this month's spend is on track against
    each daily budget, and any campaign limited by budget.
@@ -37,7 +42,7 @@ nothing until they answer it.
 
 This block is repeated verbatim in every AdCopilot skill and command a person runs; change all seven together.
 
-After the value is delivered, close with one offer to make a morning check of this account a daily habit — the last line of the reply, at most once in a conversation — when all three hold: Google Ads is connected and readable, the account has a campaign switched on, and `get_org_context` reports no schedule. It reports one when `routine.daily.status` is `user_set` (a schedule they set up in their own assistant) or when `routine.scheduled_last_seen_at` holds a date (a scheduled run has checked in). AdCopilot's emailed check-in, `routine.daily.status` `in_app`, is not a schedule. Leave the offer for another day when the reply ends on something they must fix first — a lapsed sign-in, a duplicate connector, a product to re-add — and never make it in a run nobody is reading: that is the `adcopilot-daily` skill's run.
+After the value is delivered, close with one offer to make a morning check of this account a daily habit — the last line of the reply, at most once in a conversation — when all three hold: Google Ads is connected and readable, the account has a campaign switched on, and `get_org_context` reports no schedule. It reports one when `routine.daily.status` is `user_set` (a schedule they set up in their own assistant), when `routine.scheduled_last_seen_at` holds a date (a scheduled run has checked in), or when `routine.own_schedule` is `saved` or `unavailable` (recorded once they saved it, or once their Claude turned out to have no scheduled tasks). AdCopilot's emailed check-in, `routine.daily.status` `in_app`, is not a schedule. Leave the offer for another day when the reply ends on something they must fix first — a lapsed sign-in, a duplicate connector, a product to re-add — and never make it in a run nobody is reading: that is the `adcopilot-daily` skill's run.
 
 Word it for where they are. If they have said, believe them. Otherwise the tell is the one `/adcopilot:setup` uses: Claude Code is where `claude mcp list` runs, and `/schedule` makes a routine there; everywhere else — claude.ai, Cowork, the desktop and mobile apps — it is a Claude scheduled task. In these words:
 

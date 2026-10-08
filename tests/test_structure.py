@@ -13,11 +13,14 @@ What it pins, and why each one is here:
   surface the plugin runs on (an eval run has no Read tool at all). A copy
   that drifts is a flow that offers differently, or stops offering, so the
   copies are compared byte for byte.
-- The stop condition is the server's own (`situations.schedule_offer` on
-  feat/v2302-t3): `routine.daily.status` `user_set` or a date in
-  `routine.scheduled_last_seen_at`, and nothing else. If AdCopilot renames a
-  field the offer never stops; if the plugin stops on more than the server
-  does, the plugin is silent while the server's next_step asks for the offer.
+- The stop condition is the server's own (`situations.schedule_offer`):
+  `routine.daily.status` `user_set`, a date in
+  `routine.scheduled_last_seen_at`, or `routine.own_schedule` `saved` or
+  `unavailable` (plan B9), and nothing else. If AdCopilot renames a field the
+  offer never stops; if the plugin stops on more than the server does, the
+  plugin is silent while the server's next_step asks for the offer; if it
+  stops on less, a Claude with no scheduled tasks is offered one every
+  conversation after AdCopilot has recorded that it cannot.
 - The unattended run. `adcopilot-daily` passes `claude-scheduled`, never
   `claude-plugin`, and its instructions say read-only and ask-nothing — the
   two properties a scheduled run with nobody to answer depends on. With no
@@ -38,6 +41,12 @@ What it pins, and why each one is here:
   (or for its absence) match the two sentences the block prescribes, so a
   reword cannot silently turn a grader blind.
 - The manifest is 0.2.4 and every command the README lists exists.
+- The plugin marker says its version (#696): every interactive
+  `get_org_context` call passes `source: "claude-plugin/<version>"` with
+  the manifest's own version, so a release bump that misses one copy
+  fails here; no bare `"claude-plugin"` is left; the version is the
+  X.Y.Z the server reads; and every eval grader that checks the marker
+  fails the bare value and passes the versioned one.
 """
 
 import json
@@ -107,6 +116,19 @@ BANNED = re.compile(r"\b(seamless(ly)?|effortless(ly)?|magic(al)?)\b", re.I)
 def read(rel):
     with open(os.path.join(ROOT, rel), encoding="utf-8") as fh:
         return fh.read()
+
+
+def manifest_version():
+    return json.loads(read(".claude-plugin/plugin.json"))["version"]
+
+
+def plugin_marker():
+    """The marker every interactive `get_org_context` call passes (#696):
+    the plugin and its version, which the server reads from the slash on."""
+    return 'source: "claude-plugin/%s"' % manifest_version()
+
+
+BARE_MARKER = 'source: "claude-plugin"'
 
 
 def section(text, heading):
@@ -194,7 +216,8 @@ class DailyHabitBlock(unittest.TestCase):
         # routine["scheduled_last_seen_at"]).
         block = self.blocks()[HABIT_CARRIERS[0]] or ""
         for field in ("`routine.daily.status` is `user_set`",
-                      "`routine.scheduled_last_seen_at`", "`in_app`"):
+                      "`routine.scheduled_last_seen_at`", "`in_app`",
+                      "`routine.own_schedule` is `saved` or `unavailable`"):
             with self.subTest(field=field):
                 self.assertIn(field, block)
 
@@ -269,7 +292,7 @@ class UnattendedRun(unittest.TestCase):
         run = section(self.skill(), "## The run")
         self.assertIsNotNone(run, "adcopilot-daily has no '## The run' section")
         self.assertIn('source: "claude-scheduled"', run)
-        self.assertNotIn('source: "claude-plugin"', run)
+        self.assertNotIn('source: "claude-plugin', run)
 
     def test_read_only_and_asks_nothing(self):
         run = section(self.skill(), "## The run") or ""
@@ -321,6 +344,17 @@ class UnattendedRun(unittest.TestCase):
         for part in ("`save_org_context`", "`user_set`", "`claude_scheduled`", "`in_app`"):
             with self.subTest(part=part):
                 self.assertIn(part, setup)
+
+    def test_the_set_up_records_what_stops_the_offer(self):
+        # `routine.own_schedule` is the record AdCopilot accepts on an
+        # in_app row, and `unavailable` is how a Claude with no scheduled
+        # tasks stops the offer; from 0.2.7 the server leaves its own
+        # schedule section to this plugin on the turns a skill owns.
+        setup = " ".join((section(self.skill(), "## The set-up") or "").split())
+        self.assertIn("`routine.own_schedule` `saved` and `routine.daily`", setup)
+        self.assertIn("so record `routine.own_schedule` `saved` alone", setup)
+        self.assertIn("`routine.own_schedule` `unavailable`", setup)
+        self.assertNotIn("so record nothing", setup)
 
     def test_the_account_without_one_named(self):
         # The account AdCopilot's own check-in reads (plan B6/B11 fields).
@@ -406,7 +440,7 @@ class Commands(unittest.TestCase):
         """
         for name in ("audit", "daily", "weekly", "negatives"):
             with self.subTest(command=name):
-                self.assertIn('source: "claude-plugin"', read("commands/%s.md" % name))
+                self.assertIn(plugin_marker(), read("commands/%s.md" % name))
 
         readers = ["skills/%s/SKILL.md" % d
                    for d in sorted(os.listdir(os.path.join(ROOT, "skills")))]
@@ -423,7 +457,7 @@ class Commands(unittest.TestCase):
             with self.subTest(surface=rel):
                 marker = ('source: "claude-scheduled"'
                           if "adcopilot-daily" in rel
-                          else 'source: "claude-plugin"')
+                          else plugin_marker())
                 self.assertIn(
                     marker, text,
                     "%s calls get_org_context without %s" % (rel, marker))
@@ -634,6 +668,210 @@ class Copy(unittest.TestCase):
         for rel in files:
             with self.subTest(file=rel):
                 self.assertIsNone(BANNED.search(read(rel)))
+
+
+class PluginVersionMarker(unittest.TestCase):
+    """#696: the plugin says which version it is on the marker itself.
+
+    The marker without a version can come from any plugin release, 0.1.0
+    included, so the server can only hand a turn to the skills every release
+    ships. With `source: "claude-plugin/<version>"` it can tell an install
+    that has `adcopilot-review` from one that does not, and route the counted
+    account's review to it. A skill cannot read the manifest at run time —
+    claude.ai has no shell and SKILL.md no templating — so the version is a
+    literal in every file, and these tests are what keep the copies equal to
+    `.claude-plugin/plugin.json`: a release bump that misses one fails here.
+    The server reads the version only as X.Y.Z, and treats anything else as
+    no version, which is safe but silent."""
+
+    MARKER_VALUE = re.compile(r'"claude-plugin/([^"\s]*)"')
+    # The README may write the marker with a placeholder, `<version>`; a
+    # literal there is a version and is held to the manifest like the rest.
+    README_MARKER_VALUE = re.compile(r'"claude-plugin/(\d[^"\s]*)"')
+
+    def model_read(self):
+        files = ["skills/%s/SKILL.md" % d
+                 for d in sorted(os.listdir(os.path.join(ROOT, "skills")))]
+        files += ["commands/%s" % f
+                  for f in sorted(os.listdir(os.path.join(ROOT, "commands")))]
+        agents_dir = os.path.join(ROOT, "agents")
+        if os.path.isdir(agents_dir):
+            files += ["agents/%s" % f for f in sorted(os.listdir(agents_dir))
+                      if f.endswith(".md")]
+        return files
+
+    def test_the_manifest_version_is_what_the_server_reads(self):
+        # situations.plugin_version reads ^\d+\.\d+\.\d+$ only; a "-rc1" or
+        # a "+build" would be read as no version.
+        self.assertRegex(manifest_version(), r"^\d+\.\d+\.\d+$")
+
+    def test_every_marker_names_the_manifest_version(self):
+        seen = 0
+        for rel in self.model_read() + ["README.md"]:
+            values = (self.README_MARKER_VALUE if rel == "README.md"
+                      else self.MARKER_VALUE)
+            for m in values.finditer(read(rel)):
+                seen += 1
+                with self.subTest(file=rel, value=m.group(0)):
+                    self.assertEqual(
+                        m.group(1), manifest_version(),
+                        "%s marks plugin use as %s but the manifest is %s — move "
+                        "every copy with the bump" % (rel, m.group(0), manifest_version()))
+        self.assertGreaterEqual(seen, 14, "expected the 14 marker sites, saw %d" % seen)
+
+    def test_no_bare_marker_is_left(self):
+        for rel in self.model_read():
+            with self.subTest(file=rel):
+                self.assertNotIn(BARE_MARKER, read(rel),
+                                 "%s still passes the marker without the version" % rel)
+
+    def test_every_marked_file_says_to_keep_the_version(self):
+        # The server's own `source` description names the bare value and says
+        # any other value is ignored; a model left to itself may "correct"
+        # the suffix away. One sentence per file, the same in each.
+        keep = ("Send `source` exactly as written, the version included: it "
+                "tells AdCopilot which of this plugin's steps are installed here.")
+        for rel in self.model_read():
+            text = read(rel)
+            if plugin_marker() not in text:
+                continue
+            with self.subTest(file=rel):
+                self.assertEqual(" ".join(text.split()).count(keep), 1)
+
+    def test_a_routed_turn_keeps_the_request_it_was_given(self):
+        # The server picks the skill from the account's situation, not from
+        # which command called (situations.plugin_skill), so /weekly on an
+        # account whose results are not counted is told the measurement
+        # steps cover the turn. Every marked file does its own request first
+        # and keeps the limit next_step adds. One sentence, the same in each.
+        guard = ("When the answer's `plugin.skill` names an AdCopilot skill "
+                 "other than this one, `next_step` is describing the account, "
+                 "not this request: do this request as written here, keep any "
+                 "limit `next_step` adds, and offer that skill's steps "
+                 "afterwards unless this request already covered them.")
+        marked = 0
+        for rel in self.model_read():
+            text = read(rel)
+            if plugin_marker() not in text:
+                continue
+            marked += 1
+            with self.subTest(file=rel):
+                self.assertEqual(" ".join(text.split()).count(guard), 1)
+        self.assertEqual(marked, 11)
+
+    def test_the_marker_graders_need_the_version(self):
+        """Each case's marks-plugin-use grader counts the calls it fails on, so
+        its pattern must match a call without the versioned marker and must
+        not match one with it, wherever `source` sits in the input."""
+        def input_match(case):
+            text = read("evals/%s/case.yaml" % case)
+            start = text.find("  - name: marks-plugin-use\n")
+            if start < 0:
+                return None
+            end = text.find("\n  - name: ", start + 1)
+            block = text[start:end if end > 0 else len(text)]
+            m = re.search(r"^\s+input_match: '((?:[^']|'')*)'\s*$", block, re.M)
+            self.assertIsNotNone(m, "%s/marks-plugin-use has no input_match" % case)
+            return re.compile(m.group(1).replace("''", "'"))
+
+        v = manifest_version()
+        counted = ['{}', '{"source":"claude-plugin"}', '{"source": "claude-plugin"}',
+                   '{"source":"claude-plugin/"}', '{"source":"claude-plugin/latest"}',
+                   '{"source":"chatgpt"}', '{"tools":["full_audit"]}', 'not json']
+        passed = ['{"source":"claude-plugin/%s"}' % v,
+                  '{"source": "claude-plugin/%s"}' % v,
+                  '{"tools":["full_audit","budget_pacing"],"source":"claude-plugin/%s"}' % v]
+        graded = 0
+        for case in sorted(os.listdir(os.path.join(ROOT, "evals"))):
+            if not os.path.isfile(os.path.join(ROOT, "evals", case, "case.yaml")):
+                continue
+            pattern = input_match(case)
+            if pattern is None:
+                continue
+            graded += 1
+            for call in counted:
+                with self.subTest(case=case, call=call):
+                    self.assertRegex(call, pattern)
+            for call in passed:
+                with self.subTest(case=case, call=call):
+                    self.assertNotRegex(call, pattern)
+        self.assertGreaterEqual(graded, 19)
+
+    def test_the_ablation_stub_carries_the_marker(self):
+        # Otherwise the tools-only arm fails the marker on every case and each
+        # skill's delta is the marker's weight, not what its body teaches.
+        script = read("evals/ablation/tools-only.sh")
+        self.assertIn('source: \\"claude-plugin/$VERSION\\"', script)
+        self.assertIn(".claude-plugin/plugin.json", script)
+        self.assertIn("*/adcopilot-daily/SKILL.md) ;;", script)
+
+
+class WhatTheServerDefersTo(unittest.TestCase):
+    """From plugin 0.2.7 the server stops sending its own steps for a running,
+    counted account and names `adcopilot-review` instead (#696), and drops
+    its schedule offer for the skill's. That is only safe while the skill
+    carries what the server's branch said: every yes closes a loop (read back
+    what the result does not show, the undo, the record, the next fix), no
+    bidding change in the weeks after something went live, and the habit
+    offer. These pin those, and the two other places a yes now lands: the
+    reply to a finished scheduled run, and /adcopilot:audit's first fix."""
+
+    def review(self):
+        return read("skills/adcopilot-review/SKILL.md")
+
+    def test_review_closes_the_loop_on_a_yes(self):
+        yes = section(self.review(), "## When they say yes")
+        self.assertIsNotNone(yes)
+        for part in ("read back only what its own result does not show",
+                     "how to\nundo it", "`save_org_context` as a decision",
+                     "propose the next finding's fix the same way",
+                     "nothing carries over", "proposed and not applied"):
+            with self.subTest(part=part):
+                self.assertIn(" ".join(part.split()), " ".join(yes.split()))
+
+    def test_review_carries_the_bidding_rule_the_server_drops(self):
+        text = " ".join(self.review().split())
+        self.assertIn("For two to three weeks after anything went live", text)
+        self.assertIn("recommend no bidding change", text)
+        self.assertIn("Maximize Clicks with a per-click cap", text)
+
+    def test_review_carries_the_habit_offer(self):
+        nxt = section(self.review(), "## What is next") or ""
+        self.assertIn("`routine.scheduled_last_seen_at`", nxt)
+        self.assertIn("`routine.own_schedule` is `saved` or `unavailable`",
+                      " ".join(nxt.split()))
+        self.assertIn("`adcopilot-daily`", nxt)
+
+    def test_review_spends_a_sized_day_on_the_fix(self):
+        self.assertIn("`reads_left_today`", self.review())
+
+    def test_a_yes_to_a_finished_run_is_re_read_first(self):
+        after = section(read("skills/adcopilot-daily/SKILL.md"), "## After the run")
+        self.assertIsNotNone(after)
+        flat = " ".join(after.split())
+        self.assertIn("Nothing inside the run counts as a yes", flat)
+        self.assertIn("first re-read the one thing the fix touches", flat)
+        self.assertIn("`adcopilot-review` skill's \"When they say yes\"", flat)
+        # and the run itself still asks nothing and changes nothing, and its
+        # closing question is the change itself: a check folded into it ("if
+        # it is still $30, shall I...") is one yes for a change nobody has
+        # seen restated, which "After the run" exists to prevent.
+        run = section(read("skills/adcopilot-daily/SKILL.md"), "## The run") or ""
+        self.assertNotIn("After the run", run.split("\n", 1)[1])
+        self.assertIn("Ask about the change itself", run)
+
+    def test_audit_proposes_the_first_fix_and_waits(self):
+        text = " ".join(read("commands/audit.md").split())
+        self.assertIn("as a proposal", text)
+        self.assertIn("Change nothing until they say yes", text)
+        self.assertIn("propose the next finding's fix the same way", text)
+
+    def test_docs_offers_no_read_after_a_question_about_the_limits(self):
+        nxt = " ".join((section(read("skills/adcopilot-docs/SKILL.md"),
+                                "## What is next") or "").split())
+        self.assertIn("Skip it after a question about look-ups", nxt)
+        self.assertIn("privacy or safety", nxt)
+        self.assertIn("uses one of them", nxt)
 
 
 class Manifest(unittest.TestCase):

@@ -108,10 +108,10 @@ graders:
       FAIL if any of the five is missing, or if there is no offer at all.
   - name: marks-plugin-use
     type: tool_used
-    # Counts get_org_context calls whose input lacks source "claude-plugin";
+    # Counts get_org_context calls whose input lacks source "claude-plugin/<version>";
     # any such call fails (see setup-signed-out).
     tool: mcp__plugin_adcopilot_adcopilot__get_org_context
-    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin")'
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin/\d+\.\d+\.\d+")'
     min: 0
     max: 0
     arm: with-only

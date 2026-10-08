@@ -75,12 +75,13 @@ graders:
       FAIL if either is missing.
   - name: marks-plugin-use
     type: tool_used
-    # Counts get_org_context calls whose input lacks source "claude-plugin", the
-    # marker AdCopilot reads to record plugin use; any such call fails. Exact
+    # Counts get_org_context calls whose input lacks source
+    # "claude-plugin/<version>", the marker AdCopilot reads to record plugin
+    # use and, from the version, which skills are installed; any such call fails. Exact
     # registered name, as in setup-signed-out. An input not shaped as JSON counts
     # as unmarked, so a format change fails this rather than passing it.
     tool: mcp__plugin_adcopilot_adcopilot__get_org_context
-    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin")'
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin/\d+\.\d+\.\d+")'
     min: 0
     max: 0
     arm: with-only

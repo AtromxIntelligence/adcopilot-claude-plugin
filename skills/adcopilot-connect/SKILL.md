@@ -9,7 +9,7 @@ You are walking a customer from nothing to a working set of connected, linked Go
 
 ## The first rule: ask, never assume
 
-Call `get_org_context` with `source: "claude-plugin"` before anything else and treat its answer as the only source of truth about what exists. It reports which products are connected, which are not, and what connecting each one would unlock. Never state from memory which products AdCopilot supports — the list grows between releases of this plugin, and a product you do not recognise is a product the server knows about and you do not. Describe it from what the server says. Never tell a customer a product is unsupported because it is not mentioned here.
+Call `get_org_context` with `source: "claude-plugin/0.2.7"` before anything else and treat its answer as the only source of truth about what exists. Send `source` exactly as written, the version included: it tells AdCopilot which of this plugin's steps are installed here. When the answer's `plugin.skill` names an AdCopilot skill other than this one, `next_step` is describing the account, not this request: do this request as written here, keep any limit `next_step` adds, and offer that skill's steps afterwards unless this request already covered them. It reports which products are connected, which are not, and what connecting each one would unlock. Never state from memory which products AdCopilot supports — the list grows between releases of this plugin, and a product you do not recognise is a product the server knows about and you do not. Describe it from what the server says. Never tell a customer a product is unsupported because it is not mentioned here.
 
 ## The teaching contract
 
@@ -36,7 +36,7 @@ What breaks: pick a Google account that is not on the ad account and the connect
 
 ### 2. Read the situation
 
-Call `get_org_context` with `source: "claude-plugin"`. Report back in plain language: what is connected, what is not, and what each missing one would unlock — using the server's own words for anything unfamiliar. Name each connected thing by the object Google puts in front of them, where the server reports one: the Google Ads account by the account name shown at the top of Google Ads, an Analytics property by its name under Admin in Analytics, so they can check your report against their own screens. If the server names a situation or a next step, lead with it. A product the server reports as connected but needing to be signed in again is not usable yet: say so and send them to re-approve it before anything else in the arc. Do not add products from memory and do not drop any the server reports.
+Call `get_org_context` with `source: "claude-plugin/0.2.7"`. Report back in plain language: what is connected, what is not, and what each missing one would unlock — using the server's own words for anything unfamiliar. Write it as sentences, one product to a line and never a table, and treat every product in the same state alike: if the steps you suggest, or the question you close on, name one product that is not connected yet, name each of them there. Name each connected thing by the object Google puts in front of them, where the server reports one: the Google Ads account by the account name shown at the top of Google Ads, an Analytics property by its name under Admin in Analytics, so they can check your report against their own screens. If the server names a situation or a next step, lead with it. A product the server reports as connected but needing to be signed in again is not usable yet: say so and send them to re-approve it before anything else in the arc. Do not add products from memory and do not drop any the server reports.
 
 This is an example of the shape only; the products are whatever the server names:
 
@@ -46,7 +46,7 @@ What breaks: report from memory instead of from this answer and you will offer a
 
 ### 3. Connect what is missing
 
-One product at a time, asking before each. Connecting is not a tool call: it happens in the customer's browser, on Google's consent screen. Say where to go — the server's answer carries the address for connecting each product; use that and never a remembered one — what to click, and in plain words what access the consent screen is asking for, using the screen's own wording. Then verify by calling `get_org_context` again, with `source: "claude-plugin"`. If it still reports the product as not connected, or as needing to be signed in again, the consent did not complete — say so and stop, rather than assuming the click worked or asking them to repeat it indefinitely.
+One product at a time, asking before each. Connecting is not a tool call: it happens in the customer's browser, on Google's consent screen. Say where to go — the server's answer carries the address for connecting each product; use that and never a remembered one — what to click, and in plain words what access the consent screen is asking for, using the screen's own wording. Then verify by calling `get_org_context` again, with `source: "claude-plugin/0.2.7"`. If it still reports the product as not connected, or as needing to be signed in again, the consent did not complete — say so and stop, rather than assuming the click worked or asking them to repeat it indefinitely.
 
 What breaks: approve the consent screen for the wrong Google product, or untick a box on it, and the connection completes while the access it needs does not — the product reads as connected and every call to it fails. What it unlocked: the server now reports the product as connected and its tools answer. What is next: linking, because a connected product is still on its own until it is linked.
 
@@ -70,7 +70,7 @@ What breaks: an inventory written from what you intended rather than what you re
 
 ## A product you do not recognise
 
-If `get_org_context` reports a product this skill does not mention, that is expected — it means AdCopilot connected something after this plugin was written. Describe it from the server's own description, offer it in the same shape as the rest, and do not apologise for it or call it new.
+If `get_org_context` reports a product this skill does not mention, that is expected — it means AdCopilot connected something after this plugin was written. Describe it from the server's own description, offer it in the same shape as the rest — wherever the reply names another product in its state, it is named there too — and do not apologise for it or call it new.
 
 ## Prices
 
@@ -80,7 +80,7 @@ This file names no prices. If the customer asks about plans or limits, use what 
 
 This block is repeated verbatim in every AdCopilot skill and command a person runs; change all seven together.
 
-After the value is delivered, close with one offer to make a morning check of this account a daily habit — the last line of the reply, at most once in a conversation — when all three hold: Google Ads is connected and readable, the account has a campaign switched on, and `get_org_context` reports no schedule. It reports one when `routine.daily.status` is `user_set` (a schedule they set up in their own assistant) or when `routine.scheduled_last_seen_at` holds a date (a scheduled run has checked in). AdCopilot's emailed check-in, `routine.daily.status` `in_app`, is not a schedule. Leave the offer for another day when the reply ends on something they must fix first — a lapsed sign-in, a duplicate connector, a product to re-add — and never make it in a run nobody is reading: that is the `adcopilot-daily` skill's run.
+After the value is delivered, close with one offer to make a morning check of this account a daily habit — the last line of the reply, at most once in a conversation — when all three hold: Google Ads is connected and readable, the account has a campaign switched on, and `get_org_context` reports no schedule. It reports one when `routine.daily.status` is `user_set` (a schedule they set up in their own assistant), when `routine.scheduled_last_seen_at` holds a date (a scheduled run has checked in), or when `routine.own_schedule` is `saved` or `unavailable` (recorded once they saved it, or once their Claude turned out to have no scheduled tasks). AdCopilot's emailed check-in, `routine.daily.status` `in_app`, is not a schedule. Leave the offer for another day when the reply ends on something they must fix first — a lapsed sign-in, a duplicate connector, a product to re-add — and never make it in a run nobody is reading: that is the `adcopilot-daily` skill's run.
 
 Word it for where they are. If they have said, believe them. Otherwise the tell is the one `/adcopilot:setup` uses: Claude Code is where `claude mcp list` runs, and `/schedule` makes a routine there; everywhere else — claude.ai, Cowork, the desktop and mobile apps — it is a Claude scheduled task. In these words:
 

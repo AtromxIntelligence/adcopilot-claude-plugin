@@ -11,12 +11,17 @@ A thin answer is the failure here. Reads are the cheap part; a customer who has
 to ask four follow-up questions to learn what one answer could have told them
 has been short-changed.
 
-Call `get_org_context` with `source: "claude-plugin"` first, before any other
-tool — the marker is how the server records that this workspace uses the plugin,
-and without it the customer keeps being told to install what they already have.
-Then follow its
-`next_step`, `playbook` and `cross_reads` — they carry the read ceiling for this
-account's situation and the house rails. Everything below runs inside them.
+Call `get_org_context` with `source: "claude-plugin/0.2.7"` first, before any
+other tool — the marker is how the server records that this workspace uses the
+plugin, and without it the customer keeps being told to install what they
+already have. Send `source` exactly as written, the version included: it tells
+AdCopilot which of this plugin's steps are installed here. When the answer's
+`plugin.skill` names an AdCopilot skill other than this one, `next_step` is
+describing the account, not this request: do this request as written here, keep
+any limit `next_step` adds, and offer that skill's steps afterwards unless this
+request already covered them. Then follow the answer's `next_step`, `playbook`
+and `cross_reads` — they carry the read ceiling for this account's situation
+and the house rails. Everything below runs inside them.
 
 ## Spend the reads you are given
 
@@ -24,6 +29,11 @@ account's situation and the house rails. Everything below runs inside them.
 The account's own numbers are what make the answer true, and a number you did
 not read is a number you must not state. Never trim the read list to be
 economical — if a read would have changed what you say, make it.
+
+On a day with few look-ups left, `cross_reads` also carries `reads_left_today`,
+and `ads_reads_max` has already been sized to leave room for the fix: spend
+those reads, then propose. The change they say yes to, and its read-back, are
+what the rest of the day is for.
 
 What you cannot read, say you cannot read. Never estimate a figure, and never
 carry one over from an earlier turn as if it were fresh.
@@ -89,6 +99,12 @@ A finding without a number is an opinion.
 costs to act and what it costs to do nothing — as a proposal they say yes or no
 to. Never apply it first.
 
+For two to three weeks after anything went live — a campaign switched on, or a
+change to how it bids or what it counts — recommend no bidding change: Google's
+bidding is still learning, and a change starts it over. The one exception is a
+campaign getting no traffic, where Maximize Clicks with a per-click cap is the
+fix.
+
 Say what each finding means in plain words the first time it appears. "Search
 terms" are the things people actually typed; "negative keywords" are the words
 you tell Google never to match. Teach on the step being taken, and say what the
@@ -96,9 +112,21 @@ step unlocked, or will unlock once they have done it.
 
 ## When they say yes
 
-Apply it, then say exactly what changed and how to undo it, and record it with
-`save_org_context` as a decision — what was approved, in the customer's own
-framing, and which campaign it touched.
+A yes counts when it is given here, to the change as you stated it, on today's
+numbers. A fix agreed in an earlier conversation is read again and proposed
+again before anything is applied; nothing carries over.
+
+Apply it. Then read back only what its own result does not show — a status,
+negatives once Google has normalised them, locations by the name Google shows —
+and call nothing live until a read says so. Say exactly what changed and how to
+undo it, and record it with `save_org_context` as a decision — what was
+approved, in the customer's own framing, and which campaign it touched. A fix
+they did not say yes to is recorded, if at all, as proposed and not applied;
+never as approved.
+
+Then propose the next finding's fix the same way: the change, its money both
+ways, a yes or a no. One at a time, biggest money first. When nothing left is
+worth its money, say so and stop proposing.
 
 Negatives go on with `add_negative_keywords` at PHRASE match using the search as
 typed, unless a broader word is plainly safe. Read them back before claiming
@@ -120,16 +148,20 @@ and a careless one blocks searches the customer wants.
 
 ## What is next
 
-Offer, in this order: the first fix as a change you will make now; and the
-never-show-for words you found.
+Before any yes, offer, in this order: the first fix as a change you will make
+now; and the never-show-for words you found. After a yes, the next offer is the
+next fix, as above.
 
 Then the daily habit, on the same terms every other flow uses it — one offer, the
 last line of the reply, at most once in a conversation, and only when all three
 hold: Google Ads is connected and readable, the account has a campaign switched
 on, and `get_org_context` reports no schedule. It reports one when
-`routine.daily.status` is `user_set` or when `routine.scheduled_last_seen_at`
-holds a date. AdCopilot's own emailed check-in (`routine.daily.status`
-`in_app`) is not their schedule. If the server's `next_step` also asks for a
+`routine.daily.status` is `user_set`, when `routine.scheduled_last_seen_at`
+holds a date, or when `routine.own_schedule` is `saved` or `unavailable`.
+AdCopilot's own emailed check-in (`routine.daily.status` `in_app`) is not
+their schedule. If the server's `next_step` also asks for a
 check-in offer, this one answers it — never two. On a yes, follow the
-`adcopilot-daily` skill's set-up rather than inventing steps here. Leave it for
-another day when the reply ends on something they must fix first.
+`adcopilot-daily` skill's set-up rather than inventing steps here. Its moment is
+the reply in which a change they approved first reads as live; otherwise the
+close. Leave it for another day when the reply ends on something they must fix
+first.

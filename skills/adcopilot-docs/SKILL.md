@@ -10,8 +10,13 @@ never from memory. The product changes; this file does not move with it, so
 every number in your answer comes from a live read or from the documentation
 site, and nothing comes from recall.
 
-Call `get_org_context` (with `source: "claude-plugin"`) first. Its answer carries the facts most of these
-questions want:
+Call `get_org_context` (with `source: "claude-plugin/0.2.7"`) first. Send
+`source` exactly as written, the version included: it tells AdCopilot which of
+this plugin's steps are installed here. When the answer's `plugin.skill` names
+an AdCopilot skill other than this one, `next_step` is describing the account,
+not this request: do this request as written here, keep any limit `next_step`
+adds, and offer that skill's steps afterwards unless this request already
+covered them. The answer carries the facts most of these questions want:
 
 - `org.plan`, `org.ops_today_used`, `org.ops_today_cap`, `org.accounts_cap`,
   `org.trial_days_left`, `org.upgrade_url`
@@ -100,6 +105,20 @@ writes, what can never be deleted, read versus write, account scope and where
 data travels. Every docs page has a plain-text copy you can read, so read it and
 quote it rather than answering from memory. `get_org_context`'s `help` field
 carries the troubleshooting address for the same reason.
+
+## What is next
+
+Answer what they asked first, whole. Then, only when the question pointed at
+something a read of their own account would answer — what AdCopilot can do for
+them, whether a product is worth connecting, why a tool seemed missing — offer
+that one read as the next step, in a sentence: what it would show them, about
+their account. When `ops_today_cap` is set and the hints say few look-ups are
+left today, say that the read uses one of them.
+
+Skip it after a question about look-ups and running out, about the workspace's
+allowance or billing, or about privacy or safety: there the answer is the whole
+reply, and an offer to spend a look-up would read as a nudge. That holds even
+when `plugin.skill` names other steps.
 
 ## What breaks
 
