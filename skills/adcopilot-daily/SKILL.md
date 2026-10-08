@@ -65,7 +65,7 @@ Say what it costs before they save it: about five reads a run, each counted towa
 
 On Claude Team or Enterprise, if every read in the run waits for approval, the task can be switched to **Automatically approve**. Say plainly what that does before they switch: it stops asking before each tool, changes included, so the read-only instructions are what keep the run to reads — keep them exactly as written. Setting AdCopilot's **Write/delete tools** to **Blocked** stops a change outright, but then no chat can make one either; that is their call.
 
-Claude's Free plan has no scheduled tasks; say so plainly — there, AdCopilot's emailed daily check-in, when it is on, is the morning check.
+Claude's Free plan has no scheduled tasks; say so plainly — there, AdCopilot's emailed daily check-in, when it is on, is the morning check — and call `save_org_context` with `routine.own_schedule` `unavailable`, so neither AdCopilot nor this plugin offers it again.
 
 **Claude Code — a routine:**
 
@@ -76,7 +76,7 @@ Claude's Free plan has no scheduled tasks; say so plainly — there, AdCopilot's
 
 A local task, or a `claude -p` line in cron, runs only while the computer is awake: a fallback, not the recommendation.
 
-**Then record it.** Once they say it is saved, call `save_org_context` with `routine.daily` set to `status` `user_set`, `surface` `claude_scheduled`, `hour_local` 8 and `tz` the account's time zone — except while `routine.daily.status` is `in_app`: AdCopilot keeps its emailed check-in as it is and would refuse the change, so record nothing; the first scheduled run records itself. Tell them AdCopilot's emailed check-in keeps coming as well, and that if they want only one, the Routine card on AdCopilot's Home page pauses the email. Either way the offer stops once `get_org_context` reports the schedule.
+**Then record it.** Once they say it is saved, call `save_org_context` with `routine.own_schedule` `saved` and `routine.daily` set to `status` `user_set`, `surface` `claude_scheduled`, `hour_local` 8 and `tz` the account's time zone — except while `routine.daily.status` is `in_app`: AdCopilot keeps its emailed check-in as it is and would refuse a change to that row, so record `routine.own_schedule` `saved` alone. Tell them AdCopilot's emailed check-in keeps coming as well, and that if they want only one, the Routine card on AdCopilot's Home page pauses the email. Either way the offer stops once `get_org_context` reports the schedule.
 
 ## After the run
 

@@ -156,9 +156,10 @@ Then the daily habit, on the same terms every other flow uses it — one offer, 
 last line of the reply, at most once in a conversation, and only when all three
 hold: Google Ads is connected and readable, the account has a campaign switched
 on, and `get_org_context` reports no schedule. It reports one when
-`routine.daily.status` is `user_set` or when `routine.scheduled_last_seen_at`
-holds a date. AdCopilot's own emailed check-in (`routine.daily.status`
-`in_app`) is not their schedule. If the server's `next_step` also asks for a
+`routine.daily.status` is `user_set`, when `routine.scheduled_last_seen_at`
+holds a date, or when `routine.own_schedule` is `saved` or `unavailable`.
+AdCopilot's own emailed check-in (`routine.daily.status` `in_app`) is not
+their schedule. If the server's `next_step` also asks for a
 check-in offer, this one answers it — never two. On a yes, follow the
 `adcopilot-daily` skill's set-up rather than inventing steps here. Its moment is
 the reply in which a change they approved first reads as live; otherwise the

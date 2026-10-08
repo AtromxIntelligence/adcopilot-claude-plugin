@@ -13,11 +13,14 @@ What it pins, and why each one is here:
   surface the plugin runs on (an eval run has no Read tool at all). A copy
   that drifts is a flow that offers differently, or stops offering, so the
   copies are compared byte for byte.
-- The stop condition is the server's own (`situations.schedule_offer` on
-  feat/v2302-t3): `routine.daily.status` `user_set` or a date in
-  `routine.scheduled_last_seen_at`, and nothing else. If AdCopilot renames a
-  field the offer never stops; if the plugin stops on more than the server
-  does, the plugin is silent while the server's next_step asks for the offer.
+- The stop condition is the server's own (`situations.schedule_offer`):
+  `routine.daily.status` `user_set`, a date in
+  `routine.scheduled_last_seen_at`, or `routine.own_schedule` `saved` or
+  `unavailable` (plan B9), and nothing else. If AdCopilot renames a field the
+  offer never stops; if the plugin stops on more than the server does, the
+  plugin is silent while the server's next_step asks for the offer; if it
+  stops on less, a Claude with no scheduled tasks is offered one every
+  conversation after AdCopilot has recorded that it cannot.
 - The unattended run. `adcopilot-daily` passes `claude-scheduled`, never
   `claude-plugin`, and its instructions say read-only and ask-nothing — the
   two properties a scheduled run with nobody to answer depends on. With no
@@ -213,7 +216,8 @@ class DailyHabitBlock(unittest.TestCase):
         # routine["scheduled_last_seen_at"]).
         block = self.blocks()[HABIT_CARRIERS[0]] or ""
         for field in ("`routine.daily.status` is `user_set`",
-                      "`routine.scheduled_last_seen_at`", "`in_app`"):
+                      "`routine.scheduled_last_seen_at`", "`in_app`",
+                      "`routine.own_schedule` is `saved` or `unavailable`"):
             with self.subTest(field=field):
                 self.assertIn(field, block)
 
@@ -340,6 +344,17 @@ class UnattendedRun(unittest.TestCase):
         for part in ("`save_org_context`", "`user_set`", "`claude_scheduled`", "`in_app`"):
             with self.subTest(part=part):
                 self.assertIn(part, setup)
+
+    def test_the_set_up_records_what_stops_the_offer(self):
+        # `routine.own_schedule` is the record AdCopilot accepts on an
+        # in_app row, and `unavailable` is how a Claude with no scheduled
+        # tasks stops the offer; from 0.2.7 the server leaves its own
+        # schedule section to this plugin on the turns a skill owns.
+        setup = " ".join((section(self.skill(), "## The set-up") or "").split())
+        self.assertIn("`routine.own_schedule` `saved` and `routine.daily`", setup)
+        self.assertIn("so record `routine.own_schedule` `saved` alone", setup)
+        self.assertIn("`routine.own_schedule` `unavailable`", setup)
+        self.assertNotIn("so record nothing", setup)
 
     def test_the_account_without_one_named(self):
         # The account AdCopilot's own check-in reads (plan B6/B11 fields).
@@ -823,6 +838,8 @@ class WhatTheServerDefersTo(unittest.TestCase):
     def test_review_carries_the_habit_offer(self):
         nxt = section(self.review(), "## What is next") or ""
         self.assertIn("`routine.scheduled_last_seen_at`", nxt)
+        self.assertIn("`routine.own_schedule` is `saved` or `unavailable`",
+                      " ".join(nxt.split()))
         self.assertIn("`adcopilot-daily`", nxt)
 
     def test_review_spends_a_sized_day_on_the_fix(self):
