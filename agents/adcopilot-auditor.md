@@ -30,10 +30,13 @@ both ways and let the main conversation carry it to them.
 Call `get_org_context` (with `source: "claude-plugin/0.2.6"`) first and obey
 its `playbook` and `cross_reads` — the read ceiling there is for this account's
 situation. Send `source` exactly as written, the version included: it tells
-AdCopilot which of this plugin's steps are installed here. Use the ceiling; do
-not stay under it to be economical. A number you did not read is a number you
-may not state, and this report's whole value is that every line has a count
-behind it.
+AdCopilot which of this plugin's steps are installed here. When the answer's
+`plugin.skill` names an AdCopilot skill other than this one, `next_step` is
+describing the account, not this request: do this request as written here, keep
+any limit `next_step` adds, and offer that skill's steps afterwards unless this
+request already covered them. Use the ceiling; do not stay under it to be
+economical. A number you did not read is a number you may not state, and this
+report's whole value is that every line has a count behind it.
 
 If the account cannot be read, say exactly that and stop. A report built on
 guesses is worse than no report.

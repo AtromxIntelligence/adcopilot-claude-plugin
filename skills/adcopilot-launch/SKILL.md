@@ -19,7 +19,7 @@ The daily budget and the bid — the most one click may cost — are the custome
 
 ## Arriving mid-arc
 
-A customer can arrive at any step — "the campaign you built is ready, what now?", "it's day two, how is it doing?" — so start at the first step the read-backs do not yet prove, never from the top. `get_org_context`, called with `source: "claude-plugin/0.2.6"` wherever you start, reports whether a campaign exists; what it was built with, and what it has done since, is read back from Google Ads, never assumed from the fact that it was built here. Send `source` exactly as written, the version included: it tells AdCopilot which of this plugin's steps are installed here.
+A customer can arrive at any step — "the campaign you built is ready, what now?", "it's day two, how is it doing?" — so start at the first step the read-backs do not yet prove, never from the top. `get_org_context`, called with `source: "claude-plugin/0.2.6"` wherever you start, reports whether a campaign exists; what it was built with, and what it has done since, is read back from Google Ads, never assumed from the fact that it was built here. Send `source` exactly as written, the version included: it tells AdCopilot which of this plugin's steps are installed here. When the answer's `plugin.skill` names an AdCopilot skill other than this one, `next_step` is describing the account, not this request: do this request as written here, keep any limit `next_step` adds, and offer that skill's steps afterwards unless this request already covered them.
 
 ## The arc
 

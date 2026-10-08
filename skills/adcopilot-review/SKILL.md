@@ -15,10 +15,13 @@ Call `get_org_context` with `source: "claude-plugin/0.2.6"` first, before any
 other tool — the marker is how the server records that this workspace uses the
 plugin, and without it the customer keeps being told to install what they
 already have. Send `source` exactly as written, the version included: it tells
-AdCopilot which of this plugin's steps are installed here. Then follow its
-`next_step`, `playbook` and `cross_reads` — they carry the read ceiling for
-this account's situation and the house rails. Everything below runs inside
-them.
+AdCopilot which of this plugin's steps are installed here. When the answer's
+`plugin.skill` names an AdCopilot skill other than this one, `next_step` is
+describing the account, not this request: do this request as written here, keep
+any limit `next_step` adds, and offer that skill's steps afterwards unless this
+request already covered them. Then follow the answer's `next_step`, `playbook`
+and `cross_reads` — they carry the read ceiling for this account's situation
+and the house rails. Everything below runs inside them.
 
 ## Spend the reads you are given
 

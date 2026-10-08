@@ -19,10 +19,14 @@ window, or read the latest day.
 Every `get_org_context` call here, the first one and the tools refresh alike,
 carries `source: "claude-plugin/0.2.6"`. Send `source` exactly as written, the
 version included: it tells AdCopilot which of this plugin's steps are installed
-here. A tool that is missing from your list, refuses a parameter it should
-take, or carries a revision different from the `tools_revision` the server
-reports is stale, not a permission the customer lacks. Ask `get_org_context`
-for `tools: [full_audit, budget_pacing]` and go by what it returns — that works
+here. When the answer's `plugin.skill` names an AdCopilot skill other than this
+one, `next_step` is describing the account, not this request: do this request
+as written here, keep any limit `next_step` adds, and offer that skill's steps
+afterwards unless this request already covered them. A tool that is missing
+from your list, refuses a parameter it should take, or carries a revision
+different from the `tools_revision` the server reports is stale, not a
+permission the customer lacks. Ask `get_org_context` for
+`tools: [full_audit, budget_pacing]` and go by what it returns — that works
 even when the schema you hold shows no `tools` parameter. If the tool is still
 missing: `/mcp`, choose `adcopilot`, then Reconnect refetches the tool list (at
 the time of writing); reinstalling the plugin is the last resort.

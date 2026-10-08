@@ -12,8 +12,11 @@ site, and nothing comes from recall.
 
 Call `get_org_context` (with `source: "claude-plugin/0.2.6"`) first. Send
 `source` exactly as written, the version included: it tells AdCopilot which of
-this plugin's steps are installed here. Its answer carries the facts most of
-these questions want:
+this plugin's steps are installed here. When the answer's `plugin.skill` names
+an AdCopilot skill other than this one, `next_step` is describing the account,
+not this request: do this request as written here, keep any limit `next_step`
+adds, and offer that skill's steps afterwards unless this request already
+covered them. The answer carries the facts most of these questions want:
 
 - `org.plan`, `org.ops_today_used`, `org.ops_today_cap`, `org.accounts_cap`,
   `org.trial_days_left`, `org.upgrade_url`
@@ -114,7 +117,8 @@ left today, say that the read uses one of them.
 
 Skip it after a question about look-ups and running out, about the workspace's
 allowance or billing, or about privacy or safety: there the answer is the whole
-reply, and an offer to spend a look-up would read as a nudge.
+reply, and an offer to spend a look-up would read as a nudge. That holds even
+when `plugin.skill` names other steps.
 
 ## What breaks
 

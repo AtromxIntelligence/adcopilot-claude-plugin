@@ -8,9 +8,12 @@ No skill: the connector's tools explain themselves.
 `get_org_context` first, with `source: "claude-plugin/0.2.6"`; the account's
 currency and time zone come from its answer, and the week runs Monday to Sunday
 in that time zone. Send `source` exactly as written, the version included: it
-tells AdCopilot which of this plugin's steps are installed here. Then three
-reads, in this order, stopping at the read cap it sets and saying which you did
-not reach:
+tells AdCopilot which of this plugin's steps are installed here. When the
+answer's `plugin.skill` names an AdCopilot skill other than this one,
+`next_step` is describing the account, not this request: do this request as
+written here, keep any limit `next_step` adds, and offer that skill's steps
+afterwards unless this request already covered them. Then three reads, in this
+order, stopping at the read cap it sets and saying which you did not reach:
 
 1. **The two weeks** — `search` on `campaign` with `start_date` and `end_date`
    spanning last week and the week before, `segments.date` and the cost,

@@ -10,8 +10,12 @@ the `adcopilot-daily` skill's run instead, and none of what follows.
 
 `get_org_context` first, with `source: "claude-plugin/0.2.6"`. Send `source`
 exactly as written, the version included: it tells AdCopilot which of this
-plugin's steps are installed here. Then four reads, in this order, stopping at
-the read cap it sets and saying which you did not reach and why:
+plugin's steps are installed here. When the answer's `plugin.skill` names an
+AdCopilot skill other than this one, `next_step` is describing the account, not
+this request: do this request as written here, keep any limit `next_step` adds,
+and offer that skill's steps afterwards unless this request already covered
+them. Then four reads, in this order, stopping at the read cap it sets and
+saying which you did not reach and why:
 
 1. **Pacing** — `budget_pacing`: whether this month's spend is on track against
    each daily budget, and any campaign limited by budget.

@@ -7,11 +7,15 @@ No skill: the connector's tools explain themselves.
 
 `get_org_context` first, with `source: "claude-plugin/0.2.6"`. Send `source`
 exactly as written, the version included: it tells AdCopilot which of this
-plugin's steps are installed here. Then `analyze_search_terms` with `days: 7`.
-It groups the searches that took clicks and converted nothing into themes —
-people looking for jobs, for something free, for information, for a competitor,
-and the words this workspace already said it never wants to show for — and
-names a ready call for each theme.
+plugin's steps are installed here. When the answer's `plugin.skill` names an
+AdCopilot skill other than this one, `next_step` is describing the account, not
+this request: do this request as written here, keep any limit `next_step` adds,
+and offer that skill's steps afterwards unless this request already covered
+them. Then `analyze_search_terms` with `days: 7`. It groups the searches that
+took clicks and converted nothing into themes — people looking for jobs, for
+something free, for information, for a competitor, and the words this workspace
+already said it never wants to show for — and names a ready call for each
+theme.
 
 Report each theme in plain words: the searches, what they cost in the
 account's currency, and the never-show-for words that would block them, each

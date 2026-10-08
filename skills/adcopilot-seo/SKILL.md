@@ -12,9 +12,12 @@ Call `get_org_context` with `source: "claude-plugin/0.2.6"` first, before any
 other tool — the marker is how the server records that this workspace uses the
 plugin, and without it the customer keeps being told to install what they
 already have. Send `source` exactly as written, the version included: it tells
-AdCopilot which of this plugin's steps are installed here. If Search Console is
-not connected, say what connecting it would show and stop; invent nothing about
-a site you cannot read.
+AdCopilot which of this plugin's steps are installed here. When the answer's
+`plugin.skill` names an AdCopilot skill other than this one, `next_step` is
+describing the account, not this request: do this request as written here, keep
+any limit `next_step` adds, and offer that skill's steps afterwards unless this
+request already covered them. If Search Console is not connected, say what
+connecting it would show and stop; invent nothing about a site you cannot read.
 
 **One thing to get right about `cross_reads`.** It budgets reads made OUTSIDE
 Google Ads *in service of an ads answer* — on a live account it often says

@@ -723,6 +723,27 @@ class PluginVersionMarker(unittest.TestCase):
             with self.subTest(file=rel):
                 self.assertEqual(" ".join(text.split()).count(keep), 1)
 
+    def test_a_routed_turn_keeps_the_request_it_was_given(self):
+        # The server picks the skill from the account's situation, not from
+        # which command called (situations.plugin_skill), so /weekly on an
+        # account whose results are not counted is told the measurement
+        # steps cover the turn. Every marked file does its own request first
+        # and keeps the limit next_step adds. One sentence, the same in each.
+        guard = ("When the answer's `plugin.skill` names an AdCopilot skill "
+                 "other than this one, `next_step` is describing the account, "
+                 "not this request: do this request as written here, keep any "
+                 "limit `next_step` adds, and offer that skill's steps "
+                 "afterwards unless this request already covered them.")
+        marked = 0
+        for rel in self.model_read():
+            text = read(rel)
+            if plugin_marker() not in text:
+                continue
+            marked += 1
+            with self.subTest(file=rel):
+                self.assertEqual(" ".join(text.split()).count(guard), 1)
+        self.assertEqual(marked, 11)
+
     def test_the_marker_graders_need_the_version(self):
         """Each case's marks-plugin-use grader counts the calls it fails on, so
         its pattern must match a call without the versioned marker and must
