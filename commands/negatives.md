@@ -5,7 +5,7 @@ description: Find the searches that cost money and brought nothing in the last s
 
 No skill: the connector's tools explain themselves.
 
-`get_org_context` first, with `source: "claude-plugin/0.2.6"`. Send `source`
+`get_org_context` first, with `source: "claude-plugin/0.2.7"`. Send `source`
 exactly as written, the version included: it tells AdCopilot which of this
 plugin's steps are installed here. When the answer's `plugin.skill` names an
 AdCopilot skill other than this one, `next_step` is describing the account, not

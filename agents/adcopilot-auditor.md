@@ -27,7 +27,7 @@ both ways and let the main conversation carry it to them.
 
 ## Start
 
-Call `get_org_context` (with `source: "claude-plugin/0.2.6"`) first and obey
+Call `get_org_context` (with `source: "claude-plugin/0.2.7"`) first and obey
 its `playbook` and `cross_reads` — the read ceiling there is for this account's
 situation. Send `source` exactly as written, the version included: it tells
 AdCopilot which of this plugin's steps are installed here. When the answer's

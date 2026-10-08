@@ -5,7 +5,7 @@ description: The week in one summary — last Monday to Sunday against the week 
 
 No skill: the connector's tools explain themselves.
 
-`get_org_context` first, with `source: "claude-plugin/0.2.6"`; the account's
+`get_org_context` first, with `source: "claude-plugin/0.2.7"`; the account's
 currency and time zone come from its answer, and the week runs Monday to Sunday
 in that time zone. Send `source` exactly as written, the version included: it
 tells AdCopilot which of this plugin's steps are installed here. When the
