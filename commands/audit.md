@@ -31,6 +31,14 @@ even when the schema you hold shows no `tools` parameter. If the tool is still
 missing: `/mcp`, choose `adcopilot`, then Reconnect refetches the tool list (at
 the time of writing); reinstalling the plugin is the last resort.
 
+A missing tool halves the audit and does not cancel it: say the tool list this
+session holds is out of date, run `budget_pacing` anyway, report what it found
+for the dates its answer covers, and say you will run both once the list is
+refreshed. Leave sorting newness from findings to that run — there are no
+findings to sort yet — and name no revision value to the customer. The first
+fix is then that reconnect, with its last resort: a step for them, not a change
+to the account, so it is not put as a proposal and carries no cost lines.
+
 End with the one finding to fix first, and why, as a proposal: the exact
 change, what acting costs and what leaving it costs, in the account's currency,
 for a yes or a no. Change nothing until they say yes, here. On a yes: apply it,
