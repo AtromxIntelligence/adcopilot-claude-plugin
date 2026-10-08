@@ -37,7 +37,7 @@ The report:
 
 - First line, alone: **All clear** or **Needs a look**.
 - Then each read in a sentence or two of plain words: money in the account's currency as the tools display it, Google's names for things, no field names, no account numbers, nothing pasted as the server returned it. A read with nothing in it is one line ("No changes in the last 24 hours.").
-- Last: the single most valuable fix, as one yes/no question the customer answers when they open this. It is the only question in the report, and the run does not wait for it.
+- Last: the single most valuable fix, as one yes/no question the customer answers when they open this. It is the only question in the report, and the run does not wait for it. Ask about the change itself, in one clause — not a check to make first, and not a change that hangs on what a check finds.
 
 ## The set-up
 

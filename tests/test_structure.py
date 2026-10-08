@@ -835,9 +835,13 @@ class WhatTheServerDefersTo(unittest.TestCase):
         self.assertIn("Nothing inside the run counts as a yes", flat)
         self.assertIn("first re-read the one thing the fix touches", flat)
         self.assertIn("`adcopilot-review` skill's \"When they say yes\"", flat)
-        # and the run itself still asks nothing and changes nothing
+        # and the run itself still asks nothing and changes nothing, and its
+        # closing question is the change itself: a check folded into it ("if
+        # it is still $30, shall I...") is one yes for a change nobody has
+        # seen restated, which "After the run" exists to prevent.
         run = section(read("skills/adcopilot-daily/SKILL.md"), "## The run") or ""
         self.assertNotIn("After the run", run.split("\n", 1)[1])
+        self.assertIn("Ask about the change itself", run)
 
     def test_audit_proposes_the_first_fix_and_waits(self):
         text = " ".join(read("commands/audit.md").split())
