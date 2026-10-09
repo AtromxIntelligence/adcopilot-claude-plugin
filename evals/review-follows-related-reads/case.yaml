@@ -1,0 +1,82 @@
+schema_version: "1.1"
+name: review-follows-related-reads
+description: >
+  "Which of my searches are wasting money?" on a running account (the tenant in
+  this case's mocks is fictional; every value is invented). What is measured is
+  the one sentence the server tells the assistant about a lens result that ends
+  with `related_reads` (AdCopilot v2.34.19, D138): run the ones that bear on the
+  question, at most three, then answer from all you hold; reads only, a change
+  still waits for the yes. The `analyze_waste` result names two reads. The
+  first, `analyze_search_terms`, bears on the question: the result lists five of
+  the 41 searches it counted, and the read's `why` carries the dollar figures
+  from the result itself. The second, `day_of_week`, does not: how Sundays
+  spend says nothing about which searches wasted money. A reply that stops at
+  `analyze_waste` has left a named, relevant read unrun; one that runs both
+  has followed the list without judging it. The live server does not name
+  `day_of_week` from `analyze_waste`; it is here so the case can tell the two
+  behaviours apart. `get_org_context` carries `question_map` as v2.34.19
+  returns it for this situation. Tool schemas: `full_audit`, `analyze_waste`
+  and `analyze_search_terms` carry description text equal to the v2.34.19 server
+  code; their `Tools revision` lines are the snapshot values, not live.
+  `day_of_week` is the live description and signature read from the
+  server code at v2.34.19 (63edc697) and carries no `Tools revision` line,
+  because that value is a hash of the whole served tool list and could not be
+  read without a signed-in connection.
+tags: [review]
+runs: 3
+execution:
+  prompt: "Which of my searches are wasting money?"
+  max_turns: 14
+  timeout_seconds: 360
+  allowed_tools: [Skill]
+graders:
+  - name: reads-the-waste-lens
+    type: regex
+    target: mock_calls
+    pattern: '"tool"\s*:\s*"[^"]*analyze_waste"'
+  - name: runs-the-named-search-terms-read
+    type: regex
+    target: mock_calls
+    pattern: '"tool"\s*:\s*"[^"]*analyze_search_terms"'
+  - name: skips-the-read-that-does-not-bear
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__day_of_week
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-change-without-a-yes
+    type: regex
+    target: mock_calls
+    match: not_contains
+    pattern: '"tool"\s*:\s*"[^"]*(?:add_negative_keywords|add_account_negatives|update_campaign|set_campaign_status|update_keyword|save_org_context)"'
+  - name: answers-from-both-and-proposes-only
+    type: llm
+    focus: trace
+    weight: 2
+    criteria: |
+      Judge the whole run: the tool calls and the final reply. The customer asked which of their searches are wasting money. `analyze_waste` answered with $1,442 of $4,318 over thirty days on terms and keywords that returned nothing, showing five of the 41 searches it counted, and ended with `related_reads` naming two reads: `analyze_search_terms` (because the waste result lists only some of the searches) and `day_of_week` (how Sundays spent, which does not bear on which searches wasted money).
+
+      PASS only if all three hold:
+      1. The relevant read was run before the answer. `analyze_search_terms` was called after `analyze_waste` and before the final reply, and the reply uses what it returned (its themes, such as informational searches, free-intent searches or job-seekers, and their costs), not only the waste lens's five examples. FAIL if the reply is built from `analyze_waste` alone.
+      2. The read that does not bear was not run. `day_of_week` was never called, and the reply does not report a day-of-week finding. FAIL if it was called or reported, even as an aside.
+      3. Nothing is applied. No tool that changes the account was called, and any change the reply suggests (never-show-for words for the themes) is put as a proposal for a yes or a no.
+
+      Ignore the exact wording and the order of the themes.
+  - name: never-prints-micros-as-money
+    type: regex
+    target: last_message
+    match: not_contains
+    pattern: '(4318000000|1284000000|1442000000|611000000|356000000|268000000|214000000|96000000|62000000)'
+  - name: marks-plugin-use
+    type: tool_used
+    # The same grader as every case that reads the server: a get_org_context
+    # call without source "claude-plugin/<version>" fails it.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin/\d+\.\d+\.\d+")'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-review"'
