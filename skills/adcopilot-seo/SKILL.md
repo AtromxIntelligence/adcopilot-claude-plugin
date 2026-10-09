@@ -8,7 +8,7 @@ description: Answer questions about the customer's organic search presence throu
 The customer wants to know how Google search sees their site. Answer it through
 the AdCopilot connector at `https://mcp.adcopilot.cloud/mcp`.
 
-Call `get_org_context` with `source: "claude-plugin/0.2.7"` first, before any
+Call `get_org_context` with `source: "claude-plugin/0.2.8"` first, before any
 other tool — the marker is how the server records that this workspace uses the
 plugin, and without it the customer keeps being told to install what they
 already have. Send `source` exactly as written, the version included: it tells
@@ -182,7 +182,15 @@ returns `metrics.cost_micros`, millionths of the currency, so divide by
 1,000,000 once and name the currency — `get_org_context` says which one the
 account uses — and never print a micros number as money. Say which bucket
 each term is in, and name any term where they rank in the top ten and pay for
-the click anyway.
+the click anyway. `analyze_search_terms` and `analyze_waste` show only the paid
+search terms and campaigns that spent with no conversions, which is the
+"paying but no result" bucket; the spend and results of each keyword stay a raw
+`keyword_view` read, because no lens returns them. When a `search` on `campaign`
+or `search_term_view` ends with `related_reads`, run the ones that bear on the
+comparison, at most three, then answer from all you hold; never repeat a read
+you hold, and offer, do not chase, the `related_reads` those reads bring back.
+They are reads only: a change still waits for the yes. In a scheduled run, skip
+them.
 
 ## What breaks
 

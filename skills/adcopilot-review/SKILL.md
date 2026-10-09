@@ -11,7 +11,7 @@ A thin answer is the failure here. Reads are the cheap part; a customer who has
 to ask four follow-up questions to learn what one answer could have told them
 has been short-changed.
 
-Call `get_org_context` with `source: "claude-plugin/0.2.7"` first, before any
+Call `get_org_context` with `source: "claude-plugin/0.2.8"` first, before any
 other tool — the marker is how the server records that this workspace uses the
 plugin, and without it the customer keeps being told to install what they
 already have. Send `source` exactly as written, the version included: it tells
@@ -22,6 +22,14 @@ any limit `next_step` adds, and offer that skill's steps afterwards unless this
 request already covered them. Then follow the answer's `next_step`, `playbook`
 and `cross_reads` — they carry the read ceiling for this account's situation
 and the house rails. Everything below runs inside them.
+
+On an account with campaigns to read — the answer's situation is
+`ADS_DORMANT`, `ADS_ACTIVE_UNTRACKED` or `ADS_ACTIVE_TRACKED` — the answer also
+carries `question_map`: for each kind of question, the read that answers it
+(wasted spend, search terms and negatives, keywords, ads, budget, results
+changed, tracking, what to do). Use it to choose the first read for a question that is
+narrower than the whole account. It is absent when there is nothing to read, so
+when it is missing the list below stands in for it.
 
 ## Spend the reads you are given
 
@@ -38,6 +46,17 @@ what the rest of the day is for.
 What you cannot read, say you cannot read. Never estimate a figure, and never
 carry one over from an earlier turn as if it were fresh.
 
+## Follow `related_reads`
+
+When a lens or `search` result ends with `related_reads`, run the ones that bear
+on the question, at most three, then answer from all you hold. Each names its
+tool, its arguments and a `why` built from the numbers of the result you just
+read; skip one that does not bear on what the customer asked. Never repeat a
+read you hold. Offer, do not chase, the `related_reads` those reads bring back.
+They are reads only: a change still waits for the customer's yes. The ceiling
+above still holds: if it is reached before a related read, say which one you did
+not run. In a scheduled run, skip them.
+
 ## The sequence
 
 **Open with `full_audit`, with `depth="deep"` and `days` set to the window you
@@ -52,7 +71,18 @@ orders its findings by severity, NOT by money, so re-sort by cost before you
 choose the three you report. For the cost ranking itself, `analyze_waste` is the
 read; `analyze_search_terms` groups the searches into negative-keyword
 candidates by theme, which is a different job. Together they usually answer
-steps 3 and 5 below, so read those yourself only for what they did not cover.
+step 3 below, so read it yourself only for what they did not cover.
+
+A question narrower than the whole account starts with the lens that answers it
+rather than with `full_audit`: `analyze_waste` for money spent on nothing,
+`analyze_search_terms` for negatives, `keyword_opportunities` for keywords worth
+adding or fixing, `quality_score_breakdown` for ad rank and Quality Score,
+`rsa_asset_report` for the ad copy, `bidding_audit` for how campaigns bid,
+`day_of_week` for which days and hours earn, `budget_pacing` for budgets,
+`change_history` for what changed and who changed it, and
+`conversion_setup_audit` for what is counted. Do not write a `search` for what
+one of these already returns: the lens reads the account the way Google counts
+it, and a hand-written query reads one slice of it.
 
 Then, in this order, stopping only when the ceiling is reached:
 
@@ -66,15 +96,21 @@ Then, in this order, stopping only when the ceiling is reached:
 3. **What was paid for that should not have been.** The search terms with cost
    and no conversions, worst first — usually the largest finding.
    `analyze_search_terms` is one read for six query shapes and all six
-   negative-keyword themes, so prefer it over `search_term_view` by hand.
+   negative-keyword themes: use it, never `search_term_view` written by hand.
 4. **Whether delivery is being held back.** `budget_pacing` — one read for the
    month-to-date projection against each daily budget. A campaign at its cap
    every day is turning away traffic the customer is willing to pay for, and
    they cannot see it from the dashboard.
-5. **Whether anything is switched off by Google.** Disapproved ads, and whether
-   results are being counted at all (`conversion_setup_audit` is one read for
-   what is counted and what is aimed at). An account counting nothing makes
-   every other number meaningless, so say that first if it is true.
+5. **Whether results are being counted at all.** `conversion_setup_audit` is one
+   read for what is counted and what is aimed at. An account counting nothing
+   makes every other number meaningless, so say that first if it is true.
+6. **Whether anything is switched off by Google, and what changed.** Disapproved
+   ads are a `search` on `ad_group_ad` (no lens returns them). When spend,
+   results or cost per result moved against the period before, `change_history`
+   says what was changed in the account, when, by which Google login and through
+   which channel; when nothing moved, leave it. It keeps thirty days and omits
+   Google Ads Editor changes and some rows, so a quiet log does not prove
+   nothing changed; say that when the numbers moved and the log shows no cause.
 
 Read the account, never the profile's memory of it. A saved note is context for
 your wording, never a substitute for a read.

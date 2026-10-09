@@ -5,23 +5,38 @@ description: The week in one summary — last Monday to Sunday against the week 
 
 No skill: the connector's tools explain themselves.
 
-`get_org_context` first, with `source: "claude-plugin/0.2.7"`; the account's
+`get_org_context` first, with `source: "claude-plugin/0.2.8"`; the account's
 currency and time zone come from its answer, and the week runs Monday to Sunday
 in that time zone. Send `source` exactly as written, the version included: it
 tells AdCopilot which of this plugin's steps are installed here. When the
 answer's `plugin.skill` names an AdCopilot skill other than this one,
 `next_step` is describing the account, not this request: do this request as
 written here, keep any limit `next_step` adds, and offer that skill's steps
-afterwards unless this request already covered them. Then three reads, in this
+afterwards unless this request already covered them. Then four reads, in this
 order, stopping at the read cap it sets and saying which you did not reach:
 
 1. **The two weeks** — `search` on `campaign` with `start_date` and `end_date`
    spanning last week and the week before, `segments.date` and the cost,
    clicks and conversions metrics: each week's spend, conversions and cost per
    conversion, per campaign and in total.
-2. **What changed** — `search` on `change_event` for last week, with
-   `start_date`, `end_date` and a `limit`: who changed what.
-3. **This month** — `budget_pacing`: whether the month is on track.
+2. **What changed** — `change_history`, with `days` reaching back to last
+   Monday (at most thirty; keep only last week's changes): who changed what,
+   when and through which channel. It omits Google Ads Editor changes and
+   some rows, so a quiet log does not prove nothing changed; say that when the
+   numbers moved and the log shows no cause.
+3. **What Google switched off** — `search` on `ad_group_ad` with
+   `ad_group_ad.policy_summary.approval_status`, and on `campaign` with
+   `campaign.status` for the campaigns that are no longer on: any ad
+   disapproved or limited, with Google's stated reason, and any campaign
+   stopped. The change log does not hold a disapproval, so the read above
+   cannot stand in for this one.
+4. **This month** — `budget_pacing`: whether the month is on track.
+
+When a lens or `search` result ends with `related_reads`, run the ones that
+bear on the question, at most three, then answer from all you hold; never
+repeat a read you hold, and offer, do not chase, the `related_reads` those
+reads bring back. They are reads only: a change still waits for the customer's
+yes. In a scheduled run, skip them. The read cap above still holds.
 
 Then the summary, in this order, in plain words someone could forward without
 editing:
@@ -29,8 +44,8 @@ editing:
 - **The week** — spend, conversions and cost per conversion, each against the
   week before, money in the account's currency, rounded.
 - **The three biggest changes** — the largest moves in the numbers (a campaign
-  whose spend or conversions moved most), and the changes someone made, with
-  who made them. Say which is which.
+  whose spend or conversions moved most), the changes someone made, with who
+  made them, and anything Google switched off itself. Say which is which.
 - **Three things to do this week** — each one concrete, each tied to a number
   above, the most valuable first.
 

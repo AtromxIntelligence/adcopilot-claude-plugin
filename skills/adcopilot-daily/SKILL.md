@@ -20,6 +20,7 @@ Nobody reads this until it has finished, so a question is a run that stops half-
 2. Read only. Call no tool that changes anything — nothing that creates, adds, updates, sets, pauses, links, attaches, enables or submits, in Google Ads, Analytics, Tag Manager or Search Console — and not `save_org_context` either: the source marker already records the run. A finding that names the exact call that fixes it is reported, never run.
 3. Ask nothing. Never stop for an answer and never end on a request for one. If something is unknown — which account, a read refused, a product to re-add, the day's operations used up — say so in one line and carry on with the rest.
 4. Never offer to schedule anything. This is the schedule.
+5. Skip `related_reads`. A lens result in this run may end with them; the five reads below are the run, each is counted, and nobody is there to choose among more. Do not run one, and do not mention that it was there.
 
 The account is the one the instructions name. If they name none: the account AdCopilot's own check-in reads (`latest_check_in.account`, or `routine.daily.customer_id`); else the only enabled account `get_org_context` reports that is not a manager account (`manager` true: a manager account has no campaigns of its own, and Google refuses its figures); else the first such one. If only manager accounts are enabled, say so in one line and read nothing more. Say which account, by the name Google Ads shows, right after the first line.
 
