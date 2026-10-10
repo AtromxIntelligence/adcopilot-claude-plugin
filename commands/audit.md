@@ -9,6 +9,17 @@ new account scores badly for reasons that are only its age — keywords with no
 impressions yet, a Quality Score of 0 because Google has not rated the keyword
 yet, a bidding strategy still learning.
 
+`full_audit` ends with `related_reads` when a section failed: run the ones that
+bear on the audit, at most three, then answer from all you hold. A lens result
+(`budget_pacing` included) may carry its own: the same rule, and never repeat a
+read you hold. Offer, do not chase, the `related_reads` those reads bring back.
+They are reads only: a change still waits for the customer's yes. In a
+scheduled run, skip them. For anything you want to know that one of the lenses
+(`analyze_waste`, `analyze_search_terms`, `quality_score_breakdown`,
+`rsa_asset_report`, `bidding_audit`, `keyword_opportunities`, `day_of_week`,
+`change_history`, `conversion_setup_audit`) answers, use the lens, not a
+`search` written by hand.
+
 Read the account, never the profile's memory of it. A saved note is context for your
 wording, never a substitute for a read. The decisions `get_org_context` carries say
 what was approved on a date, not what is set now: a budget, a split or a setting you
@@ -17,7 +28,7 @@ lost to budget describes the budgets of those thirty days, not today's — say t
 window, or read the latest day.
 
 Every `get_org_context` call here, the first one and the tools refresh alike,
-carries `source: "claude-plugin/0.2.7"`. Send `source` exactly as written, the
+carries `source: "claude-plugin/0.2.8"`. Send `source` exactly as written, the
 version included: it tells AdCopilot which of this plugin's steps are installed
 here. When the answer's `plugin.skill` names an AdCopilot skill other than this
 one, `next_step` is describing the account, not this request: do this request

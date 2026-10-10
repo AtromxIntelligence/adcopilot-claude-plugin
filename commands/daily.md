@@ -8,7 +8,7 @@ person asks for. If this conversation was started by a schedule — a Claude
 scheduled task or a Claude Code routine, with nobody there to answer — follow
 the `adcopilot-daily` skill's run instead, and none of what follows.
 
-`get_org_context` first, with `source: "claude-plugin/0.2.7"`. Send `source`
+`get_org_context` first, with `source: "claude-plugin/0.2.8"`. Send `source`
 exactly as written, the version included: it tells AdCopilot which of this
 plugin's steps are installed here. When the answer's `plugin.skill` names an
 AdCopilot skill other than this one, `next_step` is describing the account, not
@@ -29,6 +29,13 @@ saying which you did not reach and why:
 4. **What changed** — `search` on `change_event`, which needs `start_date`,
    `end_date` and a `limit`: what changed in the account since yesterday, and
    who changed it.
+
+When a lens or `search` result ends with `related_reads`, run the ones that
+bear on the question, at most three, then answer from all you hold; never
+repeat a read you hold, and offer, do not chase, the `related_reads` those
+reads bring back. They are reads only: a change still waits for the customer's
+yes. In a scheduled run, skip them. The read cap above still holds: say which
+you did not reach.
 
 Lead with one line: all clear, or what needs a look. Then each read in a
 sentence or two of plain words — money in the account's currency as the tools

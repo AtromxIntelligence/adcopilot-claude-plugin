@@ -1,0 +1,253 @@
+{
+  "tools": [
+    {
+      "name": "full_audit",
+      "description": "Audit conversion tracking, wasted spend, structure, keywords, ads and settings. Quick scores three of the 73 checks, month to date; deep attempts all 73 over the `days` window, with a health score. Findings: failures first, then by severity, not impact; some carry a fixing call. Account ids and the business profile come from get_org_context. Read-only.\n\nTools revision: 6145d0b5.",
+      "inputSchema": {
+        "properties": {
+          "customer_id": {
+            "title": "Customer Id",
+            "type": "string"
+          },
+          "days": {
+            "default": 30,
+            "title": "Days",
+            "type": "integer"
+          },
+          "depth": {
+            "default": "quick",
+            "enum": [
+              "quick",
+              "deep"
+            ],
+            "title": "Depth",
+            "type": "string"
+          },
+          "detail": {
+            "default": "summary",
+            "enum": [
+              "summary",
+              "full"
+            ],
+            "title": "Detail",
+            "type": "string"
+          },
+          "max_findings": {
+            "default": 20,
+            "title": "Max Findings",
+            "type": "integer"
+          },
+          "render": {
+            "default": "both",
+            "enum": [
+              "json",
+              "markdown",
+              "both"
+            ],
+            "title": "Render",
+            "type": "string"
+          },
+          "sections": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "conversion_tracking",
+                    "wasted_spend",
+                    "structure",
+                    "keywords_qs",
+                    "ads_assets",
+                    "settings_targeting"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sections"
+          }
+        },
+        "required": [
+          "customer_id"
+        ],
+        "title": "full_auditArguments",
+        "type": "object"
+      }
+    },
+    {
+      "name": "analyze_waste",
+      "description": "Find where money is going with nothing to show for it: zero-converting search terms and keywords, broad match on manual bidding, campaigns under 1.0 ROAS. Returns typed findings with the cost of each and the exact negative-keyword or pause call that fixes it. Read-only.\n\nTools revision: 7016a0aa.",
+      "inputSchema": {
+        "properties": {
+          "customer_id": {
+            "title": "Customer Id",
+            "type": "string"
+          },
+          "days": {
+            "default": 30,
+            "title": "Days",
+            "type": "integer"
+          },
+          "detail": {
+            "default": "summary",
+            "enum": [
+              "summary",
+              "full"
+            ],
+            "title": "Detail",
+            "type": "string"
+          },
+          "max_findings": {
+            "default": 12,
+            "title": "Max Findings",
+            "type": "integer"
+          },
+          "min_clicks": {
+            "default": 3,
+            "title": "Min Clicks",
+            "type": "integer"
+          },
+          "render": {
+            "default": "both",
+            "enum": [
+              "json",
+              "markdown",
+              "both"
+            ],
+            "title": "Render",
+            "type": "string"
+          }
+        },
+        "title": "analyze_wasteArguments",
+        "type": "object",
+        "required": [
+          "customer_id"
+        ]
+      }
+    },
+    {
+      "name": "analyze_search_terms",
+      "description": "Group the last 30 days of search terms into negative-keyword candidates by theme: informational, job-seeker, free-intent, competitor, this workspace's never-show-for list, and searches in a language other than the saved profile language (none saved: a writing system other than their campaign's, no call). Returns one ready-to-run add_negative_keywords call per theme. Never proposes broad-match negatives. Read-only.\n\nTools revision: 7016a0aa.",
+      "inputSchema": {
+        "properties": {
+          "customer_id": {
+            "title": "Customer Id",
+            "type": "string"
+          },
+          "days": {
+            "default": 30,
+            "title": "Days",
+            "type": "integer"
+          },
+          "detail": {
+            "default": "summary",
+            "enum": [
+              "summary",
+              "full"
+            ],
+            "title": "Detail",
+            "type": "string"
+          },
+          "max_findings": {
+            "default": 25,
+            "title": "Max Findings",
+            "type": "integer"
+          },
+          "min_clicks": {
+            "default": 3,
+            "title": "Min Clicks",
+            "type": "integer"
+          },
+          "render": {
+            "default": "both",
+            "enum": [
+              "json",
+              "markdown",
+              "both"
+            ],
+            "title": "Render",
+            "type": "string"
+          },
+          "themes": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "informational",
+                    "job_seeker",
+                    "free_intent",
+                    "competitor",
+                    "user_declared",
+                    "other_language"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Themes"
+          }
+        },
+        "title": "analyze_search_termsArguments",
+        "type": "object",
+        "required": [
+          "customer_id"
+        ]
+      }
+    },
+    {
+      "name": "day_of_week",
+      "description": "Break 90 days of cost, conversions and cost-per-conversion down by day of week and hour, and name the day-parts that lose money and the ones that are underserved. For money-losing day-parts it can give the steps to change the schedule in Google Ads; it returns no tool call. Read-only.",
+      "inputSchema": {
+        "properties": {
+          "customer_id": {
+            "title": "Customer Id",
+            "type": "string"
+          },
+          "days": {
+            "default": 90,
+            "title": "Days",
+            "type": "integer"
+          },
+          "detail": {
+            "default": "summary",
+            "enum": [
+              "summary",
+              "full"
+            ],
+            "title": "Detail",
+            "type": "string"
+          },
+          "max_findings": {
+            "default": 25,
+            "title": "Max Findings",
+            "type": "integer"
+          },
+          "render": {
+            "default": "both",
+            "enum": [
+              "json",
+              "markdown",
+              "both"
+            ],
+            "title": "Render",
+            "type": "string"
+          }
+        },
+        "title": "day_of_weekArguments",
+        "type": "object",
+        "required": [
+          "customer_id"
+        ]
+      }
+    }
+  ]
+}
