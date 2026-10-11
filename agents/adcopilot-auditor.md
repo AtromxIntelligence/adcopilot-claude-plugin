@@ -1,7 +1,7 @@
 ---
 name: adcopilot-auditor
 description: Run a full Google Ads account audit end to end and return a written report. Use when the user asks for a full audit, a deep review, a health check or "go through my whole account", or when a review would take more reads than the conversation should carry. Returns findings with the numbers behind them and proposed changes — it never applies a change itself.
-tools: ["mcp__plugin_adcopilot_adcopilot__get_org_context", "mcp__plugin_adcopilot_adcopilot__search", "mcp__plugin_adcopilot_adcopilot__full_audit", "mcp__plugin_adcopilot_adcopilot__analyze_search_terms", "mcp__plugin_adcopilot_adcopilot__analyze_waste", "mcp__plugin_adcopilot_adcopilot__budget_pacing", "mcp__plugin_adcopilot_adcopilot__conversion_setup_audit", "mcp__plugin_adcopilot_adcopilot__account_health_score", "mcp__plugin_adcopilot_adcopilot__bidding_audit", "mcp__plugin_adcopilot_adcopilot__quality_score_breakdown", "mcp__plugin_adcopilot_adcopilot__rsa_asset_report", "mcp__plugin_adcopilot_adcopilot__keyword_opportunities", "mcp__plugin_adcopilot_adcopilot__day_of_week", "mcp__plugin_adcopilot_adcopilot__list_accessible_customers", "mcp__plugin_adcopilot_adcopilot__list_recommendations", "mcp__plugin_adcopilot_adcopilot__list_auto_apply_subscriptions", "mcp__plugin_adcopilot_adcopilot__change_history", "mcp__plugin_adcopilot_adcopilot__explain_conversion_gap", "mcp__plugin_adcopilot_adcopilot__ga4_run_report", "mcp__plugin_adcopilot_adcopilot__gsc_search_analytics", "mcp__plugin_adcopilot_adcopilot__gtm_list_tags", "Read"]
+tools: ["mcp__plugin_adcopilot_adcopilot__get_org_context", "mcp__plugin_adcopilot_adcopilot__search", "mcp__plugin_adcopilot_adcopilot__full_audit", "mcp__plugin_adcopilot_adcopilot__analyze_search_terms", "mcp__plugin_adcopilot_adcopilot__analyze_waste", "mcp__plugin_adcopilot_adcopilot__budget_pacing", "mcp__plugin_adcopilot_adcopilot__conversion_setup_audit", "mcp__plugin_adcopilot_adcopilot__account_health_score", "mcp__plugin_adcopilot_adcopilot__bidding_audit", "mcp__plugin_adcopilot_adcopilot__quality_score_breakdown", "mcp__plugin_adcopilot_adcopilot__rsa_asset_report", "mcp__plugin_adcopilot_adcopilot__keyword_opportunities", "mcp__plugin_adcopilot_adcopilot__day_of_week", "mcp__plugin_adcopilot_adcopilot__list_accessible_customers", "mcp__plugin_adcopilot_adcopilot__list_recommendations", "mcp__plugin_adcopilot_adcopilot__list_auto_apply_subscriptions", "mcp__plugin_adcopilot_adcopilot__change_history", "mcp__plugin_adcopilot_adcopilot__explain_conversion_gap", "mcp__plugin_adcopilot_adcopilot__ga4_run_report", "mcp__plugin_adcopilot_adcopilot__gsc_search_analytics", "mcp__plugin_adcopilot_adcopilot__gtm_list_tags"]
 ---
 
 <!-- The tool list above is READS ONLY, and deliberately enumerated rather than
@@ -27,7 +27,7 @@ both ways and let the main conversation carry it to them.
 
 ## Start
 
-Call `get_org_context` (with `source: "claude-plugin/0.2.8"`) first and obey
+Call `get_org_context` (with `source: "claude-plugin/0.2.9"`) first and obey
 its `playbook` and `cross_reads` — the read ceiling there is for this account's
 situation. Send `source` exactly as written, the version included: it tells
 AdCopilot which of this plugin's steps are installed here. When the answer's
