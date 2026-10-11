@@ -1,7 +1,7 @@
 {
   "name": "adcopilot",
-  "version": "0.2.8",
-  "description": "Google Ads, Analytics, Search Console and Tag Manager from your AI client — audit wasted spend, build campaigns, fix conversion tracking. Your AI client asks before each change while the write tools stay on Needs approval, and AdCopilot never deletes anything but a negative keyword.",
+  "version": "0.2.9",
+  "description": "The AI agent that runs your Google Ads. Audit wasted spend, mine search terms, build campaigns and fix conversion tracking, with Google Analytics, Google Search Console and Google Tag Manager live in the same chat. Your AI client asks before each change while the write tools stay on Needs approval, and AdCopilot never deletes anything but a negative keyword.",
   "author": {
     "name": "Atromx Intelligence",
     "url": "https://adcopilot.cloud"
@@ -14,12 +14,26 @@
   "license": "MIT",
   "keywords": [
     "google-ads",
+    "google-ads-agent",
+    "google-ads-audit",
     "ppc",
-    "analytics",
+    "paid-search",
+    "search-ads",
+    "performance-max",
+    "wasted-ad-spend",
+    "negative-keywords",
+    "search-terms",
+    "conversion-tracking",
+    "google-analytics",
+    "ga4",
+    "google-search-console",
     "search-console",
+    "google-tag-manager",
     "tag-manager",
+    "adcopilot",
+    "ai-agent",
     "mcp"
   ],
-  "displayName": "AdCopilot — Google Ads, Analytics, Search Console & Tag Manager",
-  "icon": "./.claude-plugin/icon.svg"
+  "displayName": "AdCopilot for Google Ads, Google Analytics, Google Search Console & Google Tag Manager",
+  "icon": "./.claude-plugin/icon.png"
 }
