@@ -993,8 +993,35 @@ class FullAuditDepth(unittest.TestCase):
         r"quick.{0,3}\(the default\)",
         r"defaults to .?depth=\"quick\"",
         r"Its default is .?quick",
-        r"full_audit. defaults to a",
+        r"full_audit.? defaults to a",
     )]
+    # Each of these is the stale wording, wrapped the way the surfaces wrap
+    # their prose. Each is split across two source lines so that no line of
+    # this file carries a whole phrase: the issue's grep reads line by line,
+    # and the guard must not be a hit on itself.
+    WRAPPED = (
+        "Its default is\n"
+        "`quick`, which scores three of the seventy-three.",
+        "`full_audit`\n"
+        "defaults to a quick run",
+        "`quick`\n"
+        "(the default)",
+        "defaults to\n"
+        "`depth=\"quick\"`",
+    )
+
+    @classmethod
+    def stale_phrases(cls, text):
+        """The stale phrases in `text`, found wherever it wraps them."""
+        flat_text = " ".join(text.split())
+        return [m.group(0) for m in
+                (pattern.search(flat_text) for pattern in cls.STALE) if m]
+
+    def test_the_scan_finds_a_phrase_wherever_it_wraps(self):
+        for sample in self.WRAPPED:
+            with self.subTest(sample=sample):
+                self.assertTrue(self.stale_phrases(sample))
+        self.assertEqual(self.stale_phrases(DEPTH_WORDING), [])
 
     def test_the_surfaces_say_what_a_call_with_no_depth_does(self):
         for rel in self.SURFACES:
@@ -1021,12 +1048,10 @@ class FullAuditDepth(unittest.TestCase):
                         continue
                     rel = os.path.relpath(os.path.join(dirpath, name), ROOT)
                     scanned += 1
-                    for n, line in enumerate(read(rel).splitlines(), 1):
-                        for pattern in self.STALE:
-                            with self.subTest(file=rel, line=n):
-                                self.assertIsNone(
-                                    pattern.search(line),
-                                    "%s:%d still calls quick the default" % (rel, n))
+                    with self.subTest(file=rel):
+                        self.assertEqual(
+                            self.stale_phrases(read(rel)), [],
+                            "%s still calls quick the default" % rel)
         self.assertGreater(scanned, 30)
 
 
