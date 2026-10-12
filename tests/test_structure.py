@@ -52,6 +52,12 @@ What it pins, and why each one is here:
   so, the auditor holds the read such a finding names, and `full_audit`'s
   depth is described the way the server behaves now (deep, with a quick
   fallback when a call names none), not as a quick default.
+- Meta ads next to AdCopilot (`adcopilot-meta`): AdCopilot has no Meta
+  integration, so the skill sends the customer to Meta's own connector, links
+  Meta's official page and AdCopilot's guide, labels every figure with its
+  source, keeps one platform to a change, asks before a change through either
+  connector, and carries no plan or price word and nothing Meta has not
+  published. The manifests do not claim a Meta integration.
 """
 
 import json
@@ -184,6 +190,19 @@ def fenced(text, lang="text"):
     """The body of the first ```lang fenced block in `text`, or None."""
     m = re.search(r"^```%s\n(.*?)\n```$" % lang, text or "", re.S | re.M)
     return m.group(1) if m else None
+
+
+def fenced_quote(text):
+    """The text of the first `>` blockquote in `text`, with the markers removed,
+    or None. The add-it answer in `adcopilot-meta` is the customer-facing part."""
+    lines, started = [], False
+    for line in (text or "").splitlines():
+        if line.startswith(">"):
+            started = True
+            lines.append(line[1:].strip())
+        elif started:
+            break
+    return " ".join(lines) if lines else None
 
 
 def grader(case, name):
@@ -789,7 +808,7 @@ class PluginVersionMarker(unittest.TestCase):
             marked += 1
             with self.subTest(file=rel):
                 self.assertEqual(" ".join(text.split()).count(guard), 1)
-        self.assertEqual(marked, 11)
+        self.assertEqual(marked, 12)
 
     def test_the_marker_graders_need_the_version(self):
         """Each case's marks-plugin-use grader counts the calls it fails on, so
@@ -1068,6 +1087,219 @@ class FullAuditDepth(unittest.TestCase):
                             self.stale_phrases(read(rel)), [],
                             "%s still calls quick the default" % rel)
         self.assertGreater(scanned, 30)
+
+
+class MetaSkill(unittest.TestCase):
+    """`adcopilot-meta`: Meta ads next to AdCopilot, through Meta's own connector.
+
+    AdCopilot reaches Google and nothing else; a non-Google platform is
+    roadmap-only, with no date, no price and no "supported" (the founder's rule
+    for every surface). So the skill's job is to send a Meta question to Meta's
+    connector and keep the two platforms apart: it must say what Meta's
+    connector is and how to add it without stating anything Meta has not
+    published, link the official page and AdCopilot's guide, label each figure
+    with where it came from, and ask before any change through either
+    connector, one platform at a time. The text the model carries has no plan or
+    price word (the directory policy that keeps sales wording out of everything
+    the model is told), and the part the customer is told has no internal tool
+    name or check id."""
+
+    SKILL = "skills/adcopilot-meta/SKILL.md"
+    # The page AdCopilot's docs builder published for this guide:
+    # web-docs/content/docs/guides/meta-ads-alongside-adcopilot.mdx, served
+    # under adcopilot.cloud/docs.
+    GUIDE = "https://adcopilot.cloud/docs/guides/meta-ads-alongside-adcopilot"
+    # Meta's own pages, the ones the guide's sources list.
+    META_HELP = "https://www.facebook.com/business/help/1456422242197840"
+    META_NEWS = "https://www.facebook.com/business/news/meta-ads-ai-connectors"
+    META_DEVDOCS = ("https://developers.facebook.com/documentation/ads-commerce/"
+                    "ads-ai-connectors/ads-mcp-server/ads-mcp-server-overview")
+    META_ADDRESS = "https://mcp.facebook.com/ads"
+    # Plan and price words, and any amount of money. Stricter than SALES, which
+    # only guards the daily-habit block: the founder's rule for AI-carried text
+    # is no plan or price words at all.
+    PLAN_OR_PRICE = re.compile(
+        r"\b(plans?|pric\w+|paid|free|upgrade[sd]?|subscri\w+|trial|discount\w*|"
+        r"buy|purchase\w*|starter|billing|tier|costs?|charg\w+)\b|[$\u20ac\u00a3\u20b9]\s?\d",
+        re.I)
+
+    def text(self):
+        return " ".join(read(self.SKILL).split())
+
+    def test_frontmatter_names_the_skill_and_triggers_on_meta(self):
+        fm = frontmatter(read(self.SKILL))
+        self.assertIn("name: adcopilot-meta\n", fm + "\n")
+        m = re.search(r"^description: (.+)$", fm, re.M)
+        self.assertIsNotNone(m, "the description is one line, as the other skills' are")
+        desc = m.group(1)
+        self.assertLessEqual(len(desc), 1024)
+        for word in ("Meta ads", "Facebook ads", "Instagram ads", "Meta Business",
+                     "Meta and Google", "across all their advertising"):
+            with self.subTest(word=word):
+                self.assertIn(word, desc)
+        # It must also catch the cross-platform ask and the "does AdCopilot work
+        # with Facebook" question, which are the two that arrive without a Meta
+        # connector in the chat.
+        self.assertRegex(desc, r"(?i)compare platforms")
+        self.assertRegex(desc, r"(?i)whether AdCopilot works with Facebook or Instagram")
+
+    def test_the_description_leads_with_what_it_does_not_a_price(self):
+        desc = re.search(r"^description: (.+)$",
+                         frontmatter(read(self.SKILL)), re.M).group(1)
+        self.assertIsNone(self.PLAN_OR_PRICE.search(desc))
+
+    def test_it_links_meta_official_page_and_the_adcopilot_guide(self):
+        raw = read(self.SKILL)
+        for url in (self.META_HELP, self.META_NEWS, self.META_DEVDOCS,
+                    self.GUIDE, self.META_ADDRESS):
+            with self.subTest(url=url):
+                self.assertIn(url, raw)
+        # The two links the customer is given when Meta's connector is absent.
+        absent = section(raw, "## When it is not there") or ""
+        self.assertIn(self.META_HELP, absent)
+        self.assertIn(self.GUIDE, absent)
+        self.assertIn("Those two links are the answer; give both.", absent)
+
+    def test_the_guide_path_is_the_one_the_docs_site_serves(self):
+        # Every docs page lives under /docs on adcopilot.cloud, so a guide at
+        # content/docs/guides/<slug>.mdx is /docs/guides/<slug>. A link to a
+        # page that does not exist is the worst thing this skill can hand over.
+        self.assertRegex(self.GUIDE,
+                         r"^https://adcopilot\.cloud/docs/guides/[a-z0-9-]+$")
+
+    def test_it_checks_for_meta_connector_before_answering(self):
+        text = self.text()
+        self.assertIn("## Look for Meta's connector first", read(self.SKILL))
+        self.assertIn("the deferred ones included", text)
+        self.assertIn("go by what its tools do rather than by a name", text)
+        absent = section(read(self.SKILL), "## When it is not there") or ""
+        flat_absent = " ".join(absent.split())
+        self.assertIn("do not offer to read Meta through AdCopilot: it cannot.",
+                      flat_absent)
+        self.assertIn("do not run the add yourself unless they ask you to.",
+                      flat_absent)
+
+    def test_it_says_adcopilot_has_no_meta_integration_and_promises_none(self):
+        text = self.text()
+        self.assertIn("It has no connection to Meta, and says so.", text)
+        self.assertIn("An integration with Meta ads is on the roadmap, with no date:",
+                      text)
+        self.assertIn("never say AdCopilot supports, connects to or manages Meta, "
+                      "and never give a date or a promise for one.", text)
+
+    def test_the_customer_facing_answer_names_no_internal_tool_or_check_id(self):
+        absent = section(read(self.SKILL), "## When it is not there") or ""
+        answer = fenced_quote(absent)
+        self.assertIsNotNone(answer, "the add-it answer is a quoted block")
+        for m in re.finditer(r"`([^`\n]+)`", answer):
+            self.assertNotRegex(m.group(1), r"^[a-z0-9]+(_[a-z0-9]+)+$",
+                                "a snake_case code span is a tool name or a check id")
+        self.assertNotRegex(answer, r"\b[GC][0-9]{1,3}\b|\b[A-Z]{1,3}-[A-Z0-9]{2,}\b")
+        self.assertIsNone(self.PLAN_OR_PRICE.search(answer))
+
+    def test_it_states_none_of_what_meta_has_not_published(self):
+        absent = " ".join((section(read(self.SKILL), "## When it is not there") or "").split())
+        self.assertIn("Meta's pages state no list of countries, no role the person "
+                      "needs on the ad account and no verification step. Do not "
+                      "state any of them, or anything else about Meta's terms.",
+                      absent)
+        # Meta's connector is described as Meta describes it: an open beta,
+        # reached in stages, never as finished.
+        text = self.text()
+        self.assertIn("Meta calls its connector an open beta and makes it "
+                      "available to ad accounts in stages", text)
+        self.assertIn("Calling Meta's connector finished or generally available, "
+                      "when Meta calls it a beta that is rolling out.", text)
+
+    def test_chatgpt_limits_are_openais_to_state(self):
+        # The account types that decide what ChatGPT lets a custom connector do
+        # are plan names; the skill carries none and points at OpenAI instead.
+        absent = " ".join((section(read(self.SKILL), "## When it is not there") or "").split())
+        self.assertIn("depends on the customer's ChatGPT account, and OpenAI sets it",
+                      absent)
+        self.assertIn("https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt",
+                      absent)
+        # "Meta Business" is Meta's own name for its accounts and stays.
+        self.assertNotRegex(
+            self.text(),
+            r"\b(Enterprise|Edu|Pro|Plus|Team)\b|ChatGPT (Business|Pro|Plus|Team)\b")
+
+    def test_it_carries_no_plan_or_price_word(self):
+        hits = sorted({m.group(0).lower()
+                       for m in self.PLAN_OR_PRICE.finditer(read(self.SKILL))})
+        self.assertEqual(hits, [], "plan or price wording in the skill: %s" % hits)
+        self.assertIsNone(SALES.search(read(self.SKILL)))
+        self.assertIsNone(BANNED.search(read(self.SKILL)))
+
+    def test_it_labels_every_figure_with_its_source(self):
+        text = self.text()
+        self.assertIn("**Label every figure with its source.**", text)
+        self.assertIn('"Google Ads, through AdCopilot" or "Meta, through Meta\'s '
+                      'connector"', text)
+        self.assertIn("never convert one from memory", text)
+        self.assertIn("Never present one platform's figure as the other's.", text)
+
+    def test_the_google_side_is_marked_and_the_meta_side_is_not_sent_to_adcopilot(self):
+        raw = read(self.SKILL)
+        text = self.text()
+        self.assertIn(plugin_marker(), raw)
+        self.assertEqual(raw.count(plugin_marker()), 1)
+        self.assertIn("A question that is only about Meta needs no AdCopilot call.",
+                      text)
+        self.assertIn("Put nothing read from Meta, its figures, names or account "
+                      "numbers, into any AdCopilot tool call, a note you save "
+                      "included, and send Meta's tools nothing read from the "
+                      "Google side.", text)
+
+    def test_a_change_waits_for_a_yes_and_is_one_platform_at_a_time(self):
+        text = self.text()
+        self.assertIn("A change in either connector is proposed first and made only "
+                      "after the customer's yes in this conversation", text)
+        self.assertIn("Never put a Google change and a Meta change in one write, "
+                      "one batch or one yes.", text)
+        self.assertIn("A yes to one is not a yes to the other.", text)
+        self.assertIn("**AdCopilot never writes to Meta.**", text)
+
+    def test_the_confirmation_is_the_assistants_to_ask_not_metas(self):
+        # Meta says its AI client asks before activation; nothing on Meta's
+        # server enforces that, so the skill asks itself.
+        text = self.text()
+        self.assertIn("That asking is yours to do: ask the customer yourself before "
+                      "you activate anything or change anything that spends, and do "
+                      "not treat a paused start as permission.", text)
+        self.assertIn("If Meta refuses a change, say that Meta refused it, quote "
+                      "what it said, and stop. Do not look for another Meta tool "
+                      "that gets around the refusal.", text)
+
+    def test_adcopilots_own_guarantees_are_not_claimed_for_meta(self):
+        text = self.text()
+        self.assertIn("do not say it of Meta's.", text)
+        self.assertIn("and some of them delete (a custom audience, for one).", text)
+
+    def test_it_names_no_lens(self):
+        # It relays no lens finding, so it is neither a relay nor excused in
+        # ConditionalFindings; a lens named here would force that decision.
+        for lens in LENS_NAMES:
+            with self.subTest(lens=lens):
+                self.assertNotIn(lens, read(self.SKILL))
+
+    def test_the_readme_lists_it(self):
+        readme = read("README.md")
+        self.assertIn("**adcopilot-meta**", readme)
+        self.assertIn(self.GUIDE, readme)
+        entry = readme[readme.index("**adcopilot-meta**"):]
+        entry = entry[:entry.index("\n")]
+        self.assertIsNone(self.PLAN_OR_PRICE.search(entry))
+        self.assertIn("no Meta integration", entry)
+        self.assertIn("on the roadmap, with no date", entry)
+
+    def test_the_manifests_claim_no_meta_integration(self):
+        # AdCopilot has none. The listing leads with Google, and a manifest that
+        # named Meta, Facebook or Instagram would read as support.
+        for rel in (".claude-plugin/plugin.json", ".claude-plugin/marketplace.json",
+                    ".mcp.json"):
+            with self.subTest(file=rel):
+                self.assertNotRegex(read(rel), r"(?i)\b(meta|facebook|instagram)\b")
 
 
 class Manifest(unittest.TestCase):
