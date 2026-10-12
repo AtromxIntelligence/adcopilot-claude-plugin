@@ -148,9 +148,13 @@ DEPTH_WORDING = ('Pass `depth="deep"` explicitly. A call that names no depth als
                  'runs deep today, but if that run can\'t finish it falls back to '
                  'a quick audit (the result says so); an explicit `deep` never does.')
 
-# The lenses whose findings a surface may relay to the customer.
+# The lenses whose findings a surface may relay to the customer: the five the
+# issue's grep names, and every other lens the auditor's enumeration lists.
 LENS_NAMES = ("full_audit", "conversion_setup_audit", "budget_pacing",
-              "analyze_waste", "analyze_search_terms")
+              "analyze_waste", "analyze_search_terms",
+              "account_health_score", "quality_score_breakdown",
+              "rsa_asset_report", "keyword_opportunities", "bidding_audit",
+              "day_of_week", "change_history", "explain_conversion_gap")
 
 
 def flat(rel):
@@ -951,6 +955,17 @@ class ConditionalFindings(unittest.TestCase):
                     flat(rel).count(IF_X_RULE), 1,
                     "%s relays a lens's findings and must carry the \"if X\" "
                     "sentence exactly once" % rel)
+
+    def test_the_lens_list_holds_every_lens_the_auditor_enumerates(self):
+        # LENS_NAMES is what makes the check below find a file; a lens the
+        # auditor runs and the list lacks would let a new surface run it
+        # without the sentence.
+        prose = flat("agents/adcopilot-auditor.md")
+        start = prose.index("Use the deterministic lenses where they fit")
+        enumeration = prose[start:prose.index("and read raw with", start)]
+        named = re.findall(r"`([a-z_]+)`", enumeration)
+        self.assertGreaterEqual(len(named), 12)
+        self.assertEqual([n for n in named if n not in LENS_NAMES], [])
 
     def test_a_file_that_names_a_lens_is_covered_or_excused(self):
         # A new command or skill that runs a lens must either carry the rule or
