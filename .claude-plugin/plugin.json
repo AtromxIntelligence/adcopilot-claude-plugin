@@ -1,6 +1,6 @@
 {
   "name": "adcopilot",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "description": "The AI agent that runs your Google Ads. Audit wasted spend, mine search terms, build campaigns and fix conversion tracking, with Google Analytics, Google Search Console and Google Tag Manager live in the same chat. Your AI client asks before each change while the write tools stay on Needs approval, and AdCopilot never deletes anything but a negative keyword.",
   "author": {
     "name": "Atromx Intelligence",
