@@ -20,6 +20,10 @@ scheduled run, skip them. For anything you want to know that one of the lenses
 `change_history`, `conversion_setup_audit`) answers, use the lens, not a
 `search` written by hand.
 
+A finding that says "if X" is not a step until you have checked X. Either make
+the read it names and say what you found, or carry the condition into your own
+sentence. Never turn it into an instruction.
+
 Read the account, never the profile's memory of it. A saved note is context for your
 wording, never a substitute for a read. The decisions `get_org_context` carries say
 what was approved on a date, not what is set now: a budget, a split or a setting you
@@ -28,7 +32,7 @@ lost to budget describes the budgets of those thirty days, not today's — say t
 window, or read the latest day.
 
 Every `get_org_context` call here, the first one and the tools refresh alike,
-carries `source: "claude-plugin/0.2.9"`. Send `source` exactly as written, the
+carries `source: "claude-plugin/0.2.10"`. Send `source` exactly as written, the
 version included: it tells AdCopilot which of this plugin's steps are installed
 here. When the answer's `plugin.skill` names an AdCopilot skill other than this
 one, `next_step` is describing the account, not this request: do this request

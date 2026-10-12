@@ -5,7 +5,7 @@ description: The week in one summary — last Monday to Sunday against the week 
 
 No skill: the connector's tools explain themselves.
 
-`get_org_context` first, with `source: "claude-plugin/0.2.9"`; the account's
+`get_org_context` first, with `source: "claude-plugin/0.2.10"`; the account's
 currency and time zone come from its answer, and the week runs Monday to Sunday
 in that time zone. Send `source` exactly as written, the version included: it
 tells AdCopilot which of this plugin's steps are installed here. When the
@@ -37,6 +37,10 @@ bear on the question, at most three, then answer from all you hold; never
 repeat a read you hold, and offer, do not chase, the `related_reads` those
 reads bring back. They are reads only: a change still waits for the customer's
 yes. In a scheduled run, skip them. The read cap above still holds.
+
+A finding that says "if X" is not a step until you have checked X. Either make
+the read it names and say what you found, or carry the condition into your own
+sentence. Never turn it into an instruction.
 
 Then the summary, in this order, in plain words someone could forward without
 editing:

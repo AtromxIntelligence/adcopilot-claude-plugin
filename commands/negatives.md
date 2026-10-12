@@ -5,7 +5,7 @@ description: Find the searches that cost money and brought nothing in the last s
 
 No skill: the connector's tools explain themselves.
 
-`get_org_context` first, with `source: "claude-plugin/0.2.9"`. Send `source`
+`get_org_context` first, with `source: "claude-plugin/0.2.10"`. Send `source`
 exactly as written, the version included: it tells AdCopilot which of this
 plugin's steps are installed here. When the answer's `plugin.skill` names an
 AdCopilot skill other than this one, `next_step` is describing the account, not
@@ -22,6 +22,10 @@ bear on the question, at most three, then answer from all you hold; never
 repeat a read you hold, and offer, do not chase, the `related_reads` those
 reads bring back. They are reads only: a change still waits for the customer's
 yes. In a scheduled run, skip them.
+
+A finding that says "if X" is not a step until you have checked X. Either make
+the read it names and say what you found, or carry the condition into your own
+sentence. Never turn it into an instruction.
 
 Report each theme in plain words: the searches, what they cost in the
 account's currency, and the never-show-for words that would block them, each

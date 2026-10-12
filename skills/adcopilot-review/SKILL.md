@@ -11,7 +11,7 @@ A thin answer is the failure here. Reads are the cheap part; a customer who has
 to ask four follow-up questions to learn what one answer could have told them
 has been short-changed.
 
-Call `get_org_context` with `source: "claude-plugin/0.2.9"` first, before any
+Call `get_org_context` with `source: "claude-plugin/0.2.10"` first, before any
 other tool — the marker is how the server records that this workspace uses the
 plugin, and without it the customer keeps being told to install what they
 already have. Send `source` exactly as written, the version included: it tells
@@ -60,11 +60,13 @@ not run. In a scheduled run, skip them.
 ## The sequence
 
 **Open with `full_audit`, with `depth="deep"` and `days` set to the window you
-are reporting.** Its default is `quick`, which scores three of the
-seventy-three checks over the month to date — not an audit, and not what the
-customer asked for. Deep attempts all seventy-three over your window and reports
-how many it could actually evaluate; say that number rather than letting an
-unevaluated check pass as a pass.
+are reporting.** Pass `depth="deep"` explicitly. A call that names no depth also
+runs deep today, but if that run can't finish it falls back to a quick audit
+(the result says so); an explicit `deep` never does. A quick audit scores three
+of the seventy-three checks over the month to date — not an audit, and not what
+the customer asked for. Deep attempts all seventy-three over your window and
+reports how many it could actually evaluate; say that number rather than letting
+an unevaluated check pass as a pass.
 
 One lens is ONE read and answers what a dozen hand-written queries would. It
 orders its findings by severity, NOT by money, so re-sort by cost before you
@@ -130,6 +132,10 @@ number as money.
 **Then at most three findings, biggest money first.** Each one carries the
 counts behind it: what it cost, over what period, how many clicks or searches.
 A finding without a number is an opinion.
+
+A finding that says "if X" is not a step until you have checked X. Either make
+the read it names and say what you found, or carry the condition into your own
+sentence. Never turn it into an instruction.
 
 **Then one recommendation**, with the money spelled out both ways — what it
 costs to act and what it costs to do nothing — as a proposal they say yes or no
