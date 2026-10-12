@@ -23,6 +23,10 @@ repeat a read you hold, and offer, do not chase, the `related_reads` those
 reads bring back. They are reads only: a change still waits for the customer's
 yes. In a scheduled run, skip them.
 
+A finding that says "if X" is not a step until you have checked X. Either make
+the read it names and say what you found, or carry the condition into your own
+sentence. Never turn it into an instruction.
+
 Report each theme in plain words: the searches, what they cost in the
 account's currency, and the never-show-for words that would block them, each
 with its match type said out loud (Exact or Phrase; the tool never proposes

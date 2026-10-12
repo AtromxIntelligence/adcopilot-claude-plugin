@@ -47,6 +47,11 @@ What it pins, and why each one is here:
   fails here; no bare `"claude-plugin"` is left; the version is the
   X.Y.Z the server reads; and every eval grader that checks the marker
   fails the bare value and passes the versioned one.
+- A finding whose text carries a condition ("if X") is not a step (plugin
+  #10): every surface that relays a lens's findings carries one rule saying
+  so, the auditor holds the read such a finding names, and `full_audit`'s
+  depth is described the way the server behaves now (deep, with a quick
+  fallback when a call names none), not as a quick default.
 """
 
 import json
@@ -129,6 +134,29 @@ def plugin_marker():
 
 
 BARE_MARKER = 'source: "claude-plugin"'
+
+# The rule for a finding whose own text carries a condition (plugin #10). The
+# same words on every surface that relays a lens's findings.
+IF_X_RULE = ('A finding that says "if X" is not a step until you have checked X. '
+             'Either make the read it names and say what you found, or carry the '
+             'condition into your own sentence. Never turn it into an instruction.')
+
+# What the plugin says about the depth of a `full_audit` call: a call that
+# names no depth runs deep and falls back to quick if it cannot finish; an
+# explicit `deep` never falls back.
+DEPTH_WORDING = ('Pass `depth="deep"` explicitly. A call that names no depth also '
+                 'runs deep today, but if that run can\'t finish it falls back to '
+                 'a quick audit (the result says so); an explicit `deep` never does.')
+
+# The lenses whose findings a surface may relay to the customer.
+LENS_NAMES = ("full_audit", "conversion_setup_audit", "budget_pacing",
+              "analyze_waste", "analyze_search_terms")
+
+
+def flat(rel):
+    """A file's text with every run of whitespace as one space, so a sentence
+    is found wherever the file wraps it."""
+    return " ".join(read(rel).split())
 
 
 def section(text, heading):
@@ -874,6 +902,134 @@ class WhatTheServerDefersTo(unittest.TestCase):
         self.assertIn("uses one of them", nxt)
 
 
+class ConditionalFindings(unittest.TestCase):
+    """Plugin #10: a lens can hand back a finding whose own text carries a
+    condition ("if your tracking counts X, then ..."). Read as a step, it
+    reaches the customer as an instruction nobody checked. The server's
+    `related_reads` rule covers the reads it lists; it does not cover a
+    condition written into a finding's text, so the surfaces that relay a
+    lens's findings say it themselves, in one sentence, the same on each."""
+
+    # Every file that tells the model to run one of the lenses and report what
+    # it finds.
+    RELAYS = [
+        "agents/adcopilot-auditor.md",
+        "commands/audit.md",
+        "commands/daily.md",
+        "commands/negatives.md",
+        "commands/weekly.md",
+        "skills/adcopilot-review/SKILL.md",
+        "skills/adcopilot-daily/SKILL.md",
+        "skills/adcopilot-launch/SKILL.md",
+        "skills/adcopilot-measure/SKILL.md",
+    ]
+    # Files that name a lens and relay none of its findings, with why.
+    EXCUSED = {
+        "skills/adcopilot-seo/SKILL.md":
+            "names analyze_search_terms and analyze_waste only to say they cover "
+            "paid terms, so an organic question needs a raw read; it runs no lens "
+            "and reports Search Console's own rows",
+    }
+
+    def naming_a_lens(self):
+        found = []
+        for sub in ("skills", "commands", "agents"):
+            base = os.path.join(ROOT, sub)
+            for dirpath, _, names in os.walk(base):
+                for name in names:
+                    if not name.endswith(".md"):
+                        continue
+                    rel = os.path.relpath(os.path.join(dirpath, name), ROOT)
+                    if any(lens in read(rel) for lens in LENS_NAMES):
+                        found.append(rel)
+        return sorted(found)
+
+    def test_each_surface_that_relays_a_lens_says_it_once(self):
+        for rel in self.RELAYS:
+            with self.subTest(file=rel):
+                self.assertEqual(
+                    flat(rel).count(IF_X_RULE), 1,
+                    "%s relays a lens's findings and must carry the \"if X\" "
+                    "sentence exactly once" % rel)
+
+    def test_a_file_that_names_a_lens_is_covered_or_excused(self):
+        # A new command or skill that runs a lens must either carry the rule or
+        # be named in EXCUSED with the reason, so the gap is a decision.
+        self.assertEqual(
+            sorted(set(self.RELAYS) | set(self.EXCUSED)), self.naming_a_lens())
+
+    def test_an_excused_file_does_not_carry_it(self):
+        for rel in self.EXCUSED:
+            with self.subTest(file=rel):
+                self.assertNotIn(IF_X_RULE, flat(rel))
+
+    def test_the_scheduled_run_holds_it_in_the_run(self):
+        # The run is the part of the daily skill nobody reads while it works,
+        # so the rule must sit where the run is read, not in the set-up.
+        run = " ".join((section(read("skills/adcopilot-daily/SKILL.md"),
+                                "## The run") or "").split())
+        self.assertIn(IF_X_RULE, run)
+
+    def test_the_run_still_makes_only_its_own_reads(self):
+        # The rule says "make the read it names"; a run with nobody to answer
+        # makes only its own reads and still skips related_reads.
+        run = " ".join((section(read("skills/adcopilot-daily/SKILL.md"),
+                                "## The run") or "").split())
+        self.assertIn("Skip `related_reads`.", run)
+        self.assertIn("unless the read it names is one of them, carry the "
+                      "condition", run)
+
+
+class FullAuditDepth(unittest.TestCase):
+    """AdCopilot#707 made deep the default, with a quick fallback when a call
+    that names no depth cannot finish. These surfaces said the default was
+    quick; they now say what the server does, and still pass deep."""
+
+    SURFACES = ["skills/adcopilot-review/SKILL.md",
+                "agents/adcopilot-auditor.md"]
+    # What a surface must not say again. Eval mocks and tool snapshots are
+    # frozen copies of the server's old text and are left alone.
+    STALE = [re.compile(p) for p in (
+        r"quick.{0,3}\(the default\)",
+        r"defaults to .?depth=\"quick\"",
+        r"Its default is .?quick",
+        r"full_audit. defaults to a",
+    )]
+
+    def test_the_surfaces_say_what_a_call_with_no_depth_does(self):
+        for rel in self.SURFACES:
+            with self.subTest(file=rel):
+                self.assertEqual(flat(rel).count(DEPTH_WORDING), 1)
+
+    def test_they_still_ask_for_deep(self):
+        for rel in self.SURFACES:
+            with self.subTest(file=rel):
+                self.assertRegex(flat(rel), r'`full_audit`,? with `depth="deep"`')
+
+    def test_no_text_calls_quick_the_default(self):
+        scanned = 0
+        roots = ["skills", "commands", "agents", "evals", "README.md"]
+        for top in roots:
+            path = os.path.join(ROOT, top)
+            walk = ([(os.path.dirname(path), [], [os.path.basename(path)])]
+                    if os.path.isfile(path) else os.walk(path))
+            for dirpath, dirs, names in walk:
+                dirs[:] = [d for d in dirs if d != "mocks"]
+                for name in names:
+                    if name == "_tools.json" or not name.endswith(
+                            (".md", ".yaml", ".sh", ".py")):
+                        continue
+                    rel = os.path.relpath(os.path.join(dirpath, name), ROOT)
+                    scanned += 1
+                    for n, line in enumerate(read(rel).splitlines(), 1):
+                        for pattern in self.STALE:
+                            with self.subTest(file=rel, line=n):
+                                self.assertIsNone(
+                                    pattern.search(line),
+                                    "%s:%d still calls quick the default" % (rel, n))
+        self.assertGreater(scanned, 30)
+
+
 class Manifest(unittest.TestCase):
 
     def test_version(self):
@@ -956,6 +1112,13 @@ class AuditorToolList(unittest.TestCase):
         # Cover item 7 asks who changed a budget; without this read the
         # answer is always "unknown". read-only on the server side.
         self.assertIn(self.MCP + "change_history", self.tools())
+
+    def test_it_can_read_the_key_events_a_finding_names(self):
+        # Plugin #10: a conversion finding can name this read, and with only
+        # `ga4_run_report` in the list the auditor could relay the finding or
+        # drop it, never check it. A list, so the write-verb test above still
+        # clears it.
+        self.assertIn(self.MCP + "ga4_list_conversion_events", self.tools())
 
 
 if __name__ == "__main__":

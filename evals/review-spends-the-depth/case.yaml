@@ -7,15 +7,16 @@ description: >
   playbook for this situation already says to open with `full_audit` and to
   report the biggest money first, and the lens's own description already says
   its findings come back by severity rather than impact — so neither of those is
-  this case's question. The body's additions are that `full_audit` defaults to a
-  quick run scoring three of seventy-three checks month-to-date and must be
-  asked for `deep` over the window being reported; that the number of checks
-  actually scored is said out loud rather than letting the unscored ones pass as
-  passes; that a raw `search` returns millionths and must never be printed as
-  money; and that the recommendation carries the cost of acting AND the cost of
-  doing nothing. `full_audit` is pinned here at its live description (revision
-  `6145d0b5`, read 2026-10-06) because the suite-wide snapshot's copy is older
-  and says the opposite about ordering.
+  this case's question. The body's additions are that `full_audit` must be asked
+  for `deep` explicitly, over the window being reported (a call that names no
+  depth also runs deep today, but falls back to a quick audit, scoring three of
+  seventy-three checks month-to-date, if that run cannot finish); that the
+  number of checks actually scored is said out loud rather than letting the
+  unscored ones pass as passes; that a raw `search` returns millionths and must
+  never be printed as money; and that the recommendation carries the cost of
+  acting AND the cost of doing nothing. `full_audit` is pinned here at its live
+  description (revision `6145d0b5`, read 2026-10-06) because the suite-wide
+  snapshot's copy is older and says the opposite about ordering.
 tags: [review]
 runs: 3
 execution:

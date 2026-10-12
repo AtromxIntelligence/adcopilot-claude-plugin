@@ -37,6 +37,10 @@ reads bring back. They are reads only: a change still waits for the customer's
 yes. In a scheduled run, skip them. The read cap above still holds: say which
 you did not reach.
 
+A finding that says "if X" is not a step until you have checked X. Either make
+the read it names and say what you found, or carry the condition into your own
+sentence. Never turn it into an instruction.
+
 Lead with one line: all clear, or what needs a look. Then each read in a
 sentence or two of plain words — money in the account's currency as the tools
 display it, Google's names for things, nothing pasted as the server returned
