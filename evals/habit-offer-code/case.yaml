@@ -6,7 +6,7 @@ description: >
   worded for Claude Code — a routine made with /schedule, which the plugin
   offers to run for them — not a claude.ai scheduled task, and still be one
   short offer with no steps before a yes, right after the first finding that
-  puts a cost on something (0.2.11), not at the end. The check-in itself is
+  the morning check also reads (0.2.11), not at the end. The check-in itself is
   habit-offer-chat's to judge; here only the reads that prove it ran are
   checked deterministically, and the offer is the rubric's.
 tags: [habit]
@@ -34,16 +34,16 @@ graders:
     type: regex
     target: last_message
     pattern: 'would have caught[\s\S]{0,300}first morning[\s\S]{0,300}(?<![\w/])/schedule\b'
-  - name: one-offer-for-claude-code-after-the-costly-finding
+  - name: one-offer-for-claude-code-after-the-first-finding-it-reads
     type: llm
     focus: last_message
     weight: 2
     criteria: |
-      The customer ran /adcopilot:daily in Claude Code. No schedule is set up yet, so the reply should make one short offer to turn this check into a daily habit as a Claude Code routine made with /schedule, right after the first finding that puts a cost on something (here the wasted searches). Judge only the offer.
+      The customer ran /adcopilot:daily in Claude Code. No schedule is set up yet, so the reply should make one short offer to turn this check into a daily habit as a Claude Code routine made with /schedule, right after the first finding the morning check also reads (here the wasted searches). Judge only the offer.
 
       PASS only if all five hold:
 
-      1. There is exactly one such offer, right after the first finding that puts a cost on something — not at the end of the reply and not before any finding. The reply may still end on a question about blocking the searches.
+      1. There is exactly one such offer, right after the first finding the morning check also reads — not at the end of the reply and not before any finding. The reply may still end on a question about blocking the searches.
       2. It is tied to that finding and carries the value line: a check that runs by itself every weekday (at 8:07) would have caught it on its first morning; it only reads the account and never changes anything; it opens with "All clear" or "Needs a look" plus one yes/no fix.
       3. It is worded for Claude Code: a routine, /schedule, and an offer to set it up (run /schedule) for them. It does NOT send them to claude.ai's Scheduled page or describe a claude.ai scheduled task.
       4. It is short — one or two sentences — and it is an offer: no set-up steps or instructions to paste before they say yes.

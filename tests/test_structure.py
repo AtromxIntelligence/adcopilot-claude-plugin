@@ -88,9 +88,9 @@ DELEGATING_COMMANDS = {
 COMMANDS = ["setup", "audit", "daily", "weekly", "negatives", "launch", "measure"]
 
 # The sentences the offer is made in, one per surface, with the finding in the
-# braces (0.2.11: right after the first finding that puts a cost or a loss on
-# something, tied to it, with the value line; D160). The eval graders look for
-# their substance, so a reword is a deliberate act, made here too.
+# braces (0.2.11: right after the first finding the morning check also reads,
+# tied to it, with the value line). The eval graders look for their substance,
+# so a reword is a deliberate act, made here too.
 OFFER_CHAT = ("A check that runs by itself every weekday at 8:07 would have "
               "caught {the finding} on its first morning. It only reads the "
               "account and never changes anything, and it opens with \"All "
@@ -103,6 +103,11 @@ OFFER_CODE = ("A check that runs by itself every weekday at 8:07 would have "
               "clear\" or \"Needs a look\" plus one yes/no fix; say \"schedule "
               "it\" and I'll set it up as a Claude Code routine with "
               "/schedule.")
+# The first sentence of an offer made at the close, for a finding the morning
+# check does not read or none: it does not say the check would have caught
+# anything.
+OFFER_CLOSE_FIRST = ("A check that runs by itself every weekday at 8:07 can look "
+                     "over this account for you each morning.")
 
 # AdCopilot's own recipe (server: ads_mcp_cloud/schedule_recipe.py,
 # SCHEDULED_CHECKIN, AdCopilot v2.30.2). `{account}` is filled
@@ -347,10 +352,10 @@ class DailyHabitBlock(unittest.TestCase):
 
 
 class DailyHabitAtTheFirstValue(unittest.TestCase):
-    """0.2.11 (AdCopilot decision D160, founder 2026-10-13): the offer comes
-    right after the first finding that puts a cost or a loss on something,
-    tied to it, with the value line; with no such finding it is the reply's
-    last line, as before. A no is asked about once, so that a Claude with no
+    """0.2.11: the offer comes right after the first finding the morning check
+    ALSO READS, tied to it, with the value line; for any other finding, even a
+    costly one, or none, it closes the reply without claiming the check would
+    have caught anything. A no is asked about once, so that a Claude with no
     scheduled tasks is recorded, and a not-now is recorded too."""
 
     # The founder's rule for anything the model is told: no plan, price or
@@ -360,20 +365,70 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
         r"\b(plans?|pric\w+|limits?|caps?|free|upgrade[sd]?|subscri\w+|trial|"
         r"discount\w*|buy|purchase\w*|starter|tier)\b|[$\u20ac\u00a3\u20b9]\s?\d", re.I)
 
+    # What the morning check reads (SCHEDULED_CHECKIN above), and the findings
+    # the offer may be tied to: each is a line of the check, so "would have
+    # caught it" is true of every one.
+    CHECK_READS = (
+        ("searches that spent with no sale", "search terms from the last 7 days that cost the most with no conversions"),
+        ("a campaign out of budget or off its budget pace", "budget pacing"),
+        ("a disapproved ad", "Any ad that is disapproved or limited"),
+        ("a drop against the 7-day average", "against my 7-day average"),
+        ("a change nobody asked for", "Any change made in the account in the last 24 hours"),
+    )
+    # Costly, and not read by the check: the offer is made at the close.
+    NOT_READ = ("a tracking fault", "a Quality Score problem", "a targeting problem")
+
     def block(self):
         return " ".join((section(read(HABIT_CARRIERS[0]), HABIT_HEADING) or "").split())
 
-    def test_the_offer_comes_right_after_the_first_costly_finding(self):
+    def test_the_offer_comes_right_after_the_first_finding_the_check_reads(self):
         block = self.block()
         self.assertIn("Make it right after the first finding in the reply that "
-                      "puts a cost or a loss on something", block)
+                      "the morning check also reads", block)
         self.assertIn("tie it to that finding, with the figure you just read "
                       "and never one you did not", block)
-        self.assertIn("When no finding puts a cost or a loss on anything, close "
-                      "the reply with the offer instead, as its last line.", block)
-        # The old rule put it at the end of every reply.
+        # The old rule promised the check would catch ANY finding with a cost.
+        self.assertNotIn("puts a cost or a loss on", block)
+        # The old rules put it at the end of every reply.
         self.assertNotIn("the last line of the reply, at most once", block)
         self.assertNotIn("After the value is delivered", block)
+
+    def test_every_finding_it_names_is_one_the_morning_check_reads(self):
+        block = self.block()
+        for finding, line in self.CHECK_READS:
+            with self.subTest(finding=finding):
+                self.assertIn(finding, block)
+                self.assertIn(line, " ".join(SCHEDULED_CHECKIN.split()))
+        named = block.split("the morning check also reads \u2014 ")[1].split(" \u2014 and tie it")[0]
+        self.assertEqual([p.strip() for p in named.split(",")],
+                         [f for f, _l in self.CHECK_READS])
+
+    def test_a_finding_the_check_does_not_read_gets_the_close_without_the_claim(self):
+        block = self.block()
+        self.assertIn("For any other finding, even one that costs money (%s), or "
+                      "none, close the reply with the offer instead" % ", ".join(self.NOT_READ), block)
+        self.assertIn("without saying the check would have caught it", block)
+        # The three are not among the findings the offer is tied to.
+        head = block.split("For any other finding")[0]
+        for unread in self.NOT_READ:
+            self.assertNotIn(unread, head)
+        # The closing words carry no claim; the others do.
+        self.assertIn(OFFER_CLOSE_FIRST, block)
+        self.assertNotIn("caught", OFFER_CLOSE_FIRST)
+        self.assertIn("the third line is for the close", block)
+        for offer in (OFFER_CHAT, OFFER_CODE):
+            self.assertIn("would have caught {the finding}", offer)
+
+    def test_the_two_rules_for_a_reply_that_ends_on_a_question_agree(self):
+        # D160 review: "close the reply with the offer, as its last line" and
+        # "any question the reply ends on stays the last thing in it, and the
+        # offer comes before that question" could not both hold. The offer
+        # comes before the question, whichever way it is made.
+        block = self.block()
+        self.assertIn("close the reply with the offer instead (before any "
+                      "question the reply ends on)", block)
+        self.assertNotIn("as its last line", block)
+        self.assertNotIn("the last line", block)
 
     def test_both_offers_carry_the_value_line(self):
         for offer in (OFFER_CHAT, OFFER_CODE):
@@ -385,6 +440,39 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
                               "plus one yes/no fix"):
                     self.assertIn(piece, offer)
         self.assertIn("with the finding in the braces", self.block())
+
+    def test_the_public_files_carry_no_internal_decision_tag(self):
+        # The README, the skills, the commands, the agent and the manifests are
+        # a public repository's text. AdCopilot's decision numbers and the
+        # founder's say-so are its own records (the test comments may keep
+        # them); the 0.2.11 note named both and was reworded (D160 review).
+        public = ["README.md", ".claude-plugin/plugin.json",
+                  ".claude-plugin/marketplace.json"]
+        for sub in ("skills", "commands", "agents"):
+            base = os.path.join(ROOT, sub)
+            for dirpath, _dirs, names in os.walk(base):
+                for name in sorted(names):
+                    if name.endswith(".md"):
+                        public.append(os.path.relpath(
+                            os.path.join(dirpath, name), ROOT))
+        tag = re.compile(r"\bD\d{2,3}\b|\b[Dd]ecisions? D\d+|the founder approved")
+        for rel in public:
+            with self.subTest(file=rel):
+                found = tag.search(read(rel))
+                self.assertIsNone(found, found and found.group(0))
+
+    def test_the_readme_says_the_same_trigger_and_the_release_order(self):
+        readme = " ".join(read("README.md").split())
+        self.assertIn("right after the first finding the morning check also "
+                      "reads", readme)
+        self.assertIn("With any other finding, or none, the offer closes the "
+                      "reply instead, without that claim.", readme)
+        self.assertNotIn("puts a cost or a loss on", readme)
+        self.assertNotIn("is still the reply's last line", readme)
+        self.assertIn("**Release order:** this version is written against the "
+                      "AdCopilot build that accepts `declined`; on an older "
+                      "server that call is rejected by name, so the server is "
+                      "released first.", readme)
 
     def test_a_no_asks_once_and_records_the_answer(self):
         block = self.block()
@@ -421,9 +509,14 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
     def test_the_review_skill_words_it_the_same_way(self):
         nxt = " ".join((section(read("skills/adcopilot-review/SKILL.md"),
                                 "## What is next") or "").split())
-        self.assertIn("right after the first finding in the reply that puts a "
-                      "cost or a loss on something", nxt)
-        self.assertIn("with no such finding, the close", nxt)
+        self.assertIn("right after the first finding in the reply that the "
+                      "morning check also reads", nxt)
+        self.assertIn("for any other finding, even one that costs money (a "
+                      "tracking fault, a Quality Score problem, a targeting "
+                      "problem), or none, the close, before any question the "
+                      "reply ends on, without saying the check would have "
+                      "caught it", nxt)
+        self.assertNotIn("puts a cost or a loss on", nxt)
         self.assertIn("ask once whether their Claude can create scheduled "
                       "tasks, and record `routine.own_schedule` `unavailable` "
                       "if it cannot, else `declined`", nxt)

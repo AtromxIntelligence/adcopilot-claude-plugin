@@ -202,10 +202,15 @@ connected and readable, the account has a campaign switched on, and
 holds a date, or when `routine.own_schedule` is `saved`, `unavailable` or
 `declined`. AdCopilot's own emailed check-in (`routine.daily.status` `in_app`)
 is not their schedule. Its moment is right after the first finding in the reply
-that puts a cost or a loss on something, tied to that finding as the daily-habit
-block every other flow carries words it (it would have caught this on its first
-morning; it only reads; "All clear" or "Needs a look" plus one yes/no fix); with
-no such finding, the close. If the server's `next_step` also asks for a
+that the morning check also reads (searches that spent with no sale, a campaign
+out of budget or off its budget pace, a disapproved ad, a drop against the
+7-day average, a change nobody asked for), tied to that finding as the
+daily-habit block every other flow carries words it (it would have caught this
+on its first morning; it only reads; "All clear" or "Needs a look" plus one
+yes/no fix); for any other finding, even one that costs money (a tracking
+fault, a Quality Score problem, a targeting problem), or none, the close,
+before any question the reply ends on, without saying the check would have
+caught it. If the server's `next_step` also asks for a
 check-in offer, this one answers it — never two. A no ends it for this
 conversation: ask once whether their Claude can create scheduled tasks, and
 record `routine.own_schedule` `unavailable` if it cannot, else `declined`. On a
