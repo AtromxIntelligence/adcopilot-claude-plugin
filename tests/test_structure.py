@@ -561,6 +561,20 @@ class Readme(unittest.TestCase):
         morning = section(read("README.md"), "### Every morning, without asking") or ""
         self.assertIn("emailed daily check-in, when it is on,", morning)
 
+    def test_the_release_profile_is_never_a_temporary_config_dir(self):
+        """The release checklist said to start Claude Code with
+        `CLAUDE_CONFIG_DIR=$(mktemp -d)`. A session that cannot write its MCP
+        refresh lock under its config dir replays a spent refresh token, and
+        AdCopilot signs a reused one out (2026-10-07). The checklist now warns
+        against it and gives a directory that persists."""
+        releasing = section(read("README.md"), "## Releasing") or ""
+        self.assertTrue(releasing, "the README has no Releasing section")
+        self.assertNotRegex(releasing, r"CLAUDE_CONFIG_DIR=\$\(mktemp")
+        self.assertIn("Never point `CLAUDE_CONFIG_DIR` at a temporary "
+                      "directory", releasing)
+        self.assertIn('CLAUDE_CONFIG_DIR="$HOME/.claude-adcopilot-release"',
+                      releasing)
+
 
 class EvalGraders(unittest.TestCase):
     """The deterministic graders and the offer they look for agree."""
