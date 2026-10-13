@@ -11,7 +11,7 @@ A thin answer is the failure here. Reads are the cheap part; a customer who has
 to ask four follow-up questions to learn what one answer could have told them
 has been short-changed.
 
-Call `get_org_context` with `source: "claude-plugin/0.2.10"` first, before any
+Call `get_org_context` with `source: "claude-plugin/0.2.11"` first, before any
 other tool — the marker is how the server records that this workspace uses the
 plugin, and without it the customer keeps being told to install what they
 already have. Send `source` exactly as written, the version included: it tells
@@ -194,16 +194,21 @@ Before any yes, offer, in this order: the first fix as a change you will make
 now; and the never-show-for words you found. After a yes, the next offer is the
 next fix, as above.
 
-Then the daily habit, on the same terms every other flow uses it — one offer, the
-last line of the reply, at most once in a conversation, and only when all three
-hold: Google Ads is connected and readable, the account has a campaign switched
-on, and `get_org_context` reports no schedule. It reports one when
+Then the daily habit, on the same terms every other flow uses it — one offer, at
+most once in a conversation, and only when all three hold: Google Ads is
+connected and readable, the account has a campaign switched on, and
+`get_org_context` reports no schedule. It reports one when
 `routine.daily.status` is `user_set`, when `routine.scheduled_last_seen_at`
-holds a date, or when `routine.own_schedule` is `saved` or `unavailable`.
-AdCopilot's own emailed check-in (`routine.daily.status` `in_app`) is not
-their schedule. If the server's `next_step` also asks for a
-check-in offer, this one answers it — never two. On a yes, follow the
-`adcopilot-daily` skill's set-up rather than inventing steps here. Its moment is
-the reply in which a change they approved first reads as live; otherwise the
-close. Leave it for another day when the reply ends on something they must fix
+holds a date, or when `routine.own_schedule` is `saved`, `unavailable` or
+`declined`. AdCopilot's own emailed check-in (`routine.daily.status` `in_app`)
+is not their schedule. Its moment is right after the first finding in the reply
+that puts a cost or a loss on something, tied to that finding as the daily-habit
+block every other flow carries words it (it would have caught this on its first
+morning; it only reads; "All clear" or "Needs a look" plus one yes/no fix); with
+no such finding, the close. If the server's `next_step` also asks for a
+check-in offer, this one answers it — never two. A no ends it for this
+conversation: ask once whether their Claude can create scheduled tasks, and
+record `routine.own_schedule` `unavailable` if it cannot, else `declined`. On a
+yes, follow the `adcopilot-daily` skill's set-up rather than inventing steps
+here. Leave it for another day when the reply ends on something they must fix
 first.

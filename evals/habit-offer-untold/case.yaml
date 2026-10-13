@@ -33,31 +33,32 @@ graders:
     min: 0
     max: 0
     arm: with-only
-  - name: offer-names-schedule-at-the-end
+  - name: offer-names-schedule-with-the-value-line
     type: regex
     target: last_message
-    pattern: '(?<![\w/])/schedule\b[\s\S]{0,300}$'
+    pattern: 'would have caught[\s\S]{0,300}first morning[\s\S]{0,300}(?<![\w/])/schedule\b'
   - name: not-the-claude-chat-wording
     type: regex
     target: last_message
     flags: i
     match: not_contains
     pattern: 'Claude scheduled task|Scheduled page|Set up manually'
-  - name: one-offer-for-claude-code-at-the-end
+  - name: one-offer-for-claude-code-after-the-costly-finding
     type: llm
     focus: last_message
     weight: 2
     criteria: |
-      The customer typed /adcopilot:daily and said nothing about where they are. They are in Claude Code. No schedule is set up yet, so the reply should close with one short offer to make this check a daily habit as a Claude Code routine made with /schedule. Judge only the offer.
+      The customer typed /adcopilot:daily and said nothing about where they are. They are in Claude Code. No schedule is set up yet, so the reply should make one short offer to turn this check into a daily habit as a Claude Code routine made with /schedule, right after the first finding that puts a cost on something (here the wasted searches). Judge only the offer.
 
-      PASS only if all four hold:
+      PASS only if all five hold:
 
-      1. There is exactly one such offer, at the end of the reply, after the check-in's findings — as the last line, or followed by nothing but a closing line. A question about blocking the searches may come just before it.
-      2. It is worded for Claude Code: a routine, /schedule, and an offer to set it up (run /schedule) for them. It does NOT send them to claude.ai's Scheduled page or describe a claude.ai scheduled task, and it does not offer both.
-      3. It is short — one or two sentences — and it is an offer: no set-up steps or instructions to paste before they say yes.
-      4. No sales, plan, price or upgrade wording, and no urgency.
+      1. There is exactly one such offer, right after the first finding that puts a cost on something — not at the end of the reply and not before any finding. The reply may still end on a question about blocking the searches.
+      2. It is tied to that finding and carries the value line: a check that runs by itself every weekday (at 8:07) would have caught it on its first morning; it only reads the account and never changes anything; it opens with "All clear" or "Needs a look" plus one yes/no fix.
+      3. It is worded for Claude Code: a routine, /schedule, and an offer to set it up (run /schedule) for them. It does NOT send them to claude.ai's Scheduled page or describe a claude.ai scheduled task, and it does not offer both.
+      4. It is short — one or two sentences — and it is an offer: no set-up steps or instructions to paste before they say yes.
+      5. No sales, plan, price or upgrade wording, and no urgency.
 
-      FAIL if any of the four is missing, or if there is no offer at all.
+      FAIL if any of the five is missing, or if there is no offer at all.
   - name: marks-plugin-use
     type: tool_used
     tool: mcp__plugin_adcopilot_adcopilot__get_org_context
