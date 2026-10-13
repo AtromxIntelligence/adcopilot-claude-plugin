@@ -9,12 +9,15 @@ description: >
   check-in on the four reads 0.2.4 names — pacing, seven days of search terms,
   disapprovals, change history — add nothing without a yes, and end with ONE
   short offer worded for Claude chat: a scheduled task, never /schedule or a
-  routine, and no steps until the customer says yes. The customer's own line
-  says where they are, because the eval harness runs in Claude Code.
+  routine, and no steps until the customer says yes. Since 0.2.11 the offer
+  comes right after the first finding the morning check also reads — here
+  the searches that took clicks and converted nothing — tied to it, with the
+  value line, not at the end of the reply. The customer's own line says where
+  they are, because the eval harness runs in Claude Code.
   Deterministic graders test the four reads by their inputs in the call log,
-  the absence of a write and of the unattended skill, and where the offer sits
-  in the reply; meaning is two rubrics at weight 2 — the check-in, and the
-  offer — so either dead fails the case.
+  the absence of a write and of the unattended skill, and that the offer
+  carries the value line; meaning is two rubrics at weight 2 — the check-in,
+  and the offer — so either dead fails the case.
 tags: [habit]
 runs: 3
 execution:
@@ -59,11 +62,11 @@ graders:
     min: 0
     max: 0
     arm: with-only
-  - name: offer-is-a-scheduled-task-at-the-end
+  - name: offer-is-a-scheduled-task-with-the-value-line
     type: regex
     target: last_message
     flags: i
-    pattern: 'scheduled task[\s\S]{0,300}$'
+    pattern: 'would have caught[\s\S]{0,300}first morning[\s\S]{0,300}scheduled task'
   - name: not-the-claude-code-wording
     type: regex
     target: last_message
@@ -90,22 +93,23 @@ graders:
       4. Prose: money in dollars, no API field names, no account numbers, nothing pasted as the server returned it. A short list or table in plain words is fine.
 
       FAIL if any of the four is missing.
-  - name: one-offer-for-claude-chat-at-the-end
+  - name: one-offer-for-claude-chat-after-the-first-finding-it-reads
     type: llm
     focus: last_message
     weight: 2
     criteria: |
-      The customer ran /adcopilot:daily in Claude on the web (claude.ai) and said there is no terminal. No schedule is set up yet, so the reply should close with one short offer to make this check a daily habit as a Claude scheduled task. Judge only the offer — the check-in itself is judged by another rubric.
+      The customer ran /adcopilot:daily in Claude on the web (claude.ai) and said there is no terminal. No schedule is set up yet, so the reply should make one short offer to turn this check into a daily habit as a Claude scheduled task, right after the first finding the morning check also reads. Judge only the offer — the check-in itself is judged by another rubric.
 
-      PASS only if all five hold:
+      PASS only if all six hold:
 
-      1. There is exactly one such offer, and it comes at the end of the reply, after the check-in's findings — as the last line, or followed by nothing but a closing line. A question about blocking the searches may come just before it. Two offers (for example, one for a daily check-in and another for a weekly summary, or the same offer twice) FAIL.
-      2. It is worded for Claude chat: a Claude scheduled task (or Claude's Scheduled feature). It does NOT tell them to use /schedule, a terminal, a cron job or a Claude Code routine.
-      3. It is short — one or two sentences — and it is an offer: it does not give the set-up steps, the instructions to paste or any screen-by-screen path before the customer has said yes.
-      4. No sales, plan, price or upgrade wording, no urgency ("today only", "don't miss"), and no claim that every change waits for their approval.
-      5. It offers a check that arrives on its own (every morning, every weekday, daily), not merely "run this again tomorrow".
+      1. There is exactly one such offer, and it comes right after the first finding the morning check also reads — here the wasted searches — not at the end of the reply and not before any finding. The reply may still end on a question about blocking the searches. Two offers (for example, one for a daily check-in and another for a weekly summary, or the same offer twice) FAIL.
+      2. It is tied to that finding and carries the value line: a check that runs by itself every weekday (at 8:07) would have caught it on its first morning; it only reads the account and never changes anything; it opens with "All clear" or "Needs a look" plus one yes/no fix. It names the figure the reply just gave, not an invented one.
+      3. It is worded for Claude chat: a Claude scheduled task (or Claude's Scheduled feature). It does NOT tell them to use /schedule, a terminal, a cron job or a Claude Code routine.
+      4. It is short — one or two sentences — and it is an offer: it does not give the set-up steps, the instructions to paste or any screen-by-screen path before the customer has said yes.
+      5. No sales, plan, price or upgrade wording, no urgency ("today only", "don't miss"), and no claim that every change waits for their approval.
+      6. It offers a check that arrives on its own (every morning, every weekday, daily), not merely "run this again tomorrow".
 
-      FAIL if any of the five is missing, or if there is no offer at all.
+      FAIL if any of the six is missing, or if there is no offer at all.
   - name: marks-plugin-use
     type: tool_used
     # Counts get_org_context calls whose input lacks source "claude-plugin/<version>";

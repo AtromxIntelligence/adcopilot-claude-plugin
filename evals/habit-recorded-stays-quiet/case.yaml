@@ -31,7 +31,7 @@ graders:
     target: last_message
     flags: i
     match: not_contains
-    pattern: 'say\W{1,3}schedule it|walk you through (?:saving|setting)|set (?:it|this) up as a|(?<![\w/])/schedule\b|without having to ask'
+    pattern: 'say\W{1,3}schedule it|walk you through (?:saving|setting)|set (?:it|this) up as a|(?<![\w/])/schedule\b|without having to ask|would have caught[^.\n]{0,120}first morning'
   - name: no-offer-to-schedule
     type: llm
     focus: last_message
