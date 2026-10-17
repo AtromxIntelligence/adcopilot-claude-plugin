@@ -2737,9 +2737,14 @@ class V241Alignment(unittest.TestCase):
                                       "end_date": "%s"}}])
         self.assertRegex(call % "2026-10-13", re.compile(ends, flags))
         self.assertNotRegex(call % "2026-10-13", re.compile(other))
-        for day in ("2026-10-12", "2026-10-14", "2026-10-25"):
+        for day in ("2026-10-12", "2026-10-14", "2026-10-25", "2026-11-02",
+                    "2027-01-04"):
             with self.subTest(day=day):
                 self.assertRegex(call % day, re.compile(other))
+        # An earlier comparison window is not a wrong day.
+        for day in ("2026-09-29", "2026-10-06"):
+            with self.subTest(earlier=day):
+                self.assertNotRegex(call % day, re.compile(other))
         cov, cflags = grader(self.DATES, "coverage-is-a-count-not-a-percentage")
         self.assertRegex("Coverage was 73% of its 73 checks.", re.compile(cov, cflags))
         self.assertNotRegex("The audit's score comes from the 58 of 73 checks "

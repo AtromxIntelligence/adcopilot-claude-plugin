@@ -38,10 +38,12 @@ graders:
     type: regex
     target: mock_calls
     match: not_contains
-    # No `search` read ends on another day: not UTC's yesterday (12 Oct),
-    # not the account's unfinished today (14 Oct), and not a date worked out
-    # from the clock of the machine the eval runs on.
-    pattern: '"tool"\s*:\s*"[^"]*search"\s*,\s*"input"\s*:\s*"?\{[^{}]*?\\?"end_date\\?"\s*:\s*\\?"(?!2026-10-13)\d{4}-\d{2}-\d{2}'
+    # No `search` read ends on a wrong day: not UTC's yesterday (12 Oct),
+    # not the account's unfinished today (14 Oct), and not any later date
+    # worked out from the clock of the machine the eval runs on (it runs
+    # after the v2.41.0 deploy, so after 13 Oct). A read for an earlier
+    # comparison window (ending 29 Sep, say) is not a wrong day and passes.
+    pattern: '"tool"\s*:\s*"[^"]*search"\s*,\s*"input"\s*:\s*"?\{[^{}]*?\\?"end_date\\?"\s*:\s*\\?"(?:2026-10-12|2026-10-(?:1[4-9]|[23]\d)|2026-1[12]-\d{2}|20(?:2[7-9]|[3-9]\d)-\d{2}-\d{2})'
   - name: names-the-two-costliest-searches
     type: regex
     target: last_message
@@ -66,7 +68,7 @@ graders:
       1. One set of dates. The period the reply reports ends on 13 Oct (it may say 30 Sep to 13 Oct, or two weeks to 13 Oct), and no figure is given for a window ending 12 Oct or 14 Oct. A finding's shorter window, if stated, is 7 Oct to 13 Oct.
       2. The costliest searches are named with their cost in rupees: at least the top two by name. FAIL if the reply gives only a count of searches.
       3. Coverage is a count: in substance "58 of 73 checks", never a percentage.
-      4. The click-through rate is not called above or below a benchmark or an average.
+      4. The click-through rate is not graded against a benchmark, an industry figure or a US average (the audit did not grade it, because the account is set up outside the US); comparing it with the account's own earlier days is fine.
   - name: no-change-without-a-yes
     type: regex
     target: mock_calls
