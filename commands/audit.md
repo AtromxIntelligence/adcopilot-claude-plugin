@@ -34,27 +34,35 @@ window, or read the latest day.
 Every `get_org_context` call here, the first one and the tools refresh alike,
 carries `source: "claude-plugin/0.2.12"`. Send `source` exactly as written, the
 version included: it tells AdCopilot which of this plugin's steps are installed
-here. When the answer's `plugin.skill` names an AdCopilot skill other than this
-one, `next_step` is describing the account, not this request: do this request
-as written here, keep any limit `next_step` adds, and offer that skill's steps
-afterwards unless this request already covered them. If that skill is not
-installed here (Cursor can add a command without the skills), follow
-`get_org_context`'s `next_step` and `playbook` for those steps instead. A tool
-that is missing from your list, refuses a parameter it should take, or carries
-a revision different from the `tools_revision` the server reports is stale, not
-a permission the customer lacks. Ask `get_org_context` for
-`tools: [full_audit, budget_pacing]` and go by what it returns — that works
-even when the schema you hold shows no `tools` parameter. If the tool is still
-missing: `/mcp`, choose `adcopilot`, then Reconnect refetches the tool list (at
-the time of writing); reinstalling the plugin is the last resort.
+here. The one exception is where the AdCopilot skills are not installed: Cursor
+can add this command without them, and then `adcopilot-review` is not among your
+skills. There, send `source: "claude-plugin"`, with no version, so AdCopilot
+hands no step to a skill that is not here, and `get_org_context`'s `next_step`
+and `playbook` carry those steps themselves. When the answer's `plugin.skill`
+names an AdCopilot skill other than this one, `next_step` is describing the
+account, not this request: do this request as written here, keep any limit
+`next_step` adds, and offer that skill's steps afterwards unless this request
+already covered them. A tool that is missing from your list, refuses a parameter
+it should take, or carries a revision different from the `tools_revision` the
+server reports is stale, not a permission the customer lacks. Ask
+`get_org_context` for `tools: [full_audit, budget_pacing]` and go by what it
+returns — that works even when the schema you hold shows no `tools` parameter.
+If the tool is still missing, Cursor first: in Cursor (`get_org_context`'s
+top-level `surface` is `cursor`, or Cursor's own instructions or the person say
+so) there is no `/mcp` and no plugin to reinstall, and you never run
+`claude mcp` there; turning AdCopilot off and on again in Cursor's MCP settings,
+where it may be named `server`, refetches the tool list (at the time of
+writing), and removing it and adding it again is the last resort. Everywhere
+else, `/mcp`, choose `adcopilot`, then Reconnect refetches the tool list (at the
+time of writing); reinstalling the plugin is the last resort.
 
 A missing tool halves the audit and does not cancel it: say the tool list this
 session holds is out of date, run `budget_pacing` anyway, report what it found
 for the dates its answer covers, and say you will run both once the list is
 refreshed. Leave sorting newness from findings to that run — there are no
-findings to sort yet — and name no revision value to the customer. The first
-fix is then that reconnect, with its last resort: a step for them, not a change
-to the account, so it is not put as a proposal and carries no cost lines.
+findings to sort yet — and name no revision value to the customer. The first fix
+is then that refresh, with its last resort: a step for them, not a change to the
+account, so it is not put as a proposal and carries no cost lines.
 
 End with the one finding to fix first, and why, as a proposal: the exact
 change, what acting costs and what leaving it costs, in the account's currency,
@@ -69,7 +77,7 @@ live, propose no bidding change.
 
 This block is repeated verbatim in every AdCopilot skill and command a person runs; change all seven together.
 
-First, Cursor. If this is Cursor (`get_org_context`'s top-level `surface` is `cursor`, or Cursor's own instructions or the person say so), make no offer, never run `claude mcp` to work out where you are, and record nothing about a schedule: AdCopilot gives no scheduling steps for Cursor, and its emailed check-in, when `routine.daily.status` is `in_app`, is the morning check there.
+First, Cursor. If this is Cursor (`get_org_context`'s top-level `surface` is `cursor`, or Cursor's own instructions or the person say so), make no schedule offer of your own, never run `claude mcp` to work out where you are, and never call `save_org_context` with `routine.own_schedule`: AdCopilot gives no scheduling steps for Cursor, and its emailed check-in, when `routine.daily.status` is `in_app`, is the morning check there. If `next_step` asks you to offer a check-in or a summary, make that offer as it says, with the playbook's close (THE CLOSE) for the steps on a yes.
 
 Everywhere else, make one offer to turn a morning check of this account into a daily habit — at most once in a conversation — and only when both hold: Google Ads is connected and readable with a campaign switched on, and `get_org_context` hands you its recipe, `routine.schedule`. AdCopilot sends `routine.schedule` only when its `overlays.schedule_offer` is set, which is its own decision for this workspace and this AI client: no schedule is reported, the call is not a scheduled run, and the client is one AdCopilot gives scheduling steps for (Claude or Claude Code; never Cursor, ChatGPT or another client). Never make the offer without it, and never work it out from the other fields. What they mean: AdCopilot reports a schedule when `routine.daily.status` is `user_set` (a schedule they set up in their own assistant), when a scheduled run has checked in on two different days (`routine.scheduled_first_seen_at` and `routine.scheduled_last_seen_at` hold dates on different days), or when `routine.own_schedule` is `saved`, `unavailable` or `declined` (recorded once they saved it, once their Claude turned out to have no scheduled tasks, or once they said not now, which holds the offer for a week and then lets it come back), and then it sends no `routine.schedule`. AdCopilot's emailed check-in, `routine.daily.status` `in_app`, is not a schedule. Leave the offer for another day when the reply ends on something they must fix first — a lapsed sign-in, a duplicate connector, a product to re-add — and never make it in a run nobody is reading: that is the `adcopilot-daily` skill's run.
 

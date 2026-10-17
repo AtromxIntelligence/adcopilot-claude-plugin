@@ -22,7 +22,12 @@ type: fixed
 # its thirty days and its cost in micros, the profile's first-campaign record
 # holds the probe's enabled_seen_at, Analytics and Tag Manager rows are
 # {resource_id, display_name, enabled}, and the routine block carries
-# scheduled_first_seen_at, own_schedule and own_schedule_at.
+# scheduled_first_seen_at, own_schedule and own_schedule_at. Two values were
+# changed rather than carried over: routine.weekly.status is skipped (it was
+# off), so that next_step asks for no routine offer, and
+# routine.scheduled_first_seen_at is 2026-09-22 12:07:40 (it was absent), a
+# day before scheduled_last_seen_at, because v2.41.0 believes a schedule only
+# once a scheduled run has checked in on two different days.
 ---
 {
   "org": {

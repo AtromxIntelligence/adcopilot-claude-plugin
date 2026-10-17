@@ -237,16 +237,19 @@ next fix, as above.
 
 Then the daily habit, on the same terms every other flow uses it. In Cursor
 (`get_org_context`'s top-level `surface` is `cursor`, or Cursor's own
-instructions or the person say so) there is none: make no offer, never run
-`claude mcp` to work out where you are, and record nothing about a schedule.
-Everywhere else, one offer, at most once in a conversation, and only when
-Google Ads is connected and readable with a campaign switched on and
-`get_org_context` hands you its recipe, `routine.schedule`, which AdCopilot
-sends only when its `overlays.schedule_offer` is set: its own decision for this
-workspace and this AI client, made when no schedule is reported, the call is
-not a scheduled run and the client is Claude or Claude Code. It reports one
-when `routine.daily.status` is `user_set`, when a scheduled run has checked in
-on two different days (`routine.scheduled_first_seen_at` and
+instructions or the person say so) there is none of the plugin's own: make no
+schedule offer, never run `claude mcp` to work out where you are, and never
+call `save_org_context` with `routine.own_schedule`; if `next_step` asks you to
+offer a check-in or a summary, make that offer as it says, with the playbook's
+close (THE CLOSE) for the steps on a yes. Everywhere else, one offer, at most
+once in a conversation, and only when Google Ads is connected and readable with
+a campaign switched on and `get_org_context` hands you its recipe,
+`routine.schedule`, which AdCopilot sends only when its
+`overlays.schedule_offer` is set: its own decision for this workspace and this
+AI client, made when no schedule is reported, the call is not a scheduled run
+and the client is Claude or Claude Code. It reports one when
+`routine.daily.status` is `user_set`, when a scheduled run has checked in on
+two different days (`routine.scheduled_first_seen_at` and
 `routine.scheduled_last_seen_at`), or when `routine.own_schedule` is `saved`,
 `unavailable` or `declined`, and then it sends no `routine.schedule`.
 AdCopilot's own emailed check-in (`routine.daily.status` `in_app`) is not their

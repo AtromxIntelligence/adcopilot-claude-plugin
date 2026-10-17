@@ -54,10 +54,14 @@ graders:
     # clock of the machine the eval runs on (it runs after the v2.41.0
     # deploy, so after 13 Oct), whether as end_date or in its conditions as
     # the end of a BETWEEN, a <= bound, a < bound on the day after, or a single
-    # day, in single or double quotes; nor a `DURING` range that takes in
-    # today (TODAY, THIS_MONTH, THIS_WEEK_..._TODAY). A read for an earlier
-    # comparison window (ending 29 Sep, say) is not a wrong day and passes.
-    pattern: '"tool"\s*:\s*"[^"]*search"\s*,\s*"input"\s*:\s*"?\{[^{}]*?(?:\\?"end_date\\?"\s*:\s*\\?"(?:2026-10-12|2026-10-(?:1[4-9]|[23]\d)|2026-1[12]-\d{2}|20(?:2[7-9]|[3-9]\d)-\d{2}-\d{2})|[Bb][Ee][Tt][Ww][Ee][Ee][Nn]\s+(?:''|\\{1,3}")\d{4}-\d{2}-\d{2}(?:''|\\{1,3}")\s+[Aa][Nn][Dd]\s+(?:''|\\{1,3}")(?:2026-10-12|2026-10-(?:1[4-9]|[23]\d)|2026-1[12]-\d{2}|20(?:2[7-9]|[3-9]\d)-\d{2}-\d{2})(?:''|\\{1,3}")|<=\s*(?:''|\\{1,3}")(?:2026-10-12|2026-10-(?:1[4-9]|[23]\d)|2026-1[12]-\d{2}|20(?:2[7-9]|[3-9]\d)-\d{2}-\d{2})(?:''|\\{1,3}")|<(?!=)\s*(?:''|\\{1,3}")(?:2026-10-13|2026-10-(?:1[5-9]|[23]\d)|2026-1[12]-\d{2}|20(?:2[7-9]|[3-9]\d)-\d{2}-\d{2})(?:''|\\{1,3}")|(?<![<>!])=\s*(?:''|\\{1,3}")(?:2026-10-12|2026-10-(?:1[4-9]|[23]\d)|2026-1[12]-\d{2}|20(?:2[7-9]|[3-9]\d)-\d{2}-\d{2})(?:''|\\{1,3}")|[Dd][Uu][Rr][Ii][Nn][Gg]\s+(?:[Tt][Oo][Dd][Aa][Yy]|[Tt][Hh][Ii][Ss]_[Mm][Oo][Nn][Tt][Hh]|[Tt][Hh][Ii][Ss]_[Ww][Ee][Ee][Kk]_[Ss][Uu][Nn]_[Tt][Oo][Dd][Aa][Yy]|[Tt][Hh][Ii][Ss]_[Ww][Ee][Ee][Kk]_[Mm][Oo][Nn]_[Tt][Oo][Dd][Aa][Yy]))'
+    # day, in single or double quotes; nor an `IN` list holding a wrong day;
+    # nor a range that takes in today: a `DURING` range (TODAY, THIS_MONTH,
+    # THIS_WEEK_..._TODAY), or an open one, a `>` or `>=` bound on
+    # segments.date in an input with no end_date and no other bound on it
+    # (checked from the input's opening brace, so the order of the bounds
+    # does not matter). A read for an earlier comparison window (ending
+    # 29 Sep, say) is not a wrong day and passes.
+    pattern: '"tool"\s*:\s*"[^"]*search"\s*,\s*"input"\s*:\s*"?\{(?:(?![^{}]*?(?:end_date|segments\.date\s*(?:<|=|[Bb][Ee][Tt][Ww][Ee][Ee][Nn]|[Ii][Nn]\b|[Dd][Uu][Rr][Ii][Nn][Gg])))(?=[^{}]*?segments\.date\s*>)|[^{}]*?(?:\\?"end_date\\?"\s*:\s*\\?"(?:2026-10-12|2026-10-(?:1[4-9]|[23]\d)|2026-1[12]-\d{2}|20(?:2[7-9]|[3-9]\d)-\d{2}-\d{2})|[Bb][Ee][Tt][Ww][Ee][Ee][Nn]\s+(?:''|\\{1,3}")\d{4}-\d{2}-\d{2}(?:''|\\{1,3}")\s+[Aa][Nn][Dd]\s+(?:''|\\{1,3}")(?:2026-10-12|2026-10-(?:1[4-9]|[23]\d)|2026-1[12]-\d{2}|20(?:2[7-9]|[3-9]\d)-\d{2}-\d{2})(?:''|\\{1,3}")|<=\s*(?:''|\\{1,3}")(?:2026-10-12|2026-10-(?:1[4-9]|[23]\d)|2026-1[12]-\d{2}|20(?:2[7-9]|[3-9]\d)-\d{2}-\d{2})(?:''|\\{1,3}")|<(?!=)\s*(?:''|\\{1,3}")(?:2026-10-13|2026-10-(?:1[5-9]|[23]\d)|2026-1[12]-\d{2}|20(?:2[7-9]|[3-9]\d)-\d{2}-\d{2})(?:''|\\{1,3}")|(?<![<>!])=\s*(?:''|\\{1,3}")(?:2026-10-12|2026-10-(?:1[4-9]|[23]\d)|2026-1[12]-\d{2}|20(?:2[7-9]|[3-9]\d)-\d{2}-\d{2})(?:''|\\{1,3}")|[Dd][Uu][Rr][Ii][Nn][Gg]\s+(?:[Tt][Oo][Dd][Aa][Yy]|[Tt][Hh][Ii][Ss]_[Mm][Oo][Nn][Tt][Hh]|[Tt][Hh][Ii][Ss]_[Ww][Ee][Ee][Kk]_[Ss][Uu][Nn]_[Tt][Oo][Dd][Aa][Yy]|[Tt][Hh][Ii][Ss]_[Ww][Ee][Ee][Kk]_[Mm][Oo][Nn]_[Tt][Oo][Dd][Aa][Yy])|\b[Ii][Nn]\s*\([^()]*?(?:''|\\{1,3}")(?:2026-10-12|2026-10-(?:1[4-9]|[23]\d)|2026-1[12]-\d{2}|20(?:2[7-9]|[3-9]\d)-\d{2}-\d{2})(?:''|\\{1,3}")))'
   - name: names-the-two-costliest-searches
     type: regex
     target: last_message

@@ -1,7 +1,7 @@
 {
   "name": "adcopilot",
   "version": "0.2.12",
-  "description": "The AI agent that runs your Google Ads. Audit wasted spend, mine search terms, build campaigns and fix conversion tracking, with Google Analytics, Google Search Console and Google Tag Manager live in the same chat. AdCopilot proposes each change first. For a hard stop, set your AI client to ask before AdCopilot's write tools: Needs approval in Claude; in Cursor, keep them off the allowlist (Cursor's cloud agents never ask). AdCopilot never deletes anything but a negative keyword.",
+  "description": "The AI agent that runs your Google Ads. Audit wasted spend, mine search terms, build campaigns and fix conversion tracking, with Google Analytics, Google Search Console and Google Tag Manager live in the same chat. AdCopilot proposes each change first. For a hard stop, set your AI client to ask before AdCopilot's write tools: Needs approval in Claude; in Cursor, use the Allowlist run mode and keep them off the allowlist (Cursor's cloud agents never ask). AdCopilot never deletes anything but a negative keyword.",
   "author": {
     "name": "Atromx Intelligence",
     "url": "https://adcopilot.cloud"

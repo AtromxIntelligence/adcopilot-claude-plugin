@@ -63,8 +63,13 @@ What it pins, and why each one is here:
   it is in, Cursor is checked first, `claude mcp` is never run there, and the
   connector may be named `server`; the daily-habit offer is made only when
   get_org_context hands over `routine.schedule` (AdCopilot's own decision for
-  the client) and a no is recorded only from Claude; every command says what
-  to do without its skill; and one approval sentence serves every client.
+  the client) and a no is recorded only from Claude, and in Cursor the plugin
+  makes the check-in offer next_step asks for instead of one of its own;
+  every command says what to do without its skill, and the four that send
+  the versioned marker send the bare one there, so the server never hands
+  the turn to a skill that is not installed; /adcopilot:audit gives Cursor's
+  refresh for a stale tool list first; and one approval sentence serves every
+  client, its Cursor half naming the Allowlist run mode.
 """
 
 import json
@@ -160,6 +165,22 @@ def plugin_marker():
 
 
 BARE_MARKER = 'source: "claude-plugin"'
+# The one place the bare marker is written (the Cursor round's review): the
+# four commands that send the versioned marker send the bare one where the
+# AdCopilot skills are not installed. On a versioned marker v2.41.0's
+# situations.plugin_skill names the skill that owns the account's situation,
+# next_step hands it the steps ("follow the AdCopilot review steps installed
+# in this assistant") and the playbook's branch becomes `[PLUGIN]`; on the bare
+# one plugin_version is None, so plugin_skill is None and the full branch
+# comes back.
+NO_SKILLS = ("The one exception is where the AdCopilot skills are not "
+             "installed: Cursor can add this command without them, and then "
+             "`adcopilot-review` is not among your skills. There, send "
+             "`source: \"claude-plugin\"`, with no version, so AdCopilot hands "
+             "no step to a skill that is not here, and `get_org_context`'s "
+             "`next_step` and `playbook` carry those steps themselves.")
+VERSIONED_COMMANDS = ("commands/audit.md", "commands/daily.md",
+                      "commands/negatives.md", "commands/weekly.md")
 
 # The rule for a finding whose own text carries a condition (plugin #10). The
 # same words on every surface that relays a lens's findings.
@@ -1156,9 +1177,14 @@ class PluginVersionMarker(unittest.TestCase):
         self.assertGreaterEqual(seen, 14, "expected the 14 marker sites, saw %d" % seen)
 
     def test_no_bare_marker_is_left(self):
+        # Outside the four commands' no-skills exception, nowhere.
         for rel in self.model_read():
             with self.subTest(file=rel):
-                self.assertNotIn(BARE_MARKER, read(rel),
+                text = flat(rel)
+                if rel in VERSIONED_COMMANDS:
+                    self.assertEqual(text.count(NO_SKILLS), 1)
+                    text = text.replace(NO_SKILLS, "")
+                self.assertNotIn(BARE_MARKER, text,
                                  "%s still passes the marker without the version" % rel)
 
     def test_every_marked_file_says_to_keep_the_version(self):
@@ -2810,6 +2836,27 @@ class V241Alignment(unittest.TestCase):
                                   "## Evals, and how a skill earns its place") or "").split())
         self.assertIn("The four cases added in 0.2.5 (`docs-safe-to-let-loose`", evals)
         self.assertNotIn("The four newest cases", evals)
+        # What the six newest cases have and have not run on (the Cursor
+        # round's review): four ran on 2026-10-17 against an earlier text.
+        self.assertNotIn("written but not yet run", evals)
+        self.assertIn("ran on 2026-10-17 against an earlier 0.2.12 text, where "
+                      "`meta-connector-absent` scored 0.778, under the 0.8 line "
+                      "on all three of its runs, and the other two have never "
+                      "run", evals)
+        self.assertNotIn("Five new cases are written and have not been run.", note)
+        self.assertIn("three of them ran once, on 2026-10-17, against an earlier "
+                      "0.2.12 text, and two never have", note)
+        # The 0.2.5 cases' baseline arm, after the re-render.
+        self.assertIn("the baseline arm is the plugin present with its skill "
+                      "bodies empty", evals)
+
+    def test_the_readme_says_which_campaign_it_will_not_switch_on(self):
+        # The server refuses a switch-on only for the campaign AdCopilot built
+        # (toolfilter.FIRST_CAMPAIGN_REFUSAL), and the plugin pauses or
+        # switches on others with set_campaign_status on a yes.
+        will_not = section(read("README.md"), "## What it will not do") or ""
+        self.assertIn("- **Switch on a campaign it built.**", will_not)
+        self.assertNotIn("**Switch a campaign on.**", will_not)
 
     def test_the_v241_fixtures_hold_what_classify_derives(self):
         # release/v2.41.0's situations.classify, run on each fixture's own
@@ -3028,10 +3075,60 @@ class V241Alignment(unittest.TestCase):
                         self.assertRegex(logged(cond, as_string), re.compile(other))
             for cond in ("segments.date < '2026-09-30'",
                          'segments.date BETWEEN "2026-09-16" AND "2026-09-29"',
-                         "segments.date >= '2026-10-13'",
-                         "segments.date DURING LAST_14_DAYS"):
+                         "segments.date DURING LAST_14_DAYS",
+                         "segments.date IN ('2026-10-06', '2026-10-13')"):
                 with self.subTest(earlier=cond, as_string=as_string):
                     self.assertNotRegex(logged(cond, as_string), re.compile(other))
+            # The review's closing of the remaining gaps: an open range (a `>`
+            # or `>=` bound with no upper bound runs to the account's today,
+            # whatever its first day) and an IN list holding a wrong day.
+            for cond in ("segments.date >= '2026-10-14'",
+                         'segments.date > "2026-10-13"',
+                         "segments.date >= '2026-10-13'",
+                         "segments.date >= '2026-09-30'",
+                         "segments.date>='2026-09-30'",
+                         "segments.date IN ('2026-10-14')",
+                         'segments.date in ("2026-10-13", "2026-10-14")',
+                         "segments.date IN ('2026-10-12')"):
+                with self.subTest(wrong=cond, as_string=as_string):
+                    self.assertRegex(logged(cond, as_string), re.compile(other))
+                    self.assertNotRegex(logged(cond, as_string), re.compile(ends, flags))
+            # A lower bound with an upper one, in either order or in two
+            # conditions, is a finite range and is judged by its end.
+            def two(conds):
+                inp = {"resource": "campaign", "conditions": conds}
+                return json.dumps([{"tool": mcp, "input": json.dumps(inp)
+                                    if as_string else inp}])
+            for conds, right in (
+                    (["segments.date <= '2026-10-13' AND segments.date >= '2026-09-30'"], True),
+                    (["segments.date >= '2026-09-30'", "segments.date <= '2026-10-13'"], True),
+                    (["segments.date > '2026-09-29'", 'segments.date < "2026-10-14"'], True),
+                    (["segments.date >= '2026-09-30'", "segments.date <= '2026-10-14'"], False)):
+                with self.subTest(conds=conds, as_string=as_string):
+                    if right:
+                        self.assertRegex(two(conds), re.compile(ends, flags))
+                        self.assertNotRegex(two(conds), re.compile(other))
+                    else:
+                        self.assertRegex(two(conds), re.compile(other))
+            # A lower bound beside end_date is bounded by end_date.
+            for end, wrong in (("2026-10-13", False), ("2026-10-14", True)):
+                inp = {"resource": "campaign", "start_date": "2026-09-30",
+                       "end_date": end, "conditions": ["segments.date >= '2026-09-30'"]}
+                log = json.dumps([{"tool": mcp, "input": json.dumps(inp)
+                                   if as_string else inp}])
+                with self.subTest(end_date=end, as_string=as_string):
+                    if wrong:
+                        self.assertRegex(log, re.compile(other))
+                    else:
+                        self.assertNotRegex(log, re.compile(other))
+                        self.assertRegex(log, re.compile(ends, flags))
+            # Neither grader is decided by a `tools` refresh or a lens call.
+            refresh = json.dumps([{"tool": "mcp__plugin_adcopilot_adcopilot__get_org_context",
+                                   "input": {"tools": ["search"], "source": "x"}},
+                                  {"tool": "mcp__plugin_adcopilot_adcopilot__budget_pacing",
+                                   "input": {"customer_id": "1"},
+                                   "output": "segments.date >= '2026-10-01'"}])
+            self.assertNotRegex(refresh, re.compile(other))
         cov, cflags = grader(self.DATES, "coverage-is-a-count-not-a-percentage")
         self.assertRegex("Coverage was 73% of its 73 checks.", re.compile(cov, cflags))
         self.assertNotRegex("The audit's score comes from the 58 of 73 checks "
@@ -3048,8 +3145,9 @@ class V241Alignment(unittest.TestCase):
 # (schedule_recipe.offer_for gives None for a named client that is not Claude).
 APPROVAL_SENTENCE = ("AdCopilot proposes each change first. For a hard stop, "
                      "set your AI client to ask before AdCopilot's write tools: "
-                     "Needs approval in Claude; in Cursor, keep them off the "
-                     "allowlist (Cursor's cloud agents never ask).")
+                     "Needs approval in Claude; in Cursor, use the Allowlist "
+                     "run mode and keep them off the allowlist (Cursor's cloud "
+                     "agents never ask).")
 CURSOR_CONFIG = ("eyJ0eXBlIjoiaHR0cCIsInVybCI6Imh0dHBzOi8vbWNwLmFkY29waWxvdC5jbG91"
                  "ZC9tY3AifQ%3D%3D")
 CURSOR_TELL = ("`get_org_context`'s top-level `surface` is `cursor`, or Cursor's "
@@ -3102,6 +3200,19 @@ class ClientNeutralApproval(unittest.TestCase):
                 if "Needs approval" in sentence:
                     with self.subTest(file=rel, sentence=sentence[:80]):
                         self.assertIn("Cursor", sentence)
+
+    def test_cursors_hard_stop_names_the_allowlist_run_mode(self):
+        # Keeping the write tools off the allowlist is a hard stop only in
+        # Cursor's Allowlist run mode: in Auto-review, its recommended default,
+        # a classifier can let a tool that is not allowlisted through.
+        for rel in (["README.md", ".claude-plugin/plugin.json"]
+                    + model_read_files()):
+            text = flat(rel)
+            for sentence in ApprovalCondition.sentences(text):
+                if "Cursor" in sentence and "off the allowlist" in sentence:
+                    with self.subTest(file=rel, sentence=sentence[:90]):
+                        self.assertIn("Allowlist", sentence.replace(
+                            "off the allowlist", ""))
 
     def test_the_docs_skill_names_each_clients_hard_stop(self):
         docs = flat("skills/adcopilot-docs/SKILL.md")
@@ -3156,9 +3267,59 @@ class CursorPath(unittest.TestCase):
         first = block.index("First, Cursor. If this is Cursor (" + CURSOR_TELL + ")")
         self.assertLess(first, block.index("make one offer"))
         self.assertLess(first, block.index("`claude mcp list`"))
-        self.assertIn("make no offer, never run `claude mcp` to work out where "
-                      "you are, and record nothing about a schedule", block)
+        self.assertIn("make no schedule offer of your own, never run `claude mcp` "
+                      "to work out where you are, and never call "
+                      "`save_org_context` with `routine.own_schedule`", block)
+        self.assertNotIn("make no offer,", block)
+        self.assertNotIn("record nothing about a schedule", block)
         self.assertIn("never Cursor, ChatGPT or another client", block)
+
+    def test_in_cursor_the_servers_check_in_offer_is_made(self):
+        # v2.41.0 gives a Cursor connection no schedule_offer, but while the
+        # routine is pending its next_step still ends "Before you finish,
+        # offer to set up a daily check-in and a Monday summary." and the
+        # playbook carries THE CLOSE (plugin_drops_schedule applies only when
+        # schedule_offer is set). "Make no offer" would have cut the one
+        # daily loop Cursor has.
+        offer = ("If `next_step` asks you to offer a check-in or a summary, "
+                 "make that offer as it says, with the playbook's close (THE "
+                 "CLOSE) for the steps on a yes.")
+        for rel in HABIT_CARRIERS:
+            block = " ".join((section(read(rel), HABIT_HEADING) or "").split())
+            cursor = block.split("Everywhere else,")[0]
+            with self.subTest(file=rel):
+                self.assertEqual(cursor.count(offer), 1)
+        review = flat("skills/adcopilot-review/SKILL.md")
+        self.assertIn("In Cursor (" + CURSOR_TELL + ") there is none of the "
+                      "plugin's own: make no schedule offer, never run "
+                      "`claude mcp` to work out where you are, and never call "
+                      "`save_org_context` with `routine.own_schedule`; if "
+                      "`next_step` asks you to offer a check-in or a summary, "
+                      "make that offer as it says, with the playbook's close "
+                      "(THE CLOSE) for the steps on a yes.", review)
+        readme = flat("README.md")
+        self.assertIn("there the plugin makes no schedule offer of its own; in "
+                      "Cursor, when AdCopilot's answer asks for an offer of a "
+                      "check-in or a summary, the plugin makes that one as "
+                      "AdCopilot words it.", readme)
+        self.assertNotIn("and there the plugin makes no offer.", readme)
+
+    def test_audit_refreshes_a_stale_tool_list_cursor_first(self):
+        text = flat("commands/audit.md")
+        cursor = text.index("If the tool is still missing, Cursor first: in "
+                            "Cursor (" + CURSOR_TELL + ") there is no `/mcp`")
+        self.assertLess(cursor, text.index("`/mcp`, choose `adcopilot`"))
+        for words in ("you never run `claude mcp` there",
+                      "turning AdCopilot off and on again in Cursor's MCP "
+                      "settings, where it may be named `server`, refetches the "
+                      "tool list",
+                      "removing it and adding it again is the last resort.",
+                      "Everywhere else, `/mcp`, choose `adcopilot`, then "
+                      "Reconnect refetches the tool list",
+                      "The first fix is then that refresh, with its last resort"):
+            with self.subTest(words=words):
+                self.assertIn(words, text)
+        self.assertNotIn("that reconnect", text)
 
     def test_own_schedule_is_recorded_only_from_claude(self):
         block = " ".join((section(read(HABIT_CARRIERS[0]), HABIT_HEADING) or "").split())
@@ -3190,10 +3351,16 @@ class CursorPath(unittest.TestCase):
                                   "`get_org_context`'s `next_step` and `playbook` "
                                   "instead.", text)
                 else:
-                    self.assertIn("If that skill is not installed here (Cursor can "
-                                  "add a command without the skills), follow "
-                                  "`get_org_context`'s `next_step` and `playbook` "
-                                  "for those steps instead.", text)
+                    # The versioned marker hands the turn to a skill, so a
+                    # fallback to next_step and the playbook would point back
+                    # at the skill that is missing: these send the bare one.
+                    self.assertIn(NO_SKILLS, text)
+                    self.assertNotIn("If that skill is not installed here", text)
+                    keep = text.index("Send `source` exactly as written, the "
+                                      "version included")
+                    self.assertLess(keep, text.index(NO_SKILLS))
+                    self.assertLess(text.index(NO_SKILLS),
+                                    text.index("When the answer's `plugin.skill`"))
 
     def test_the_auditor_is_readonly_where_cursor_reads_it(self):
         text = read("agents/adcopilot-auditor.md")
@@ -3289,6 +3456,31 @@ class OlderFixturesOnV241(unittest.TestCase):
                 for key in ("scheduled_first_seen_at", "scheduled_last_seen_at",
                             "own_schedule", "own_schedule_at"):
                     self.assertIn(key, routine)
+
+    def test_each_header_names_the_values_changed(self):
+        # The re-render set routine.weekly.status from off to skipped in five
+        # fixtures and added a first scheduled sighting to one; each header
+        # says so, and the others change nothing in their data.
+        weekly = ("habit-recorded-stays-quiet", "review-follows-related-reads",
+                  "review-spends-the-depth", "seo-discovered-is-not-a-verdict",
+                  "seo-two-numbers-that-lie")
+        for case in self.CASES:
+            text = read("evals/%s/mocks/adcopilot/get_org_context.md" % case)
+            head = re.match(r"^---\n(.*?)\n---\n", text, re.S).group(1)
+            head = " ".join(head.replace("#", " ").split())
+            with self.subTest(case=case):
+                said = ("routine.weekly.status is skipped (it was off), so that "
+                        "next_step asks for no routine offer")
+                self.assertEqual(said in head, case in weekly)
+                if case in weekly:
+                    self.assertEqual(self.ctx(case)["routine"]["weekly"]["status"],
+                                     "skipped")
+                first = ("routine.scheduled_first_seen_at is 2026-09-22 12:07:40 "
+                         "(it was absent), a day before scheduled_last_seen_at")
+                self.assertEqual(first in head,
+                                 case == "habit-recorded-stays-quiet")
+                self.assertEqual("changed rather than carried over" in head,
+                                 case in weekly)
 
     def test_routine_schedule_is_there_exactly_when_the_offer_is(self):
         for case in self.CASES:

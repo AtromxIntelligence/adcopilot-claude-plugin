@@ -8,18 +8,21 @@ No skill: the connector's tools explain themselves.
 `get_org_context` first, with `source: "claude-plugin/0.2.12"`; the account's
 currency and time zone come from its answer, and the week runs Monday to Sunday
 in that time zone. Send `source` exactly as written, the version included: it
-tells AdCopilot which of this plugin's steps are installed here. When the
-answer's `plugin.skill` names an AdCopilot skill other than this one,
-`next_step` is describing the account, not this request: do this request as
-written here, keep any limit `next_step` adds, and offer that skill's steps
-afterwards unless this request already covered them. If that skill is not
-installed here (Cursor can add a command without the skills), follow
-`get_org_context`'s `next_step` and `playbook` for those steps instead.
-`cross_reads.ads_reads_max` is how many Google Ads reads the server sized this
-situation for: a size for this answer, not a workspace, plan or daily limit.
-Only when `cross_reads.reads_left_today` is present is the day itself short.
-Then four reads, in this order, stopping when this answer's reads are spent and
-offering the one you did not reach as the next read, never as a limit you hit:
+tells AdCopilot which of this plugin's steps are installed here. The one
+exception is where the AdCopilot skills are not installed: Cursor can add this
+command without them, and then `adcopilot-review` is not among your skills.
+There, send `source: "claude-plugin"`, with no version, so AdCopilot hands no
+step to a skill that is not here, and `get_org_context`'s `next_step` and
+`playbook` carry those steps themselves. When the answer's `plugin.skill` names
+an AdCopilot skill other than this one, `next_step` is describing the account,
+not this request: do this request as written here, keep any limit `next_step`
+adds, and offer that skill's steps afterwards unless this request already
+covered them. `cross_reads.ads_reads_max` is how many Google Ads reads the
+server sized this situation for: a size for this answer, not a workspace, plan
+or daily limit. Only when `cross_reads.reads_left_today` is present is the day
+itself short. Then four reads, in this order, stopping when this answer's reads
+are spent and offering the one you did not reach as the next read, never as a
+limit you hit:
 
 1. **The two weeks** — `search` on `campaign` with `start_date` and `end_date`
    spanning last week and the week before, `segments.date` and the cost,
@@ -72,7 +75,7 @@ proposed, and the one question, if any, is which to start with.
 
 This block is repeated verbatim in every AdCopilot skill and command a person runs; change all seven together.
 
-First, Cursor. If this is Cursor (`get_org_context`'s top-level `surface` is `cursor`, or Cursor's own instructions or the person say so), make no offer, never run `claude mcp` to work out where you are, and record nothing about a schedule: AdCopilot gives no scheduling steps for Cursor, and its emailed check-in, when `routine.daily.status` is `in_app`, is the morning check there.
+First, Cursor. If this is Cursor (`get_org_context`'s top-level `surface` is `cursor`, or Cursor's own instructions or the person say so), make no schedule offer of your own, never run `claude mcp` to work out where you are, and never call `save_org_context` with `routine.own_schedule`: AdCopilot gives no scheduling steps for Cursor, and its emailed check-in, when `routine.daily.status` is `in_app`, is the morning check there. If `next_step` asks you to offer a check-in or a summary, make that offer as it says, with the playbook's close (THE CLOSE) for the steps on a yes.
 
 Everywhere else, make one offer to turn a morning check of this account into a daily habit — at most once in a conversation — and only when both hold: Google Ads is connected and readable with a campaign switched on, and `get_org_context` hands you its recipe, `routine.schedule`. AdCopilot sends `routine.schedule` only when its `overlays.schedule_offer` is set, which is its own decision for this workspace and this AI client: no schedule is reported, the call is not a scheduled run, and the client is one AdCopilot gives scheduling steps for (Claude or Claude Code; never Cursor, ChatGPT or another client). Never make the offer without it, and never work it out from the other fields. What they mean: AdCopilot reports a schedule when `routine.daily.status` is `user_set` (a schedule they set up in their own assistant), when a scheduled run has checked in on two different days (`routine.scheduled_first_seen_at` and `routine.scheduled_last_seen_at` hold dates on different days), or when `routine.own_schedule` is `saved`, `unavailable` or `declined` (recorded once they saved it, once their Claude turned out to have no scheduled tasks, or once they said not now, which holds the offer for a week and then lets it come back), and then it sends no `routine.schedule`. AdCopilot's emailed check-in, `routine.daily.status` `in_app`, is not a schedule. Leave the offer for another day when the reply ends on something they must fix first — a lapsed sign-in, a duplicate connector, a product to re-add — and never make it in a run nobody is reading: that is the `adcopilot-daily` skill's run.
 
