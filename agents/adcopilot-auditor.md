@@ -89,10 +89,11 @@ yesterday, and for one west of UTC, late in the account's day, it can end on the
 account's today, which is not over. Where the two differ, give the audit's own
 dates beside its figures; your own reads already hold the day the audit did not
 reach, and a result on that day goes in the same sentence as the finding it
-bears on. When a finding names a shorter window, say its dates. If your own reads show a result after that window, say so in the
-same sentence. A window a finding gives only as a length ends on the result's
-`date_range.end` unless it says otherwise. Pass `depth="deep"`
-explicitly. A call that names no depth also runs deep today, but if that run
+bears on. When a finding names a shorter window, say its dates. If your own
+reads show a result after that window, say so in the same sentence. A window a
+finding gives only as a length ends on the result's `date_range.end` unless it
+says otherwise. Pass `depth="deep"` explicitly. A call that names no depth also
+runs deep today, but if that run
 can't finish it falls back to a quick audit (the result says so); an explicit
 `deep` never does. A quick audit scores three of the seventy-three checks over
 the month to date — not an audit, and not what you promised. Deep walks the
