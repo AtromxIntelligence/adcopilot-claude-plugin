@@ -2284,6 +2284,108 @@ SERVER_REVIEW_STEP = ("The account is running and results are being counted; "
                       "went live.")
 SERVER_RETURNING = ("They have been here before, so open with one line on what "
                     "happened last time.")
+# The hand-off for an account spending with nothing counted
+# (situations._PLUGIN_STEP["adcopilot-measure"], origin/develop 37bd01de):
+# what the real turn's get_org_context carried (skill=adcopilot-measure).
+SERVER_MEASURE_STEP = ("Money is going out and results are not being counted; "
+                       "the AdCopilot measurement steps installed in this "
+                       "assistant cover this turn, so follow them, and suggest "
+                       "no change to how they bid until results are counted.")
+
+
+def never_grader(case_text, tool, needle=None):
+    """True when the case carries a tool_used grader that allows `tool`
+    (optionally only calls whose grader block contains `needle`) zero times."""
+    for block in re.split(r"\n  - name: ", case_text)[1:]:
+        if (re.search(r"^\s+type: tool_used\s*$", block, re.M)
+                and re.search(r"^\s+tool: %s\s*$" % re.escape(tool), block, re.M)
+                and (needle is None or needle in block)
+                and re.search(r"^\s+max: 0\s*$", block, re.M)
+                and re.search(r"^\s+min: 0\s*$", block, re.M)):
+            return True
+    return False
+
+
+class RealTurnDocsCase(unittest.TestCase):
+    """Fix round 1: docs-capabilities-routed hands a counted account to the
+    review, but the real turn (audit rows, 2026-10-13 20:55 UTC) was
+    ADS_ACTIVE_UNTRACKED handed to adcopilot-measure, with situational
+    cross_reads that made no read and offered Analytics. This case is that
+    state, graded on the same docs rule, and also on starting neither the
+    review nor the measurement steps and on no budget read, which the real
+    turn made."""
+
+    CASE = "docs-capabilities-untracked"
+    MCP = "mcp__plugin_adcopilot_adcopilot__"
+
+    def test_the_fixture_is_the_real_turns_server_state(self):
+        ctx = mock(self.CASE, "get_org_context")
+        self.assertEqual(ctx["situation"], "ADS_ACTIVE_UNTRACKED")
+        self.assertEqual(ctx["plugin"]["skill"], "adcopilot-measure")
+        self.assertEqual(ctx["next_step"], SERVER_MEASURE_STEP + " " + SERVER_RETURNING)
+        for part in ("[RAILS]", "[RECAP]", "[PLUGIN]", "adcopilot-measure"):
+            with self.subTest(part=part):
+                self.assertIn(part, ctx["playbook"])
+        cross = ctx["cross_reads"]
+        self.assertEqual(cross["mode"], "situational")
+        self.assertEqual(cross["reads"], [])
+        self.assertEqual([c["product"] for c in cross["connect"]], ["ga4"])
+        self.assertEqual(cross["ads_reads_max"], 5)
+        self.assertNotIn("reads_left_today", cross)
+        self.assertEqual(ctx["org"]["plan"], "pro")
+        self.assertIsNone(ctx["org"]["ops_today_cap"])
+        products = ctx["products"]
+        self.assertTrue(products["google_ads"]["connected"])
+        self.assertTrue(products["search_console"]["connected"])
+        self.assertFalse(products["ga4"]["connected"])
+        self.assertFalse(products["gtm"]["connected"])
+        probe = next(v for k, v in ctx["ads_probe"].items() if k.isdigit())
+        self.assertGreater(probe["last_30d"]["cost_micros"], 0)
+        self.assertEqual(probe["last_30d"]["conversions"], 0)
+        # Untracked, not the routed case's tracked sub-case: 50 clicks or more.
+        self.assertGreaterEqual(probe["last_30d"]["clicks"], 50)
+        self.assertGreaterEqual(probe["conversion_actions"]["primary"], 1)
+
+    def test_it_reads_nothing_and_starts_neither_skill(self):
+        text = read("evals/%s/case.yaml" % self.CASE)
+        for tool in ("full_audit", "analyze_waste", "analyze_search_terms",
+                     "search", "conversion_setup_audit", "budget_pacing",
+                     "gsc_search_analytics"):
+            with self.subTest(tool=tool):
+                self.assertTrue(never_grader(text, self.MCP + tool), tool)
+        for skill in ("adcopilot-review", "adcopilot-measure"):
+            with self.subTest(skill=skill):
+                self.assertTrue(never_grader(text, "Skill", skill), skill)
+        self.assertIn("adcopilot-docs", grader_block(text, "skill-fired"))
+        self.assertIn('  prompt: "I have the AdCopilot plugin. Please walk me '
+                      'through what it can do."\n', text)
+        self.assertIn("tags: [docs]\n", text)
+
+    def test_its_rubric_and_approval_grader(self):
+        text = read("evals/%s/case.yaml" % self.CASE)
+        llm = grader_block(text, "one-list-one-question")
+        self.assertIn("type: llm", llm)
+        self.assertIn("exactly one", llm)
+        self.assertIn("$1,865 on 607 clicks", llm)
+        self.assertIn("Tracking without Analytics", llm)
+        self.assertEqual(grader(self.CASE, "no-approval-promise-without-its-condition"),
+                         grader("docs-capabilities-routed",
+                                "no-approval-promise-without-its-condition"))
+        self.assertIn("marks-plugin-use", text)
+
+    def test_the_routed_case_no_longer_claims_the_real_turns_hand_off(self):
+        routed = read("evals/docs-capabilities-routed/case.yaml")
+        description = routed[:routed.index("tags:")]
+        self.assertIn("docs-capabilities-untracked reproduces it", description)
+        self.assertNotIn("because the server's next_step said", description)
+
+    def test_every_mock_it_needs_is_there(self):
+        for tool in ("get_org_context", "full_audit", "search",
+                     "analyze_search_terms", "analyze_waste",
+                     "conversion_setup_audit", "budget_pacing",
+                     "gsc_search_analytics"):
+            with self.subTest(tool=tool):
+                self.assertIsInstance(mock(self.CASE, tool), dict)
 
 
 class NewEvalCases(unittest.TestCase):
