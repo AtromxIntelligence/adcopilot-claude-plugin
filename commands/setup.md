@@ -3,19 +3,38 @@ name: setup
 description: Check the AdCopilot connector is connected and signed in, and say what each connected product unlocks.
 ---
 
-Follow the `adcopilot-connect` skill.
+Follow the `adcopilot-connect` skill. If that skill is not installed here (Cursor
+can add this command without it), follow `get_org_context`'s `next_step` and
+`playbook` instead.
 
-**Work out the surface before you diagnose anything.** If you can run
-`claude mcp list`, this is Claude Code and the whole of the next two paragraphs
-applies. If you cannot — claude.ai, Cowork, the desktop app — none of it does:
-there is no `/mcp`, no `claude mcp list` and no `claude mcp remove` there, and
-no shadowing either: claude.ai links a connector by its URL, so a copy they
-added by hand before installing the plugin is the same connector, not a second
-one. On the web the only question is whether they have signed in to the
-plugin's own connector yet: open the plugin from the plugin list, then its
-Connectors tab, and Connect `adcopilot` there. Never offer "Add custom
-connector" or the connector URL to someone who has this plugin installed — the
-plugin already brings the connector, so it adds nothing and fixes nothing.
+**Work out the surface before you diagnose anything, and Cursor first.** If this
+is Cursor (`get_org_context`'s top-level `surface` is `cursor`, or Cursor's own
+instructions or the person say so), never run `claude mcp`, not even to check:
+Cursor's agent can reach a shell where Claude Code is installed, and that
+command lists Claude Code's connectors, not Cursor's, so what it shows, and any
+`claude mcp remove` it seems to call for, is about another client. In Cursor the
+connector is in Cursor's MCP settings, where one added from cursor.directory may
+be named `server` rather than `adcopilot`; it is the same connector. There is no
+plugin Connectors tab there and no shadowing to fix. If it is not in the list,
+they add it with AdCopilot's Cursor link,
+`https://cursor.com/en/install-mcp?name=adcopilot&config=eyJ0eXBlIjoiaHR0cCIsInVybCI6Imh0dHBzOi8vbWNwLmFkY29waWxvdC5jbG91ZC9tY3AifQ%3D%3D`,
+or by its URL, `https://mcp.adcopilot.cloud/mcp`. To sign in, Cursor opens
+AdCopilot's page, **Let Cursor use your AdCopilot?**, in the browser, and
+**Approve** finishes it; there is no key to paste. If **Approve** did nothing,
+they remove the connector in Cursor's MCP settings, add it again and press
+**Approve** once. Nothing in the next three paragraphs applies in Cursor.
+
+Otherwise, if you can run `claude mcp list`, this is Claude Code and the whole
+of the next two paragraphs applies. If you cannot — claude.ai, Cowork, the
+desktop app — none of it does: there is no `/mcp`, no `claude mcp list` and no
+`claude mcp remove` there, and no shadowing either: claude.ai links a connector
+by its URL, so a copy they added by hand before installing the plugin is the
+same connector, not a second one. On the web the only question is whether they
+have signed in to the plugin's own connector yet: open the plugin from the
+plugin list, then its Connectors tab, and Connect `adcopilot` there. Never offer
+"Add custom connector" or the connector URL to someone who has this plugin
+installed in Claude — the plugin already brings the connector, so it adds
+nothing and fixes nothing.
 
 One condition the server cannot see, and only in Claude Code, so check it there:
 **a second, hand-added connector**. This plugin already registers `adcopilot`; a copy added from our

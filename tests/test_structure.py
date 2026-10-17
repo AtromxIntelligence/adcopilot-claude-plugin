@@ -58,6 +58,12 @@ What it pins, and why each one is here:
   source, keeps one platform to a change, asks before a change through either
   connector, and carries no plan or price word and nothing Meta has not
   published. The manifests do not claim a Meta integration.
+- Cursor (0.2.12's Cursor round): wherever the plugin works out which client
+  it is in, Cursor is checked first, `claude mcp` is never run there, and the
+  connector may be named `server`; the daily-habit offer is made only when
+  get_org_context hands over `routine.schedule` (AdCopilot's own decision for
+  the client) and a no is recorded only from Claude; every command says what
+  to do without its skill; and one approval sentence serves every client.
 """
 
 import json
@@ -384,9 +390,36 @@ class DailyHabitBlock(unittest.TestCase):
         # never on a row's surface: a row switched off keeps surface
         # claude_scheduled, and Recipe A writes a weekly-only one. Stopping on
         # surface leaves the plugin silent while next_step asks for the offer.
+        # (The answer's TOP-LEVEL `surface`, `cursor` for a Cursor connection,
+        # is the Cursor tell, not a stop condition.)
         block = self.blocks()[HABIT_CARRIERS[0]] or ""
         self.assertNotIn("claude_scheduled", block)
-        self.assertNotIn("`surface`", block)
+        self.assertNotIn("routine.daily.surface", block)
+        self.assertNotIn("`surface` `", block)
+        self.assertIn("`get_org_context`'s top-level `surface` is `cursor`", block)
+
+    def test_the_offer_follows_the_servers_decision_for_the_client(self):
+        # 0.2.12 Cursor round: the offer is made only when get_org_context
+        # hands over `routine.schedule`, which v2.41.0 sets exactly when
+        # classify's `overlays.schedule_offer` is set
+        # (tools_adcopilot.get_org_context; schedule_recipe.offer_for gives
+        # None for any named client that is not Claude, Cursor included).
+        # The plugin no longer decides from the routine fields alone.
+        block = " ".join((self.blocks()[HABIT_CARRIERS[0]] or "").split())
+        self.assertIn("and only when `get_org_context` hands you its recipe: "
+                      "`routine.schedule` is present.", block)
+        self.assertIn("AdCopilot sends it exactly when its "
+                      "`overlays.schedule_offer` is set", block)
+        self.assertIn("Never make the offer without it, and never work it out "
+                      "from the other fields.", block)
+        self.assertIn("Word it for where they are, by `routine.schedule.offer`: "
+                      "`claude_code` is Claude Code, and `claude` is the Claude "
+                      "app. `both` means AdCopilot could not tell which Claude "
+                      "this is", block)
+        # The values the block names are the server's own
+        # (schedule_recipe.OFFERS).
+        for value in ("claude", "claude_code", "both"):
+            self.assertIn("`%s`" % value, block)
 
     def test_offered_only_for_a_running_account(self):
         # The server offers only in ADS_ACTIVE_* situations: a campaign that
@@ -2024,14 +2057,18 @@ class ApprovalCondition(unittest.TestCase):
                 self.assertEqual(self.offenders(text, self.THIRD_PERSON_PROMISE), [])
 
     def test_the_two_third_person_sentences_carry_it(self):
+        # The Cursor round: the two sentences now promise nothing, so they
+        # need no condition, and they name no Claude-only setting.
         desc = re.search(r"^description: (.+)$",
                          frontmatter(read("commands/negatives.md")), re.M).group(1)
-        self.assertIn("added only after the customer's yes, while the write "
-                      "tools stay on Needs approval, then read back.", desc)
-        self.assertIn("happens only after the customer says yes in their own "
-                      "conversation — the one that asked for this audit — while "
-                      "AdCopilot's write tools stay on Needs approval there, and "
-                      "never here.", flat(self.AUDITOR))
+        self.assertIn("and propose never-show-for words (negative keywords) for "
+                      "them; the ones added are read back.", desc)
+        self.assertIn("nothing above has been applied; each change is a "
+                      "proposal, to be put to the customer in their own "
+                      "conversation — the one that asked for this audit — and "
+                      "never made here.", flat(self.AUDITOR))
+        for text in (desc, section(read(self.AUDITOR), "## The report") or ""):
+            self.assertNotIn("Needs approval", text)
 
     def test_the_guard_catches_the_words_it_is_for(self):
         for bad in ("They are reads only: a change still waits for the customer's yes.",
@@ -2658,7 +2695,16 @@ class V241Alignment(unittest.TestCase):
                            r"runs its other tools without asking")
 
     def test_the_one_tool_claude_code_always_asks_about(self):
-        exception = ("the tool that switches a campaign on or off")
+        # The Cursor round: the exception is named by the tool, and the
+        # plugin routes every pause and switch-on through it, so what it says
+        # stays true on v2.41.0 (where `update_campaign` also takes a status,
+        # unflagged) and after the server refuses a status there.
+        exception = ("`set_campaign_status`, the tool that pauses a campaign or "
+                     "switches one on")
+        routed = {"README.md": "The plugin's skills pause or switch on a "
+                               "campaign only with that tool.",
+                  self.DOCS: "This plugin pauses or switches on a campaign only "
+                             "with that tool."}
         for rel in ("README.md", self.DOCS):
             with self.subTest(file=rel):
                 text = flat(rel)
@@ -2667,16 +2713,18 @@ class V241Alignment(unittest.TestCase):
                               "every use of it", text)
                 self.assertIn("a run with nobody there to answer cannot use it", text)
                 self.assertIn("the Claude desktop app may also ask every time", text)
-                # How far it goes: a settings change can pause one too.
-                self.assertIn("That covers the one tool, not every way to pause a "
-                              "campaign: a change to a campaign's settings", text)
+                self.assertIn(routed[rel], text)
+                # How far it goes on v2.41.0: a settings change can carry a
+                # status, and the flag does not hold it.
+                self.assertIn("AdCopilot v2.41.0 also lets a change to a "
+                              "campaign's settings", text)
         morning = " ".join((section(read("README.md"),
                                     "### Every morning, without asking") or "").split())
-        self.assertIn("AdCopilot marks the tool that switches a campaign on or off "
-                      "(`set_campaign_status`) as needing a person, so Claude Code "
-                      "(version 2.1.214 or later) will not use it in a run on your "
-                      "computer with nobody there to answer", morning)
-        self.assertIn("The mark is on that tool alone", morning)
+        self.assertIn("AdCopilot marks `set_campaign_status`, the tool that pauses "
+                      "a campaign or switches one on, as needing a person, so "
+                      "Claude Code (version 2.1.214 or later) will not use it in a "
+                      "run on your computer with nobody there to answer", morning)
+        self.assertIn("the mark does not hold that change", morning)
         self.assertIn("A Claude Code routine runs its tools without asking", morning)
         for rel in ["README.md", ".claude-plugin/plugin.json"] + model_read_files():
             with self.subTest(overclaim=rel):
@@ -2687,7 +2735,33 @@ class V241Alignment(unittest.TestCase):
         self.assertNotIn("2.1.214", flat("skills/adcopilot-daily/SKILL.md"))
         rubric = grader_block(read("evals/docs-safe-to-let-loose/case.yaml"),
                               "the-approval-answer-names-its-condition")
-        self.assertIn("except the tool that switches a campaign on or off", rubric)
+        self.assertIn("except `set_campaign_status`, the tool that pauses a "
+                      "campaign or switches one on", " ".join(rubric.split()))
+
+    def test_every_pause_or_switch_on_goes_through_set_campaign_status(self):
+        # (5) of the Cursor round: the surfaces that pause a campaign or
+        # switch one on name `set_campaign_status`, and no surface sends a
+        # status through `update_campaign` (v2.41.0 takes one there, without
+        # the flag; a server change is making it refuse one).
+        for rel, words in (("skills/adcopilot-review/SKILL.md",
+                            "Pause a campaign, or switch one on, only with "
+                            "`set_campaign_status`, never with a status in "
+                            "`update_campaign`"),
+                           ("commands/audit.md",
+                            "a pause or a switch-on with `set_campaign_status`, "
+                            "never a status in `update_campaign`"),
+                           ("skills/adcopilot-launch/SKILL.md",
+                            "Pausing a campaign or switching one on is "
+                            "`set_campaign_status`'s alone, never a status in "
+                            "`update_campaign`.")):
+            with self.subTest(file=rel):
+                self.assertIn(words, flat(rel))
+        status = re.compile(r"\bstatus\b", re.I)
+        for rel in model_read_files():
+            for sentence in ApprovalCondition.sentences(read(rel)):
+                if "`update_campaign`" in sentence and status.search(sentence):
+                    with self.subTest(file=rel, sentence=sentence[:80]):
+                        self.assertRegex(sentence, r"\bnever\b")
 
     def test_a_request_to_get_started_follows_the_installed_skill(self):
         # v2.41.0's next_step and [PLUGIN]: "on a greeting alone, a request to
@@ -2905,6 +2979,202 @@ class V241Alignment(unittest.TestCase):
         self.assertRegex("Coverage was 73% of its 73 checks.", re.compile(cov, cflags))
         self.assertNotRegex("The audit's score comes from the 58 of 73 checks "
                             "that gave a result.", re.compile(cov, cflags))
+
+
+# The Cursor round of 0.2.12. AdCopilot is listed on cursor.directory, whose
+# "Add to Cursor" installs the connector under the name `server`, and Cursor
+# reads skills from .cursor/skills or .claude/skills. Cursor has no "Needs
+# approval" setting: its run modes decide (Auto-review, the recommended
+# default, can let an MCP call through; Allowlist; Run Everything), and a
+# cloud agent never asks. v2.41.0 reports a Cursor connection as `surface`
+# `cursor` (tools_adcopilot._SURFACE_MAP) and offers it no schedule
+# (schedule_recipe.offer_for gives None for a named client that is not Claude).
+APPROVAL_SENTENCE = ("AdCopilot proposes each change first. For a hard stop, "
+                     "set your AI client to ask before AdCopilot's write tools: "
+                     "Needs approval in Claude; in Cursor, keep them off the "
+                     "allowlist (Cursor's cloud agents never ask).")
+CURSOR_CONFIG = ("eyJ0eXBlIjoiaHR0cCIsInVybCI6Imh0dHBzOi8vbWNwLmFkY29waWxvdC5jbG91"
+                 "ZC9tY3AifQ%3D%3D")
+CURSOR_TELL = ("`get_org_context`'s top-level `surface` is `cursor`, or Cursor's "
+               "own instructions or the person say so")
+GOOGLE_ACCESS_DISCLOSURE = (
+    "AdCopilot connects to Google Ads through its own Google Cloud project, "
+    "with your Google sign-in. If you want programmatic access to Google Ads "
+    "for your own software, get your own Google Cloud account and apply for "
+    "Google Ads API access there.")
+
+
+class ClientNeutralApproval(unittest.TestCase):
+    """One approval sentence for every AI client. The earlier 0.2.12 text
+    made "while the write tools stay on Needs approval" the condition of every
+    promise: a Claude setting, which the plugin directory, the README and
+    cursor.directory's copy of the description all showed to Cursor users."""
+
+    CLAUDE_ONLY = re.compile(r"while (?:the|AdCopilot's) write tools (?:stay|need)|"
+                             r"Your AI client asks before each change", re.I)
+
+    def surfaces(self):
+        return (["README.md", ".claude-plugin/plugin.json",
+                 ".claude-plugin/marketplace.json"] + model_read_files())
+
+    def test_the_manifest_and_the_readme_carry_the_sentence(self):
+        desc = json.loads(read(".claude-plugin/plugin.json"))["description"]
+        self.assertIn(APPROVAL_SENTENCE, desc)
+        self.assertIn("AdCopilot never deletes anything but a negative keyword.", desc)
+        self.assertLessEqual(len(desc), 1024)
+        intro = " ".join(read("README.md").split("\n## ", 1)[0].split())
+        self.assertIn(APPROVAL_SENTENCE, intro)
+
+    def test_no_surface_keeps_the_claude_only_condition(self):
+        for rel in self.surfaces():
+            with self.subTest(file=rel):
+                found = self.CLAUDE_ONLY.search(flat(rel))
+                self.assertIsNone(found, found and found.group(0))
+
+    def test_needs_approval_is_named_beside_cursor(self):
+        # Wherever the customer reads "Needs approval", Cursor's way is in the
+        # same sentence. The one exception is adcopilot-daily's set-up step
+        # for the Claude app, which is Claude's own screen.
+        visible = [(rel, read(rel)) for rel in
+                   ("README.md", ".claude-plugin/plugin.json",
+                    ".claude-plugin/marketplace.json")]
+        visible.append(("skills/adcopilot-docs/SKILL.md",
+                        read("skills/adcopilot-docs/SKILL.md")))
+        for rel, text in visible:
+            for sentence in ApprovalCondition.sentences(text):
+                if "Needs approval" in sentence:
+                    with self.subTest(file=rel, sentence=sentence[:80]):
+                        self.assertIn("Cursor", sentence)
+
+    def test_the_docs_skill_names_each_clients_hard_stop(self):
+        docs = flat("skills/adcopilot-docs/SKILL.md")
+        for words in ("AdCopilot proposes each change first.",
+                      "**Needs approval** in claude.ai, Cowork and the desktop app",
+                      "in Cursor, the write tools kept off the allowlist",
+                      "Cursor has no **Needs approval** setting",
+                      "a Cursor cloud agent never asks",
+                      "never promise a yes before every change without the hard "
+                      "stop beside it."):
+            with self.subTest(words=words):
+                self.assertIn(words, docs)
+
+
+class CursorPath(unittest.TestCase):
+    """Wherever the plugin works out which client it is in, Cursor is checked
+    first: there it never runs `claude mcp` (Cursor's agent can reach a shell
+    where Claude Code is installed, and that command lists Claude Code's
+    connectors), the connector may be named `server`, and it gives Cursor's
+    sign-in step instead of the plugin's Connectors tab."""
+
+    def test_setup_checks_for_cursor_before_claude_code(self):
+        text = flat("commands/setup.md")
+        cursor = text.index("If this is Cursor (" + CURSOR_TELL + ")")
+        self.assertLess(cursor, text.index("`claude mcp list`"))
+        for words in ("never run `claude mcp`, not even to check",
+                      "may be named `server` rather than `adcopilot`; it is the "
+                      "same connector",
+                      "**Let Cursor use your AdCopilot?**",
+                      "config=" + CURSOR_CONFIG,
+                      "Nothing in the next three paragraphs applies in Cursor."):
+            with self.subTest(words=words):
+                self.assertIn(words, text)
+
+    def test_connect_signs_in_cursor_first(self):
+        step = " ".join((section(read("skills/adcopilot-connect/SKILL.md"),
+                                 "### 1. Signed in") or "").split())
+        self.assertLess(step.index("**Cursor** (" + CURSOR_TELL + ")"),
+                        step.index("**Claude Code**"))
+        for words in ("never run `claude mcp` here",
+                      "may be named `server` rather than `adcopilot`",
+                      "**Let Cursor use your AdCopilot?**",
+                      "config=" + CURSOR_CONFIG):
+            with self.subTest(words=words):
+                self.assertIn(words, step)
+        # The plugin's Connectors tab is the web branch's, not Cursor's.
+        cursor = step.split("**Claude Code**")[0]
+        self.assertNotIn("Connectors", cursor)
+
+    def test_the_habit_block_checks_for_cursor_first(self):
+        block = " ".join((section(read(HABIT_CARRIERS[0]), HABIT_HEADING) or "").split())
+        first = block.index("First, Cursor. If this is Cursor (" + CURSOR_TELL + ")")
+        self.assertLess(first, block.index("make one offer"))
+        self.assertLess(first, block.index("`claude mcp list`"))
+        self.assertIn("make no offer, never run `claude mcp` to work out where "
+                      "you are, and record nothing about a schedule", block)
+        self.assertIn("never Cursor, ChatGPT or another client", block)
+
+    def test_own_schedule_is_recorded_only_from_claude(self):
+        block = " ".join((section(read(HABIT_CARRIERS[0]), HABIT_HEADING) or "").split())
+        self.assertIn("Record it only from Claude: AdCopilot keeps "
+                      "`routine.own_schedule` for the whole workspace", block)
+        review = flat("skills/adcopilot-review/SKILL.md")
+        self.assertIn("else `declined` — only from Claude", review)
+        self.assertIn("In Cursor (" + CURSOR_TELL + ") there is none", review)
+        self.assertIn("only when `get_org_context` hands you its recipe, "
+                      "`routine.schedule`", review)
+        daily = flat("skills/adcopilot-daily/SKILL.md")
+        self.assertIn("Never call `save_org_context` with `routine.own_schedule` "
+                      "from Cursor", daily)
+        self.assertLess(daily.index("Cursor first."),
+                        daily.index("First, the instructions they will save."))
+
+    def test_every_command_says_what_to_do_without_its_skill(self):
+        for name in COMMANDS:
+            rel = "commands/%s.md" % name
+            text = flat(rel)
+            with self.subTest(file=rel):
+                if rel in DELEGATING_COMMANDS:
+                    self.assertIn("If that skill is not installed here (Cursor can "
+                                  "add this command without it), follow "
+                                  "`get_org_context`'s `next_step` and `playbook` "
+                                  "instead.", text)
+                else:
+                    self.assertIn("If that skill is not installed here (Cursor can "
+                                  "add a command without the skills), follow "
+                                  "`get_org_context`'s `next_step` and `playbook` "
+                                  "for those steps instead.", text)
+
+    def test_the_auditor_is_readonly_where_cursor_reads_it(self):
+        text = read("agents/adcopilot-auditor.md")
+        self.assertRegex(frontmatter(text), r"(?m)^readonly: true$")
+        comment = " ".join(text.split("<!--", 1)[1].split("-->", 1)[0].split())
+        self.assertIn("The list is enforced only in Claude Code.", comment)
+        self.assertIn("its subagents have no tool list", comment)
+        self.assertIn("does not say it holds back an MCP write", comment)
+
+    def test_the_readme_has_a_cursor_section(self):
+        install = " ".join((section(read("README.md"), "## Install") or "").split())
+        cursor = " ".join((section(read("README.md"), "### Cursor") or "").split())
+        self.assertTrue(cursor)
+        self.assertIn(cursor[:200], install)
+        self.assertIn("(https://cursor.com/en/install-mcp?name=adcopilot&config="
+                      + CURSOR_CONFIG + ")", cursor)
+        self.assertIn("`cursor://anysphere.cursor-deeplink/mcp/install?name="
+                      "adcopilot&config=" + CURSOR_CONFIG + "`", cursor)
+        self.assertNotIn("name=server", cursor)
+        for words in ("**Let Cursor use your AdCopilot?**",
+                      "can name the connector `server` instead of `adcopilot`",
+                      "Cursor has no **Needs approval** setting",
+                      "Settings, then Agents, then Approvals & Execution",
+                      "keep AdCopilot's write tools off the allowlist",
+                      "**Auto-review**, Cursor's recommended default",
+                      "**Run Everything** asks before nothing",
+                      "a Cursor cloud agent never asks you to approve an action"):
+            with self.subTest(words=words):
+                self.assertIn(words, cursor)
+
+    def test_the_config_is_the_connectors_own(self):
+        import base64
+        from urllib.parse import unquote
+        self.assertEqual(json.loads(base64.b64decode(unquote(CURSOR_CONFIG))),
+                         json.loads(read(".mcp.json"))["mcpServers"]["adcopilot"])
+
+    def test_googles_disclosure_is_under_install_word_for_word(self):
+        install = section(read("README.md"), "## Install") or ""
+        before_surfaces = install.split("\n### ", 1)[0]
+        self.assertIn("\n" + GOOGLE_ACCESS_DISCLOSURE + "\n", before_surfaces)
+        self.assertEqual(flat("README.md").count(GOOGLE_ACCESS_DISCLOSURE), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

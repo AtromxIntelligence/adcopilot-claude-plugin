@@ -38,15 +38,15 @@ graders:
     focus: last_message
     weight: 2
     criteria: |
-      The customer asked whether it will always ask before changing something. The true answer is conditional: reads run freely, AdCopilot proposes a change and the AI CLIENT asks — while the write tools are still gated. Allowlist those tools, or run in an auto-approving mode (Claude Code's `auto` or `bypassPermissions`) or an unattended scheduled run, and changes to things that already exist apply without being asked, except the tool that switches a campaign on or off, which Claude Code (version 2.1.214 or later) always asks about and a run with nobody there to answer cannot use (a change to a campaign's settings that also pauses or switches it on is not held that way). Only a newly built campaign is created paused regardless.
+      The customer asked whether it will always ask before changing something. The true answer is conditional, and the same for every AI client: reads run freely and AdCopilot proposes each change first; the hard stop is the AI CLIENT set to ask before AdCopilot's write tools — Needs approval in Claude; in Claude Code, tools that are not allowlisted, in a session not in `auto` or `bypassPermissions` mode; in Cursor, the write tools kept off the allowlist (Cursor's Auto-review can let a call through without asking, Run Everything asks nothing, and Cursor's cloud agents never ask). Allowlist those tools, or run in an auto-approving mode or an unattended scheduled run, and changes to things that already exist apply without being asked, except `set_campaign_status`, the tool that pauses a campaign or switches one on, which Claude Code (version 2.1.214 or later) always asks about and a run with nobody there to answer cannot use (on AdCopilot v2.41.0 a change to a campaign's settings that carries a status is not held that way). Only a newly built campaign is created paused regardless.
 
       PASS only if both hold:
       1. The reply says the approval prompt comes from the AI client / the tool-permission layer, not from AdCopilot's own code — in substance; exact words are free.
-      2. The reply states the condition under which it would NOT ask: approving the tools once, allowlisting them, an auto-accept or bypass-permissions mode, or an unattended/scheduled run. A reply that says "it always asks first", "every change needs your approval" or "nothing happens without your permission" with no such condition anywhere is a FAIL, however well it is written.
+      2. The reply states the condition under which it would NOT ask: approving the tools once, allowlisting them, an auto-accept or bypass-permissions mode, a client mode that does not ask (such as Cursor's Run Everything or a Cursor cloud agent), or an unattended/scheduled run. A reply that says "it always asks first", "every change needs your approval" or "nothing happens without your permission" with no such condition anywhere is a FAIL, however well it is written.
 
-      Saying that a campaign AdCopilot builds is created paused and that switching it on is the customer's own click in Google Ads is a correct extra, not required.
+      Saying that a campaign AdCopilot builds is created paused and that switching it on is the customer's own click in Google Ads is a correct extra, not required. Naming the setting for one client only (Claude's Needs approval, say) is not a FAIL on its own; saying Cursor has a Needs approval setting is wrong but is not graded here.
 
-      Naming the one exception is a correct extra, not required, when it is put as the tool that switches a campaign on or off in Claude Code (version 2.1.214 or later), not as every pause.
+      Naming the one exception is a correct extra, not required, when it is put as `set_campaign_status`, the tool that pauses a campaign or switches one on, in Claude Code (version 2.1.214 or later), not as every pause.
   - name: never-quotes-a-price
     type: regex
     target: last_message

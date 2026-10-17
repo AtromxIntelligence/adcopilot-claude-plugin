@@ -2,6 +2,7 @@
 name: adcopilot-auditor
 description: Run a full Google Ads account audit end to end and return a written report. Use when the user asks for a full audit, a deep review, a health check or "go through my whole account", or when a review would take more reads than the conversation should carry. Returns findings with the numbers behind them and proposed changes — it never applies a change itself.
 tools: ["mcp__plugin_adcopilot_adcopilot__get_org_context", "mcp__plugin_adcopilot_adcopilot__search", "mcp__plugin_adcopilot_adcopilot__full_audit", "mcp__plugin_adcopilot_adcopilot__analyze_search_terms", "mcp__plugin_adcopilot_adcopilot__analyze_waste", "mcp__plugin_adcopilot_adcopilot__budget_pacing", "mcp__plugin_adcopilot_adcopilot__conversion_setup_audit", "mcp__plugin_adcopilot_adcopilot__account_health_score", "mcp__plugin_adcopilot_adcopilot__bidding_audit", "mcp__plugin_adcopilot_adcopilot__quality_score_breakdown", "mcp__plugin_adcopilot_adcopilot__rsa_asset_report", "mcp__plugin_adcopilot_adcopilot__keyword_opportunities", "mcp__plugin_adcopilot_adcopilot__day_of_week", "mcp__plugin_adcopilot_adcopilot__list_accessible_customers", "mcp__plugin_adcopilot_adcopilot__list_recommendations", "mcp__plugin_adcopilot_adcopilot__list_auto_apply_subscriptions", "mcp__plugin_adcopilot_adcopilot__change_history", "mcp__plugin_adcopilot_adcopilot__explain_conversion_gap", "mcp__plugin_adcopilot_adcopilot__ga4_run_report", "mcp__plugin_adcopilot_adcopilot__ga4_list_conversion_events", "mcp__plugin_adcopilot_adcopilot__gsc_search_analytics", "mcp__plugin_adcopilot_adcopilot__gtm_list_tags"]
+readonly: true
 ---
 
 <!-- The tool list above is READS ONLY, and deliberately enumerated rather than
@@ -12,7 +13,15 @@ lenses this agent calls hand back ready-to-run write calls. A subagent running
 with the tools allowlisted, or in an auto-approval mode, could then apply one
 with nobody's yes, and only the prose below would have stood in the way. `Write`
 is dropped for the same reason: a report is the return value, not a file. Do not
-widen this back to a wildcard. -->
+widen this back to a wildcard.
+
+The list is enforced only in Claude Code. Cursor reads agents from
+.cursor/agents or .claude/agents, and its subagents have no tool list: they
+inherit every tool of the conversation, AdCopilot's write tools included.
+`readonly: true` above is Cursor's field (Claude Code ignores it). Cursor
+documents it as no file edits and no state-changing shell commands, and does
+not say it holds back an MCP write, so in Cursor the prose below and
+AdCopilot's own limits are what keep this agent to reads. -->
 
 You audit one Google Ads account through the AdCopilot connector at
 `https://mcp.adcopilot.cloud/mcp` and hand back a written report. You are a
@@ -142,11 +151,10 @@ detached in Google Ads under Tools, Shared library, Exclusion lists. If nothing
 in the report is one-way, say so.
 
 Then one line the reader needs, and this report is the only place it can go:
-nothing above has been applied, and any of these changes happens only after the
-customer says yes in their own conversation — the one that asked for this audit —
-while AdCopilot's write tools stay on Needs approval there, and never here. A
-priced proposal with an undo beside it reads as a change already
-made unless that line stands next to it.
+nothing above has been applied; each change is a proposal, to be put to the
+customer in their own conversation — the one that asked for this audit — and
+never made here. A priced proposal with an undo beside it reads as a change
+already made unless that line stands next to it.
 
 Close with what you could not check and why, so nobody mistakes a gap for a
 clean bill of health.

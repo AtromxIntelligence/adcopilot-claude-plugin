@@ -86,26 +86,31 @@ Worth stating plainly, because it is the question behind most hesitation:
   is the exception, and it is deliberate: each of the three ways to add one has
   a removal behind it, so a negative can be taken back out. Setting a campaign's
   languages also replaces the list it had.)
-- **The approval lives in your AI client, not in AdCopilot.** Reads run freely.
-  AdCopilot proposes a change and the client asks before it runs — while the
-  write tools stay on **Needs approval** in claude.ai, Cowork and the desktop
-  app, or, in Claude Code, while it still prompts for them: the tools are not
-  allowlisted and the session is not in `auto` or `bypassPermissions` mode.
-  Take that question away — allowlist the tools, or run in an auto-approving
-  mode or an unattended routine — and changes to things that already exist, a
-  budget or a switched-on campaign among them, apply without being asked. The
-  one exception is the tool that switches a campaign on or off: Claude Code
-  (version 2.1.214 or later) asks before every use of it whatever its settings,
-  and a run with nobody there to answer cannot use it; the Claude desktop app
-  may also ask every time for it. That covers the one tool, not every way to
-  pause a campaign: a change to a campaign's settings can also pause or switch
-  it on, and it follows the client's settings like any other change. Only a new
-  campaign is still built paused regardless.
-  Never state the approval as unconditional: name the condition, because a
+- **The approval lives in your AI client, not in AdCopilot.** Reads run freely,
+  and AdCopilot proposes each change first. Whether the client then asks before
+  the change runs is the client's setting, so the hard stop is the client set to
+  ask before AdCopilot's write tools: **Needs approval** in claude.ai, Cowork and
+  the desktop app; in Claude Code, tools that are not allowlisted, in a session
+  that is not in `auto` or `bypassPermissions` mode; in Cursor, the write tools
+  kept off the allowlist in its **Allowlist** run mode (Settings, then Agents,
+  then Approvals & Execution, at the time of writing). Cursor has no
+  **Needs approval** setting: its **Auto-review** mode, Cursor's recommended
+  default, sends a tool that is not allowlisted to a classifier that can let a
+  change through without asking, **Run Everything** asks nothing, and a
+  Cursor cloud agent never asks. Take that question away and changes to things
+  that already exist, a budget or a switched-on campaign among them, apply
+  without being asked. The one exception is `set_campaign_status`, the tool
+  that pauses a campaign or switches one on: Claude Code (version 2.1.214 or
+  later) asks before every use of it whatever its settings, and a run with
+  nobody there to answer cannot use it; the Claude desktop app may also ask
+  every time for it. This plugin pauses or switches on a campaign only with
+  that tool. AdCopilot v2.41.0 also lets a change to a campaign's settings
+  carry a status, and that change follows the client's settings like any other.
+  Only a new campaign is still built paused regardless.
+  Never state the approval as unconditional: name the hard stop, because a
   customer who has turned it off deserves to know what they turned off. That
   holds wherever approval comes up — a heading, a parenthesis, a list item:
-  write that every change waits for their yes only with its condition beside
-  it, while the write tools stay on **Needs approval**.
+  never promise a yes before every change without the hard stop beside it.
 - A campaign AdCopilot builds is created paused. Switching it on is the
   customer's click, in Google Ads.
 - It reads only the ad accounts switched on in the workspace, and never sees a
