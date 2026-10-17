@@ -10,13 +10,19 @@ never from memory. The product changes; this file does not move with it, so
 every number in your answer comes from a live read or from the documentation
 site, and nothing comes from recall.
 
-Call `get_org_context` (with `source: "claude-plugin/0.2.11"`) first. Send
+Call `get_org_context` (with `source: "claude-plugin/0.2.12"`) first. Send
 `source` exactly as written, the version included: it tells AdCopilot which of
-this plugin's steps are installed here. When the answer's `plugin.skill` names
-an AdCopilot skill other than this one, `next_step` is describing the account,
-not this request: do this request as written here, keep any limit `next_step`
-adds, and offer that skill's steps afterwards unless this request already
-covered them. The answer carries the facts most of these questions want:
+this plugin's steps are installed here. A question about AdCopilot itself is
+answered from that one call, plus the documentation site where this file says
+so. Make no Google Ads, Analytics, Search Console or Tag Manager read for it,
+and start no other AdCopilot skill. The answer's `next_step`, `playbook` (a
+section saying an installed skill owns the turn, or that they are coming back,
+included), `cross_reads` and `question_map` describe the account, not this
+question: do not follow them on this turn. Keep from them only a limit
+`next_step` names (look-ups left today, a teammate's login) and the facts
+below. If the customer says yes to the read you offer, that is a new request,
+and the skill that answers it runs then. The answer carries the facts most of
+these questions want:
 
 - `org.plan`, `org.ops_today_used`, `org.ops_today_cap`, `org.accounts_cap`,
   `org.trial_days_left`, `org.upgrade_url`
@@ -30,6 +36,18 @@ Never recite a list of products or a count of tools from memory: both move, and
 a stale list is a promise the connector cannot keep. Ask `get_org_context` and
 answer from `products` — what is connected, and for anything that is not, what
 the connector itself says connecting it would unlock. Invent nothing.
+
+Answer it once, as one list, in this order: what is connected and what each
+lets them do; what connecting each of the others would unlock; the routines
+installed here (the daily check-in, the weekly summary, the audit, the
+negative-keyword clean-up, the first-campaign launch, conversion tracking);
+what AdCopilot may change, with its condition (below); and the plan's look-ups.
+That is the whole answer: never a second list in another grouping, and never
+come back later in the same reply to answer it again. One fact from
+`get_org_context`'s 30-day summary (an account's `last_30d` in `ads_probe`,
+with its dates when `last_30d` carries them) may be the reason for the offer
+that ends the reply. Anything that needs a read is that offer, not part of the
+answer.
 
 If a tool seems missing, that proves nothing on its own: tool lists are cached
 by the client and can be out of date. `get_org_context` is the only thing that
@@ -78,7 +96,10 @@ Worth stating plainly, because it is the question behind most hesitation:
   a switched-on campaign among them, apply without being asked. Only a new
   campaign is still built paused regardless. Never state the approval as
   unconditional: name the condition, because a customer who has turned it off
-  deserves to know what they turned off.
+  deserves to know what they turned off. That holds wherever approval comes
+  up — a heading, a parenthesis, a list item: write that every change waits
+  for their yes only with its condition beside it, while the write tools stay
+  on **Needs approval**.
 - A campaign AdCopilot builds is created paused. Switching it on is the
   customer's click, in Google Ads.
 - It reads only the ad accounts switched on in the workspace, and never sees a
@@ -108,12 +129,13 @@ carries the troubleshooting address for the same reason.
 
 ## What is next
 
-Answer what they asked first, whole. Then, only when the question pointed at
+Answer what they asked first, whole. Then, when the question pointed at
 something a read of their own account would answer — what AdCopilot can do for
-them, whether a product is worth connecting, why a tool seemed missing — offer
-that one read as the next step, in a sentence: what it would show them, about
-their account. When `ops_today_cap` is set and the hints say few look-ups are
-left today, say that the read uses one of them.
+them, whether a product is worth connecting, why a tool seemed missing — end
+the reply with exactly one question, offering one read: what it would show them
+about their account, tied to the 30-day fact that makes it worth doing. Not a
+fix, not a change, and not a second offer. When `ops_today_cap` is set and the
+hints say few look-ups are left today, say that the read uses one of them.
 
 Skip it after a question about look-ups and running out, about the workspace's
 allowance or billing, or about privacy or safety: there the answer is the whole

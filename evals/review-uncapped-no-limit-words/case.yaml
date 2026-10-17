@@ -1,0 +1,57 @@
+schema_version: "1.1"
+name: review-uncapped-no-limit-words
+description: >
+  "How are my ads doing?" on a workspace whose plan has no daily limit (the
+  tenant in this case's mocks is fictional; every value is invented). It comes
+  from a real conversation on 2026-10-14: the review spent the five Google Ads
+  reads the server sizes an untracked account's answer at, counted 27 searches
+  it could not name, and told the customer "I hit today's read limit for this
+  review before listing those searches, so that's one more look-up", a minute
+  after saying the plan had no daily limit. Here `ops_today_cap` is null,
+  `cross_reads.ads_reads_max` is 5 and there is no `reads_left_today`: the
+  number is the size of one answer, not a limit on the day, the plan or the
+  workspace. `full_audit`'s `related_reads` names `analyze_waste`, so an answer
+  that follows the review's sequence has a read left over once its five are
+  spent. What is graded is how that read is spoken of: offered as the next
+  read, never as a limit that was hit. Whether it is made is not graded,
+  because whether related reads should run past the answer's size on such a
+  plan is still an open decision; 0.2.12 keeps the stop and changes the words.
+  `get_org_context`'s next_step, playbook and plugin block are the server's own
+  texts for this state (AdCopilot origin/develop 37bd01de). Tool schemas are
+  review-spends-the-depth's.
+tags: [review]
+runs: 3
+execution:
+  prompt: "How are my ads doing?"
+  max_turns: 14
+  timeout_seconds: 360
+  allowed_tools: [Skill]
+graders:
+  - name: no-limit-words
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    # On a plan with no daily limit nothing was hit: no read, look-up or
+    # "today's" limit may be named. The pattern is the one written for this
+    # case, with its leading (?i) given as `flags: i` like every other case
+    # here, and the apostrophe allowed typed or curly.
+    pattern: '\b(read|look-?up)s?\s+limit|today[''’]?s\s+(read|look-?up)s?\b|hit\s+(the|today[''’]?s|a|my)\b[^.]{0,30}\blimit'
+  - name: no-change-without-a-yes
+    type: regex
+    target: mock_calls
+    match: not_contains
+    pattern: '"tool"\s*:\s*"[^"]*(?:add_negative_keywords|add_account_negatives|update_campaign|set_campaign_status|update_keyword|save_org_context)"'
+  - name: marks-plugin-use
+    type: tool_used
+    # The same grader as every case that reads the server: a get_org_context
+    # call without source "claude-plugin/<version>" fails it.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin/\d+\.\d+\.\d+")'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-review"'

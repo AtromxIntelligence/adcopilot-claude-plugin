@@ -27,19 +27,22 @@ both ways and let the main conversation carry it to them.
 
 ## Start
 
-Call `get_org_context` (with `source: "claude-plugin/0.2.11"`) first and obey
-its `playbook` and `cross_reads` — the read ceiling there is for this account's
-situation. Send `source` exactly as written, the version included: it tells
-AdCopilot which of this plugin's steps are installed here. When the answer's
-`plugin.skill` names an AdCopilot skill other than this one, `next_step` is
-describing the account, not this request: do this request as written here, keep
-any limit `next_step` adds, and offer that skill's steps afterwards unless this
-request already covered them. When the answer carries a `question_map` (an account with campaigns to
-read has one), it names the read that answers each kind of question: use it to
-pick the first read for any part of the report below that the audit does not
-cover. Use the ceiling; do not stay under it to be
-economical. A number you did not read is a number you may not state, and this
-report's whole value is that every line has a count behind it.
+Call `get_org_context` (with `source: "claude-plugin/0.2.12"`) first and obey
+its `playbook` and `cross_reads`. `cross_reads.ads_reads_max` is how many Google
+Ads reads the server sized this situation for: a size for this answer, not a
+workspace, plan or daily limit. Only when `cross_reads.reads_left_today` is
+present is the day itself short. Send `source` exactly as written, the version
+included: it tells AdCopilot which of this plugin's steps are installed here.
+When the answer's `plugin.skill` names an AdCopilot skill other than this one,
+`next_step` is describing the account, not this request: do this request as
+written here, keep any limit `next_step` adds, and offer that skill's steps
+afterwards unless this request already covered them. When the answer carries a
+`question_map` (an account with campaigns to read has one), it names the read
+that answers each kind of question: use it to pick the first read for any part
+of the report below that the audit does not cover. Use all of `ads_reads_max`;
+do not stay under it to be economical. A number you did not read is a number you
+may not state, and this report's whole value is that every line has a count
+behind it.
 
 If the account cannot be read, say exactly that and stop. A report built on
 guesses is worse than no report.
@@ -72,12 +75,20 @@ guesses is worse than no report.
 
 Call `full_audit` with `depth="deep"` and `days` set to the same window the
 report's period comparison uses, so the audit and the comparison cannot
-disagree; say that window in the report's first line. Pass `depth="deep"`
+disagree; say that window in the report's first line. End your own `search`
+reads on `full_audit`'s `date_range.end`, never on a date you work out
+yourself, and say the dates once. When a finding names a shorter window, say
+its dates. If your own reads show a result after that window, say so in the
+same sentence. A window a finding gives only as a length ends on the result's
+`date_range.end` unless it says otherwise. Pass `depth="deep"`
 explicitly. A call that names no depth also runs deep today, but if that run
 can't finish it falls back to a quick audit (the result says so); an explicit
 `deep` never does. A quick audit scores three of the seventy-three checks over
 the month to date — not an audit, and not what you promised. Deep walks the
-whole registry over the window you ask for, in one read.
+whole registry over the window you ask for, in one read, and says which checks
+it could not evaluate. Give coverage as a count, "N of 73 checks could run",
+never as a percentage next to the count, and give reasons for the rest only in
+the result's own words.
 
 Use the deterministic lenses where they fit — `full_audit`,
 `analyze_waste`, `analyze_search_terms`, `budget_pacing`,
@@ -91,10 +102,12 @@ one slice of it.
 When a lens or `search` result ends with `related_reads`, run the ones that bear
 on the question, at most three, then answer from all you hold. Never repeat a
 read you hold. Offer, do not chase, the `related_reads` those reads bring back.
-They are reads only: a change still waits for the customer's yes, in their own
-conversation. If the one named is a tool you do not hold, say which read you
-could not run rather than leaving it out. If your instructions say this is a
-scheduled run, skip them. The ceiling still holds.
+They are reads only: a change is still only proposed, for the customer to take
+up in their own conversation. If the one named is a tool you do not hold, say
+which read you could not run rather than leaving it out. If your instructions
+say this is a scheduled run, skip them. They count toward this report's reads:
+if those are spent before a related read, name it in the report as the next
+read to make, never as a limit you hit.
 
 A finding that says "if X" is not a step until you have checked X. Either make
 the read it names and say what you found, or carry the condition into your own

@@ -81,7 +81,7 @@ Those two links are the answer; give both. Then:
 Read Meta from Meta's tools and Google from AdCopilot's. The two connectors do
 not talk to each other.
 
-**The Google side.** Call `get_org_context` with `source: "claude-plugin/0.2.11"`
+**The Google side.** Call `get_org_context` with `source: "claude-plugin/0.2.12"`
 first, before any other AdCopilot tool, whenever Google figures are part of the
 answer. Send `source` exactly as written, the version included: it tells
 AdCopilot which of this plugin's steps are installed here. When the answer's
@@ -89,8 +89,12 @@ AdCopilot which of this plugin's steps are installed here. When the answer's
 describing the account, not this request: do this request as written here, keep
 any limit `next_step` adds, and offer that skill's steps afterwards unless this
 request already covered them. Then read Google the way the `adcopilot-review`
-skill does, within the read ceiling the answer states. A question that is only
-about Meta needs no AdCopilot call.
+skill does. `cross_reads.ads_reads_max` is how many Google Ads reads the server
+sized this situation for: a size for this answer, not a workspace or daily
+limit. Only when `cross_reads.reads_left_today` is present is the day itself
+short. If this answer's reads are spent before a read you wanted, offer it as
+the next one, never as a limit you hit. A question that is only about Meta
+needs no AdCopilot call.
 
 **The Meta side.** Read what the question needs from Meta's tools, and read each
 tool's own description for what it does. A figure you did not read is a figure

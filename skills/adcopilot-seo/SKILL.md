@@ -8,7 +8,7 @@ description: Answer questions about the customer's organic search presence throu
 The customer wants to know how Google search sees their site. Answer it through
 the AdCopilot connector at `https://mcp.adcopilot.cloud/mcp`.
 
-Call `get_org_context` with `source: "claude-plugin/0.2.11"` first, before any
+Call `get_org_context` with `source: "claude-plugin/0.2.12"` first, before any
 other tool — the marker is how the server records that this workspace uses the
 plugin, and without it the customer keeps being told to install what they
 already have. Send `source` exactly as written, the version included: it tells
@@ -20,12 +20,16 @@ request already covered them. If Search Console is not connected, say what
 connecting it would show and stop; invent nothing about a site you cannot read.
 
 **One thing to get right about `cross_reads`.** It budgets reads made OUTSIDE
-Google Ads *in service of an ads answer* — on a live account it often says
-"make no cross-product read" and offers zero Search Console allowance. That is
-not a refusal of this skill. When the customer's question IS organic search,
-Search Console is the answer and the reads below are the work; the ads ceiling
-in `cross_reads` does not cap them. Follow `next_step` and the `playbook` as
-usual, and read `cross_reads` for what it is: guidance for the other direction.
+Google Ads *in service of an ads answer* — on a live account it often says "make
+no cross-product read" and offers zero Search Console allowance. That is not a
+refusal of this skill. When the customer's question IS organic search, Search
+Console is the answer and the reads below are the work.
+`cross_reads.ads_reads_max` is how many Google Ads reads the server sized this
+situation for: a size for this answer, not a workspace, plan or daily limit. It
+does not cap the Search Console reads below. Only when
+`cross_reads.reads_left_today` is present is the day itself short. Follow
+`next_step` and the `playbook` as usual, and read `cross_reads` for what it is:
+guidance for the other direction.
 
 ## Six tools, and what they cannot do
 
@@ -92,7 +96,8 @@ Each of these has been read wrongly in a real review. Do not repeat them.
 
 ## The sequence
 
-Work in this order, stopping when `cross_reads` says the ceiling is reached.
+Work in this order. If this answer's reads are spent before a read you wanted,
+offer it as the next one, never as a limit you hit.
 
 1. **Which property.** `gsc_list_sites`, then use the exact `siteUrl` it
    returns. A domain property and a URL-prefix property are different sites.
@@ -189,7 +194,7 @@ search terms and campaigns that spent with no conversions, which is the
 or `search_term_view` ends with `related_reads`, run the ones that bear on the
 comparison, at most three, then answer from all you hold; never repeat a read
 you hold, and offer, do not chase, the `related_reads` those reads bring back.
-They are reads only: a change still waits for the yes. In a scheduled run, skip
+They are reads only: a change is still only proposed. In a scheduled run, skip
 them.
 
 ## What breaks

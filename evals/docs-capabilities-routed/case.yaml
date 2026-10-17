@@ -1,0 +1,112 @@
+schema_version: "1.1"
+name: docs-capabilities-routed
+description: >
+  "Walk me through what it can do" on a running account whose server answer
+  hands the account to another skill (the tenant in this case's mocks is
+  fictional; every value is invented). It comes from a real conversation on
+  2026-10-14: the docs skill listed what AdCopilot can do, then ran a full
+  performance review nobody asked for, because the server's next_step said
+  the installed review steps "cover this answer, so follow them", the
+  playbook's [PLUGIN] section said "follow it", its [RECAP] said "then go into
+  the branch below" and cross_reads said "make every read below". It then
+  listed the capabilities again in another grouping, under a heading that
+  promised every change would wait for the customer's yes with no condition,
+  and ended on three questions. Every server text in this case's
+  get_org_context is the live one for that state (AdCopilot origin/develop
+  37bd01de), on a call carrying the plugin marker, so each of those pulls is
+  present. What is graded is the docs skill's own rule: a question about
+  AdCopilot is answered from the one get_org_context call, with no account
+  read and no other skill, as one list, ending on exactly one question that
+  offers one read tied to one fact from the 30-day summary ($341 spent, 46
+  clicks, nothing counted), with approval always stated with its condition.
+  Mocks for the reads the server's texts ask for are present, so a run that
+  makes one is graded on it rather than failing on a missing mock.
+tags: [docs]
+runs: 3
+execution:
+  prompt: "I have the AdCopilot plugin. Please walk me through what it can do."
+  max_turns: 10
+  timeout_seconds: 300
+  allowed_tools: [Skill]
+graders:
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-docs"'
+  - name: review-skill-not-started
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-review"'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-full-audit
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__full_audit
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-waste-read
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__analyze_waste
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-search-terms-read
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__analyze_search_terms
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-search
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__search
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-conversion-setup-read
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__conversion_setup_audit
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-search-console-read
+    type: tool_used
+    # cross_reads tells the assistant to make this read; the docs skill makes
+    # no Search Console read for a question about AdCopilot either.
+    tool: mcp__plugin_adcopilot_adcopilot__gsc_search_analytics
+    min: 0
+    max: 0
+    arm: with-only
+  - name: one-list-one-question
+    type: llm
+    focus: last_message
+    weight: 2
+    criteria: |
+      The customer asked only what the AdCopilot plugin can do. The workspace answer the assistant received says: Google Ads (one account) and Search Console are connected; Analytics and Tag Manager are not, with what connecting each would unlock; the plan has no daily limit on look-ups; and in its 30-day summary one campaign spent $341 on 46 clicks with nothing counted. The same answer also handed the account to the review steps and asked for a Search Console read, which is not what the customer asked for. The reply should give the capabilities once and end on exactly one question.
+
+      PASS only if all four hold:
+      1. One list. What AdCopilot can do is given once, as a single list or a single run of short sections: what is connected and what each lets it do, what connecting the others would add, the ready-made routines, what it may change, and the look-ups. FAIL if the reply lists the capabilities twice in different groupings (for example once by product and again by kind of request), or comes back later in the reply to answer the question again.
+      2. No review. The reply reports nothing about the account beyond facts from that 30-day summary: no health score, no audit findings, no search terms, no week-against-week comparison, no setting to change. FAIL if it delivers a performance review or proposes a fix.
+      3. Exactly one question, at the end, offering one look at their own account (a read) tied to the 30-day fact, for example whether results are being counted. FAIL if the reply ends on two or more questions or offers, if its question proposes a change to the account (a fix, a setting, a negative keyword), or if it asks nothing.
+      4. Approval with its condition. Wherever the reply says AdCopilot asks before changing anything, the same sentence says when that holds: while the write tools stay on Needs approval, or that switching approval off lets changes through. FAIL if any heading, parenthesis or list item says changes wait for their approval with no condition.
+
+      Ignore wording, length and the order of the list's parts.
+  - name: no-approval-promise-without-its-condition
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    # A sentence (or a heading or list line) that promises approval with no
+    # "as long as" or "while" anywhere in it. A full stop only ends a sentence
+    # when a space or the end follows it, so "claude.ai" does not split one.
+    pattern: '(?:^|(?<=[.!?]\s)|(?<=\n))(?!(?:(?![.!?](?:\s|$))[^\n])*\b(?:as long as|while)\b)(?:(?![.!?](?:\s|$))[^\n])*\b(?:waits? for your (?:yes|approval|ok(?:ay)?)|only (?:on|after|with) your (?:yes|approval|ok(?:ay)?)|only after you (?:approve|say yes|okay))'
+  - name: marks-plugin-use
+    type: tool_used
+    # The same grader as every case that reads the server: a get_org_context
+    # call without source "claude-plugin/<version>" fails it.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin/\d+\.\d+\.\d+")'
+    min: 0
+    max: 0
+    arm: with-only
