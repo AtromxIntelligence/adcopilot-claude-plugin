@@ -205,27 +205,43 @@ LEFT_OVER_READ = ("If this answer's reads are spent before a related read, "
 # at 20:55 UTC on 13 Oct, 02:25 on 14 Oct in India, the audit's window ended on
 # 12 Oct and the account's only result came on 13 Oct.
 #
-# v2.41 alignment: AdCopilot v2.41.0 (D185, ONE CLOCK, #832) ends every report
-# window on the account's last full day in its own time zone
-# (`gaql.report_today`, `gaql._window(time_zone=...)` in
-# `_context.build_context`; UTC's day only when the customer read gave no
-# zone). So `date_range.end` IS the account's yesterday, and the reads end on
-# it: one set of dates, read off the result rather than worked out from a
-# clock the model may not hold (an eval's fixtures are dated, its run is not).
-DATE_END_RULE = ("End your own `search` reads on the `date_range.end` your lens "
-                 "results carry, and say the dates once.")
-ONE_CLOCK_RULE = ("AdCopilot ends every report window on the account's "
-                  "yesterday, the last full day in the account's own time zone "
-                  "(UTC's, when it could not read the zone), so the audit and "
-                  "your reads cover the same days.")
+# v2.41 alignment: AdCopilot v2.41.0 (D185, ONE CLOCK, #832) ends the
+# audit's window and the other analysis windows on the account's last full
+# day in its own time zone (`gaql.report_today`, `gaql._window(time_zone=...)`
+# in `_context.build_context`; UTC's day only when the customer read gave no
+# zone). So their `date_range.end` IS the account's yesterday, and the reads
+# end on it: one set of dates, read off the result rather than worked out from
+# a clock the model may not hold (an eval's fixtures are dated, its run is
+# not).
+#
+# Fix round of the v2.41 alignment: two lenses are not on that clock.
+# `budget_pacing`'s month runs through the account's today and counts it
+# (`pacing.account_month_bounds`: "days_elapsed counts the current, partial
+# day"), and `change_history` covers "the account-local calendar days ...,
+# today included" (`gaql.change_event_window`); the server's goldens show it
+# (full_audit ends 2026-06-14, budget_pacing and change_history 2026-06-15).
+# An end read off either would put a `search` on an unfinished day.
+DATE_END_RULE = ("End your own `search` reads on the `date_range.end` that "
+                 "`full_audit` and the other lenses carry, and say the dates "
+                 "once.")
+ONE_CLOCK_RULE = ("AdCopilot ends those windows on the account's yesterday, "
+                  "the last full day in the account's own time zone (UTC's, "
+                  "when it could not read the zone), so the audit and your "
+                  "reads cover the same days.")
+TODAY_RULE = ("`budget_pacing` and `change_history` are the exceptions: they "
+              "run through the account's today, so give their dates on their "
+              "own and never end a `search` read on them.")
 # What earlier 0.2.12 text said: first the UTC day, then the account's day
-# against a UTC audit window, which v2.41.0 no longer has.
+# against a UTC audit window, which v2.41.0 no longer has, then one clock for
+# every window, which v2.41.0 does not have either.
 STALE_DATE_RULE = re.compile(r"never on a date you work out yourself|"
                              r"End your own `search` reads on `full_audit`'s|"
                              r"fourteen days ending on `full_audit`'s|"
                              r"yesterday in UTC|east of UTC|west of UTC|"
                              r"the day the audit did not reach|"
-                             r"which AdCopilot works out in UTC")
+                             r"which AdCopilot works out in UTC|"
+                             r"ends every report window|"
+                             r"the `date_range.end` your lens results carry")
 FINDING_WINDOW_RULE = ("When a finding names a shorter window, say its dates. "
                        "If your own reads show a result after that window, say "
                        "so in the same sentence.")
@@ -2066,8 +2082,11 @@ class DatesAndCounts(unittest.TestCase):
                 text = flat(rel)
                 self.assertEqual(text.count(DATE_END_RULE), 1)
                 self.assertEqual(text.count(ONE_CLOCK_RULE), 1)
-                # The date rule comes before the reason it holds.
+                self.assertEqual(text.count(TODAY_RULE), 1)
+                # The date rule comes before the reason it holds, and the two
+                # lenses that run to today right after it.
                 self.assertLess(text.index(DATE_END_RULE), text.index(ONE_CLOCK_RULE))
+                self.assertLess(text.index(ONE_CLOCK_RULE), text.index(TODAY_RULE))
 
     def test_nothing_ties_the_reads_to_the_utc_day(self):
         for rel in model_read_files():
@@ -2082,6 +2101,7 @@ class DatesAndCounts(unittest.TestCase):
         self.assertIn("the fourteen days ending on the account's yesterday", step1)
         self.assertIn(DATE_END_RULE, step1)
         self.assertIn(ONE_CLOCK_RULE, step1)
+        self.assertIn(TODAY_RULE, step1)
         self.assertIn(FINDING_WINDOW_RULE, step1)
         self.assertNotIn("for the last fourteen days", step1)
         self.assertLess(step1.index(ONE_CLOCK_RULE), step1.index(FINDING_WINDOW_RULE))
@@ -2597,40 +2617,120 @@ class V241Alignment(unittest.TestCase):
 
     - #831: `set_campaign_status` is served with
       `_meta["anthropic/requiresUserInteraction"]`, so Claude Code (2.1.214 or
-      later) asks before every pause or switch-on whatever its settings, and a
-      run with nobody to answer cannot make one. PRODUCT-FACTS: say it of
+      later) asks before every use of that tool whatever its settings, and a
+      run with nobody to answer cannot use it. PRODUCT-FACTS: say it of
       Claude Code with its version and of that tool alone; of the desktop app
-      no more than that it "may also ask every time for this tool".
+      no more than that it "may also ask every time for this tool". It is
+      that tool alone (`toolsurface.NEEDS_A_PERSON`): `update_campaign` takes
+      a status too (ENABLED or PAUSED) and is not flagged, so no surface says
+      every pause or switch-on is asked about, and none says a cloud routine
+      refuses one (Claude on the web is not verified).
     - #827: a first call that skipped get_org_context can carry a note (once
       its switch is on), so every surface opens with get_org_context.
     - #821: the assistant reports no limit no call returned: no surface calls
       the answer's size a read cap.
     - #829, #832, #820: the cases that grade a question answered first on a
       roomy day with eight reads, one set of dates on the account's own
-      yesterday, and the costliest searches named.
+      yesterday (this month's pacing and the change log run to its today),
+      and the costliest searches named.
     - #839: nothing here offers a developer token of the customer's own."""
 
     DOCS = "skills/adcopilot-docs/SKILL.md"
     QUESTION = "review-question-first-roomy"
     DATES = "review-account-day-named-searches"
     UNCAPPED = "review-uncapped-no-limit-words"
+    # The audit and the analysis lenses end on the account's yesterday; this
+    # month's pacing and the change log run through its today (v2.41.0's
+    # `account_month_bounds` and `change_event_window`).
     LENSES = ("full_audit", "analyze_search_terms", "analyze_waste",
-              "conversion_setup_audit", "change_history")
+              "conversion_setup_audit")
+    TODAY_LENSES = ("budget_pacing", "change_history")
+    FIVE = ("review-uncapped-no-limit-words", "review-question-first-roomy",
+            "docs-capabilities-untracked", "docs-capabilities-routed",
+            "review-account-day-named-searches")
+    # What the alignment first said, of every pause or switch-on (only
+    # set_campaign_status is flagged) and of a cloud routine (not verified).
+    OVERCLAIM = re.compile(r"pausing or switching on a campaign: Claude Code|"
+                           r"every pause or switch-on|"
+                           r"marks pausing or switching on a campaign|"
+                           r"will not do it with nobody there|"
+                           r"Only pausing or switching on a campaign is refused|"
+                           r"runs its other tools without asking")
 
     def test_the_one_tool_claude_code_always_asks_about(self):
-        exception = ("pausing or switching on a campaign: Claude Code (version "
-                     "2.1.214 or later) asks before every one")
+        exception = ("the tool that switches a campaign on or off")
         for rel in ("README.md", self.DOCS):
             with self.subTest(file=rel):
                 text = flat(rel)
                 self.assertIn(exception, text)
-                self.assertIn("a run with nobody there to answer cannot make it",
-                              text)
+                self.assertIn("Claude Code (version 2.1.214 or later) asks before "
+                              "every use of it", text)
+                self.assertIn("a run with nobody there to answer cannot use it", text)
                 self.assertIn("the Claude desktop app may also ask every time", text)
+                # How far it goes: a settings change can pause one too.
+                self.assertIn("That covers the one tool, not every way to pause a "
+                              "campaign: a change to a campaign's settings", text)
         morning = " ".join((section(read("README.md"),
                                     "### Every morning, without asking") or "").split())
-        self.assertIn("so Claude Code (version 2.1.214 or later) will not do it "
-                      "with nobody there to answer", morning)
+        self.assertIn("AdCopilot marks the tool that switches a campaign on or off "
+                      "(`set_campaign_status`) as needing a person, so Claude Code "
+                      "(version 2.1.214 or later) will not use it in a run on your "
+                      "computer with nobody there to answer", morning)
+        self.assertIn("The mark is on that tool alone", morning)
+        self.assertIn("A Claude Code routine runs its tools without asking", morning)
+        for rel in ["README.md", ".claude-plugin/plugin.json"] + model_read_files():
+            with self.subTest(overclaim=rel):
+                found = self.OVERCLAIM.search(flat(rel))
+                self.assertIsNone(found, found and found.group(0))
+        # The daily skill's routine step says nothing of the flag: whether a
+        # cloud routine honours it is not verified.
+        self.assertNotIn("2.1.214", flat("skills/adcopilot-daily/SKILL.md"))
+        rubric = grader_block(read("evals/docs-safe-to-let-loose/case.yaml"),
+                              "the-approval-answer-names-its-condition")
+        self.assertIn("except the tool that switches a campaign on or off", rubric)
+
+    def test_a_request_to_get_started_follows_the_installed_skill(self):
+        # v2.41.0's next_step and [PLUGIN]: "on a greeting alone, a request to
+        # get started or ..., follow" the installed steps. adcopilot-connect
+        # fires on "asks to get started", so it alone carries the exception
+        # to the hand-off sentence every marked surface shares.
+        exception = ("A greeting alone or a request to get started is the one "
+                     "exception: then `next_step` is describing this request "
+                     "too, so follow that skill's steps, as `next_step` says.")
+        for rel in model_read_files():
+            with self.subTest(file=rel):
+                self.assertEqual(flat(rel).count(exception),
+                                 1 if rel == "skills/adcopilot-connect/SKILL.md" else 0)
+        self.assertIn("asks to get started",
+                      frontmatter(read("skills/adcopilot-connect/SKILL.md")))
+
+    def test_the_readme_dates_and_cases(self):
+        notes = section(read("README.md"), "## AdCopilot version") or ""
+        note = " ".join(notes[notes.find("**0.2.12 ("):].split("\n\n", 1)[0].split())
+        self.assertIn("This month's pacing (`budget_pacing`) and the change log "
+                      "(`change_history`) run through the account's today", note)
+        self.assertNotIn("ends every report window", note)
+        evals = " ".join((section(read("README.md"),
+                                  "## Evals, and how a skill earns its place") or "").split())
+        self.assertIn("The four cases added in 0.2.5 (`docs-safe-to-let-loose`", evals)
+        self.assertNotIn("The four newest cases", evals)
+
+    def test_the_v241_fixtures_hold_what_classify_derives(self):
+        # release/v2.41.0's situations.classify, run on each fixture's own
+        # data, gives exactly its overlays (no `focus`, #423), and
+        # tools_adcopilot._hints gives no hint for these states.
+        for case in self.FIVE:
+            with self.subTest(case=case):
+                ctx = mock(case, "get_org_context")
+                self.assertNotIn("focus", ctx["overlays"])
+                self.assertEqual(ctx["hints"], [])
+                self.assertFalse(ctx["overlays"]["draft_waiting"])
+                self.assertFalse(ctx["overlays"]["routine_pending"])
+                self.assertIsNone(ctx["overlays"]["plugin_offer"])
+                first = ctx["profile"].get("first_campaign") or {}
+                if first.get("campaign_id"):
+                    self.assertTrue(first.get("enabled_seen_at"))
+                self.assertNotEqual(ctx["routine"]["weekly"]["status"], "off")
 
     def test_every_surface_opens_with_get_org_context(self):
         self.assertIn("`get_org_context` first, then `full_audit` at `depth: "
@@ -2709,6 +2809,25 @@ class V241Alignment(unittest.TestCase):
                 result = mock(self.DATES, tool)
                 self.assertEqual(result["date_range"]["end"], "2026-10-13")
                 self.assertEqual(result["time_zone"], "Asia/Kolkata")
+        # v2.41.0 at 20:55 UTC on 13 Oct, Asia/Kolkata: change_event_window(14)
+        # is 1 Oct..14 Oct, account_month_bounds 1 Oct..14 Oct, 14 days elapsed.
+        for tool in self.TODAY_LENSES:
+            with self.subTest(today=tool):
+                result = mock(self.DATES, tool)
+                self.assertEqual(result["date_range"],
+                                 {"start": "2026-10-01", "end": "2026-10-14", "days": 14})
+                self.assertEqual(result["time_zone"], "Asia/Kolkata")
+        self.assertEqual(mock(self.DATES, "budget_pacing")["month_to_date"]["days_elapsed"], 14)
+        # At 08:40 UTC on 6 Oct, America/New_York: 7 Sep..6 Oct over 30 days,
+        # and the month so far 1 Oct..6 Oct, 6 days elapsed.
+        for case in (self.QUESTION, self.UNCAPPED):
+            with self.subTest(case=case):
+                self.assertEqual(mock(case, "change_history")["date_range"],
+                                 {"start": "2026-09-07", "end": "2026-10-06", "days": 30})
+                pacing = mock(case, "budget_pacing")
+                self.assertEqual(pacing["date_range"],
+                                 {"start": "2026-10-01", "end": "2026-10-06", "days": 6})
+                self.assertEqual(pacing["month_to_date"]["days_elapsed"], 6)
         days = sorted({row["segments.date"] for row in mock(self.DATES, "search")["result"]
                        if "segments.date" in row})
         self.assertEqual(days[-1], "2026-10-13")
@@ -2718,6 +2837,25 @@ class V241Alignment(unittest.TestCase):
                       next(f["detail"] for f in audit["findings"] if f["check_id"] == "G-CT3"))
         self.assertTrue(any(c.get("reason_code") == "NO_MARKET_BENCHMARK"
                             for c in audit["coverage"]))
+        # G16 as v2.41.0's evaluator words it: 40% of spend is a fail, and its
+        # window is a length, which review step 1 dates from date_range.end.
+        g16 = next(f for f in audit["findings"] if f["check_id"] == "G16")
+        self.assertEqual((g16["status"], g16["title"]),
+                         ("fail", "Wasted spend on irrelevant terms"))
+        self.assertIn("in the last 14 days", g16["detail"])
+        self.assertNotIn("Oct", g16["detail"])
+        self.assertEqual(g16, next(f for f in mock(self.DATES, "analyze_waste")["findings"]
+                                   if f["check_id"] == "G16"))
+        self.assertEqual(audit["counts"]["fail"],
+                         sum(1 for f in audit["findings"] if f["status"] == "fail"))
+        # No related read promises the searches' names (v2.41.0's
+        # related_reads.from_envelope names the two failing areas).
+        self.assertEqual([r["tool"] for r in audit["related_reads"]],
+                         ["analyze_waste", "conversion_setup_audit"])
+        terms = mock(self.DATES, "analyze_search_terms")["findings"]
+        self.assertEqual([f["check_id"] for f in terms],
+                         ["O-NEG-TOP", "O-NEG-FREE", "O-NEG-INFO", "O-NEG-JOB"])
+        self.assertEqual(terms[-1]["title"], "Job-seeker search terms")
         names = [r[0] for r in mock(self.DATES, "analyze_search_terms")["findings"][0]
                  ["evidence"]["rows"]]
         self.assertEqual(names[:2], ["dentist jobs bangalore", "free dental camp"])
@@ -2745,6 +2883,24 @@ class V241Alignment(unittest.TestCase):
         for day in ("2026-09-29", "2026-10-06"):
             with self.subTest(earlier=day):
                 self.assertNotRegex(call % day, re.compile(other))
+        # The same day written into the conditions, as an object or as an
+        # escaped JSON string: a BETWEEN range, or a <= bound.
+        mcp = "mcp__plugin_adcopilot_adcopilot__search"
+        for cond in ("segments.date BETWEEN '2026-09-30' AND '%s'",
+                     "segments.date between '2026-09-30' and '%s'",
+                     "segments.date >= '2026-09-30' AND segments.date <= '%s'"):
+            for as_string in (False, True):
+                def log(day):
+                    inp = {"resource": "campaign", "conditions": [cond % day]}
+                    return json.dumps([{"tool": mcp, "input": json.dumps(inp)
+                                        if as_string else inp}])
+                with self.subTest(cond=cond, as_string=as_string):
+                    self.assertRegex(log("2026-10-13"), re.compile(ends, flags))
+                    self.assertNotRegex(log("2026-10-13"), re.compile(other))
+                    self.assertNotRegex(log("2026-10-14"), re.compile(ends, flags))
+                    self.assertRegex(log("2026-10-14"), re.compile(other))
+                    self.assertRegex(log("2026-10-12"), re.compile(other))
+                    self.assertNotRegex(log("2026-09-29"), re.compile(other))
         cov, cflags = grader(self.DATES, "coverage-is-a-count-not-a-percentage")
         self.assertRegex("Coverage was 73% of its 73 checks.", re.compile(cov, cflags))
         self.assertNotRegex("The audit's score comes from the 58 of 73 checks "

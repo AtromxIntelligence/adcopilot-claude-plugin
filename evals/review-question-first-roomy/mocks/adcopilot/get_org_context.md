@@ -147,7 +147,8 @@ type: fixed
       "name": "Example Bakery | Search | Wedding cakes",
       "built_at": "2026-08-22",
       "campaign_id": "800000001",
-      "customer_id": "1234567890"
+      "customer_id": "1234567890",
+      "enabled_seen_at": "2026-09-01 08:30:00"
     },
     "expertise": "new",
     "stage": "routine",
@@ -194,7 +195,7 @@ type: fixed
     "weekly": {
       "org_id": 1,
       "kind": "weekly",
-      "status": "off",
+      "status": "skipped",
       "surface": null,
       "hour_local": null,
       "weekday": null,
@@ -221,9 +222,14 @@ type: fixed
     "quota_low": false,
     "read_only": false,
     "needs_reauth": [],
-    "focus": null,
     "draft_waiting": false,
-    "routine_pending": false
+    "week_one": null,
+    "routine_pending": false,
+    "site_health": [],
+    "checkin_later": false,
+    "schedule_offer": null,
+    "quota_sized": false,
+    "plugin_offer": null
   },
   "next_step": "Money is going out and results are not being counted; on a greeting alone, a request to get started or a question about counting results, follow the AdCopilot measurement steps installed in this assistant, answer anything else they asked first and then offer those steps, and suggest no change to how they bid until results are counted. They have been here before, so open with one line on what happened last time.",
   "playbook": "## [RAILS] Never broken\n\n1. **Call `get_org_context` first.** Follow its `next_step` and `cross_reads`; never guess a refusal's cause.\n2. **Reads run freely; every change is proposed first,** money both ways, applied only on their yes here, never unattended; if promised, add: while their AI client asks before each change (in Claude: write tools on Needs approval). Then read back only what its result does not show, say how to undo it, record it, propose the next finding's fix, until none is worth its money.\n3. **Build campaigns switched off (PAUSED).** Never call `set_campaign_status` with ENABLED on one you built: their money, their switch.\n4. **Never delete,** except a negative keyword. Pause, never REMOVED.\n5. **Only `get_org_context` says what is connected;** tools load lazily; a missing tool proves nothing: fetch it, never report a missing permission; unconnected, say what connecting unlocks, invent nothing.\n6. **Never claim what did not happen.** Say when a call failed; nothing is live until it reads switched on; never attribute to them what they did not say; never report a refusal or a limit no call returned.\n7. **Plain words:** no tool or field name, status word or account number aloud.\n\n## [RECAP] Overlay \u2014 the user is coming back\n\nOpen with two sentences: what you did together last time, and what is due\nnow, then go into the branch below. Never re-introduce yourself, re-ask what\nthe saved profile holds, or repeat the intake. A change not made last time\nis proposed again with today's numbers.\n\nIf the account moved since then \u2014 a campaign switched on, a first result, an\nad switched off by Google \u2014 that is the opening sentence.\n\n## [PLUGIN] The installed skill\n\nThe AdCopilot skill adcopilot-measure, installed here, carries this situation's steps. On a greeting alone, a request to get started or the request it is for, follow it, inside the rails, with the reads `cross_reads` names. Asked anything else, answer that first with only the reads it needs, then offer it.",
@@ -246,9 +252,7 @@ type: fixed
     "exempt_cross_left": {},
     "cost_today": 0
   },
-  "hints": [
-    "The wedding campaign has spent for a month and counted nothing."
-  ],
+  "hints": [],
   "tools_revision": "fixture-4",
   "tools_revision_note": "Every AdCopilot tool description ends with \"Tools revision: <this value>.\" A description that shows a different revision or none is out of date: get_org_context with tools=[those tool names] returns the current text, to read before relying on those tools.",
   "plugin": {

@@ -5,19 +5,26 @@ description: >
   case's mocks is fictional; every value is invented), asked at 20:55 UTC on
   13 Oct, 02:25 on 14 Oct where the account is: the account's yesterday is
   13 Oct, UTC's is 12 Oct. It grades two things AdCopilot v2.41.0 changed.
-  First, one clock (D185, #832): every report window ends on the account's
-  own last full day, so `last_30d`, `full_audit` and every lens here end on
-  2026-10-13, and the review ends its own `search` reads on that
-  `date_range.end` and says one set of dates; the tag finding names its
-  seven days (7 Oct to 13 Oct) and the health line counts the checks that
-  gave a result (58 of 73), as v2.41.0 words them (#822), and an account
-  set up outside the US is not graded against the US click-through average.
+  First, one clock (D185, #832): the audit's window and the other analysis
+  windows end on the account's own last full day, so `last_30d`,
+  `full_audit`, `analyze_search_terms`, `analyze_waste` and
+  `conversion_setup_audit` end on 2026-10-13, while this month's pacing and
+  the change log run through the account's today, 2026-10-14, as v2.41.0's
+  `account_month_bounds` and `change_event_window` give them. The review ends
+  its own `search` reads on 2026-10-13 and says one set of dates; the tag
+  finding names its seven days (7 Oct to 13 Oct), the wasted-spend finding
+  (G16) gives its window only as a length, and the health line counts the
+  checks that gave a result (58 of 73), as v2.41.0 words them (#822), and an
+  account set up outside the US is not graded against the US click-through
+  average.
   Second, the costliest searches are named (#820): `analyze_search_terms`
   returns "Costliest search terms with no conversion" with each search's
   clicks and cost, and the review names the top ones rather than counting
-  them. `get_org_context`'s situation, next_step, playbook and cross_reads
-  are what release/v2.41.0's own code renders for this state. The fixtures
-  are dated and the run is not, so the dates graded are the results'.
+  them. `get_org_context`'s situation, overlays, next_step, playbook and
+  cross_reads are what release/v2.41.0's own code renders for this state,
+  and G16 and the search-terms findings are its evaluators' own. The
+  fixtures are dated and the run is not, so the dates graded are the
+  results'.
 tags: [review]
 runs: 3
 execution:
@@ -29,21 +36,25 @@ graders:
   - name: search-ends-on-the-accounts-yesterday
     type: regex
     target: mock_calls
-    # A `search` call whose end_date is 2026-10-13, the date_range.end every
-    # lens result carries (the account's yesterday). The input is written
-    # either as an object or as an escaped JSON string; [^{}] keeps the match
-    # inside the one call's own input.
-    pattern: '"tool"\s*:\s*"[^"]*search"\s*,\s*"input"\s*:\s*"?\{[^{}]*?\\?"end_date\\?"\s*:\s*\\?"2026-10-13'
+    # A `search` call that ends on 2026-10-13, the date_range.end the audit and
+    # the analysis lenses carry (the account's yesterday): as its end_date, or
+    # as the end of a `segments.date BETWEEN ... AND ...` or a
+    # `segments.date <= ...` in its conditions. The input is written either as
+    # an object or as an escaped JSON string; [^{}] keeps the match inside the
+    # one call's own input.
+    pattern: '"tool"\s*:\s*"[^"]*search"\s*,\s*"input"\s*:\s*"?\{[^{}]*?(?:\\?"end_date\\?"\s*:\s*\\?"2026-10-13|[Bb][Ee][Tt][Ww][Ee][Ee][Nn]\s+''\d{4}-\d{2}-\d{2}''\s+[Aa][Nn][Dd]\s+''2026-10-13''|<=\s*''2026-10-13'')'
   - name: no-search-ends-on-another-day
     type: regex
     target: mock_calls
     match: not_contains
     # No `search` read ends on a wrong day: not UTC's yesterday (12 Oct),
-    # not the account's unfinished today (14 Oct), and not any later date
-    # worked out from the clock of the machine the eval runs on (it runs
-    # after the v2.41.0 deploy, so after 13 Oct). A read for an earlier
-    # comparison window (ending 29 Sep, say) is not a wrong day and passes.
-    pattern: '"tool"\s*:\s*"[^"]*search"\s*,\s*"input"\s*:\s*"?\{[^{}]*?\\?"end_date\\?"\s*:\s*\\?"(?:2026-10-12|2026-10-(?:1[4-9]|[23]\d)|2026-1[12]-\d{2}|20(?:2[7-9]|[3-9]\d)-\d{2}-\d{2})'
+    # not the account's unfinished today (14 Oct, where this month's pacing
+    # and the change log end), and not any later date worked out from the
+    # clock of the machine the eval runs on (it runs after the v2.41.0
+    # deploy, so after 13 Oct), whether as end_date or as the end of a
+    # BETWEEN or a <= in its conditions. A read for an earlier comparison
+    # window (ending 29 Sep, say) is not a wrong day and passes.
+    pattern: '"tool"\s*:\s*"[^"]*search"\s*,\s*"input"\s*:\s*"?\{[^{}]*?(?:\\?"end_date\\?"\s*:\s*\\?"(?:2026-10-12|2026-10-(?:1[4-9]|[23]\d)|2026-1[12]-\d{2}|20(?:2[7-9]|[3-9]\d)-\d{2}-\d{2})|[Bb][Ee][Tt][Ww][Ee][Ee][Nn]\s+''\d{4}-\d{2}-\d{2}''\s+[Aa][Nn][Dd]\s+''(?:2026-10-12|2026-10-(?:1[4-9]|[23]\d)|2026-1[12]-\d{2}|20(?:2[7-9]|[3-9]\d)-\d{2}-\d{2})''|<=\s*''(?:2026-10-12|2026-10-(?:1[4-9]|[23]\d)|2026-1[12]-\d{2}|20(?:2[7-9]|[3-9]\d)-\d{2}-\d{2})'')'
   - name: names-the-two-costliest-searches
     type: regex
     target: last_message
@@ -62,10 +73,10 @@ graders:
     focus: trace
     weight: 2
     criteria: |
-      Judge the whole run: the tool calls and the final reply. The account is in India; every result it read ends on 13 Oct 2026, the account's own yesterday: the audit covers 30 Sep to 13 Oct, the tag finding's seven days are 7 Oct to 13 Oct, and results came in on 13 Oct. `analyze_search_terms` listed the costliest searches with no conversion: dentist jobs bangalore (₹4,120), free dental camp (₹3,560), teeth whitening kit (₹2,890), 21 in all costing ₹18,240. The audit's health line said 58 of 73 checks gave a result, and the click-through check was not graded because the account is set up outside the US.
+      Judge the whole run: the tool calls and the final reply. The account is in India; the audit and the analysis reads end on 13 Oct 2026, the account's own yesterday: the audit covers 30 Sep to 13 Oct (its wasted-spend finding says "the last 14 days"), the tag finding's seven days are 7 Oct to 13 Oct, and results came in on 13 Oct. This month's pacing and the change log run from 1 Oct through 14 Oct, the account's today, the day in progress. `analyze_search_terms` listed the costliest searches with no conversion: dentist jobs bangalore (₹4,120), free dental camp (₹3,560), teeth whitening kit (₹2,890), 21 in all costing ₹18,240. The audit's health line said 58 of 73 checks gave a result, and the click-through check was not graded because the account is set up outside the US.
 
       PASS only if all four hold:
-      1. One set of dates. The period the reply reports ends on 13 Oct (it may say 30 Sep to 13 Oct, or two weeks to 13 Oct), and no figure is given for a window ending 12 Oct or 14 Oct. A finding's shorter window, if stated, is 7 Oct to 13 Oct.
+      1. One set of dates. The period the reply reports ends on 13 Oct (it may say 30 Sep to 13 Oct, or two weeks to 13 Oct), and no figure for that period, or for any of the audit's or the search terms' findings, is given for a window ending 12 Oct or 14 Oct. A finding's shorter window, if stated, is 7 Oct to 13 Oct. This month's pacing and the change log may be dated to 14 Oct, when they are given with their own dates and not as the period reported.
       2. The costliest searches are named with their cost in rupees: at least the top two by name. FAIL if the reply gives only a count of searches.
       3. Coverage is a count: in substance "58 of 73 checks", never a percentage.
       4. The click-through rate is not graded against a benchmark, an industry figure or a US average (the audit did not grade it, because the account is set up outside the US); comparing it with the account's own earlier days is fine.

@@ -1,7 +1,9 @@
 ---
 type: fixed
-# The waste lens over the same 14 days (every value invented): the costliest
-# searches with no conversion, from G16, ranked by cost.
+# The waste lens over the same 14 days (every value invented). G16 is
+# v2.41.0's own finding for these searches, rendered by its evaluator: it
+# fails at 40% of spend and names the costliest searches with their clicks
+# and cost.
 ---
 {
   "tool": "analyze_waste",
@@ -13,60 +15,81 @@ type: fixed
     "end": "2026-10-13",
     "days": 14
   },
-  "total_waste_display": "₹18,240",
-  "measured": true,
+  "totals": {
+    "account_cost_micros": 45210000000,
+    "measured": true,
+    "wasted_cost_micros": 18240000000,
+    "wasted_share": 0.4035
+  },
   "findings": [
     {
       "check_id": "G16",
-      "status": "warning",
-      "severity": "high",
+      "reason_code": "WASTE_ZERO_CONV_SEARCH_TERM",
+      "status": "fail",
+      "severity": "critical",
       "category": "wasted_spend",
-      "title": "Search terms with spend and no conversion",
-      "detail": "21 search terms with 3 or more clicks converted nothing in the 14 days from 30 Sep to 13 Oct, ₹18,240 in all.",
+      "title": "Wasted spend on irrelevant terms",
+      "detail": "18240.0 INR of the 45210.0 INR this account spent in the last 14 days went to search terms that brought no conversions and were clicked at least 3 times — 40.4% of spend. 21 terms are in that group.",
+      "confidence": "high",
+      "scope": {
+        "level": "account",
+        "id": "4455667788",
+        "name": ""
+      },
+      "impact": {
+        "metric": "wasted_cost_micros",
+        "value": 18240000000,
+        "currency": "INR",
+        "window_days": 14,
+        "basis": "zero-conversion search terms over the click floor"
+      },
       "evidence": {
         "columns": [
           "search_term",
           "clicks",
-          "cost"
+          "cost",
+          "conversions"
         ],
         "rows": [
           [
             "dentist jobs bangalore",
             18,
-            "₹4,120"
+            4120.0,
+            0.0
           ],
           [
             "free dental camp",
             15,
-            "₹3,560"
+            3560.0,
+            0.0
           ],
           [
             "teeth whitening kit",
             12,
-            "₹2,890"
+            2890.0,
+            0.0
           ],
           [
             "dental college admission",
             9,
-            "₹1,980"
+            1980.0,
+            0.0
           ],
           [
             "how to stop tooth pain at home",
             8,
-            "₹1,610"
+            1610.0,
+            0.0
           ]
         ],
         "row_count": 21,
         "truncated": true,
         "handle": null
       },
-      "impact": {
-        "metric": "cost_micros",
-        "value": 18240000000,
-        "value_display": "₹18,240",
-        "window_days": 14,
-        "search_terms": 21
-      }
+      "recommended_actions": [],
+      "quick_win": false,
+      "not_evaluated_reason": null,
+      "docs": "https://adcopilot.cloud/docs/checks/wasted_spend#g16"
     }
   ],
   "coverage": []

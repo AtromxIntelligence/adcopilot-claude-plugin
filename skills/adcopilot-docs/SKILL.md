@@ -94,10 +94,13 @@ Worth stating plainly, because it is the question behind most hesitation:
   Take that question away — allowlist the tools, or run in an auto-approving
   mode or an unattended routine — and changes to things that already exist, a
   budget or a switched-on campaign among them, apply without being asked. The
-  one exception is pausing or switching on a campaign: Claude Code (version
-  2.1.214 or later) asks before every one whatever its settings, and a run with
-  nobody there to answer cannot make it; the Claude desktop app may also ask
-  every time for it. Only a new campaign is still built paused regardless.
+  one exception is the tool that switches a campaign on or off: Claude Code
+  (version 2.1.214 or later) asks before every use of it whatever its settings,
+  and a run with nobody there to answer cannot use it; the Claude desktop app
+  may also ask every time for it. That covers the one tool, not every way to
+  pause a campaign: a change to a campaign's settings can also pause or switch
+  it on, and it follows the client's settings like any other change. Only a new
+  campaign is still built paused regardless.
   Never state the approval as unconditional: name the condition, because a
   customer who has turned it off deserves to know what they turned off. That
   holds wherever approval comes up — a heading, a parenthesis, a list item:

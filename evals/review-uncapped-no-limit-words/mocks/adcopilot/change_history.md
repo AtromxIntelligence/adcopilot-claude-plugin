@@ -1,6 +1,8 @@
 ---
 type: fixed
 # Nothing changed in the window (every value invented).
+# The change log runs through the account's today (AdCopilot v2.41.0's
+# change_event_window): 2026-09-07..2026-10-06.
 ---
 {
   "tool": "change_history",
@@ -8,8 +10,8 @@ type: fixed
   "currency": "USD",
   "time_zone": "America/New_York",
   "date_range": {
-    "start": "2026-09-06",
-    "end": "2026-10-05",
+    "start": "2026-09-07",
+    "end": "2026-10-06",
     "days": 30
   },
   "findings": [],

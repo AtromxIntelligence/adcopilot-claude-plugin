@@ -4,8 +4,12 @@ type: fixed
 # yesterday (AdCopilot v2.41.0, D185), in v2.41.0's wording: the tag check
 # names its seven days (7 Oct to 13 Oct), the health line counts the checks
 # that gave a result (58 of 73), and G-AD2 is not graded against the US
-# click-through average for an account set up outside the US (#822). G16 lists
-# the costliest searches, as it does on an account that counted results.
+# click-through average for an account set up outside the US (#822). G16 is
+# v2.41.0's own finding for these searches (rendered by its evaluator): it
+# fails at 40% of spend, names the costliest searches, and gives its window
+# only as a length ("the last 14 days"). related_reads are what v2.41.0's
+# related_reads.from_envelope gives for these findings. The health score and
+# the coverage list are invented values.
 ---
 {
   "tool": "full_audit",
@@ -20,8 +24,8 @@ type: fixed
   },
   "data_through": "2026-10-13",
   "counts": {
-    "fail": 1,
-    "warning": 2,
+    "fail": 2,
+    "warning": 1,
     "pass": 55,
     "returned": 3
   },
@@ -64,55 +68,72 @@ type: fixed
     },
     {
       "check_id": "G16",
-      "status": "warning",
-      "severity": "high",
+      "reason_code": "WASTE_ZERO_CONV_SEARCH_TERM",
+      "status": "fail",
+      "severity": "critical",
       "category": "wasted_spend",
-      "title": "Search terms with spend and no conversion",
-      "detail": "21 search terms with 3 or more clicks converted nothing in the 14 days from 30 Sep to 13 Oct, ₹18,240 in all.",
+      "title": "Wasted spend on irrelevant terms",
+      "detail": "18240.0 INR of the 45210.0 INR this account spent in the last 14 days went to search terms that brought no conversions and were clicked at least 3 times — 40.4% of spend. 21 terms are in that group.",
+      "confidence": "high",
+      "scope": {
+        "level": "account",
+        "id": "4455667788",
+        "name": ""
+      },
+      "impact": {
+        "metric": "wasted_cost_micros",
+        "value": 18240000000,
+        "currency": "INR",
+        "window_days": 14,
+        "basis": "zero-conversion search terms over the click floor"
+      },
       "evidence": {
         "columns": [
           "search_term",
           "clicks",
-          "cost"
+          "cost",
+          "conversions"
         ],
         "rows": [
           [
             "dentist jobs bangalore",
             18,
-            "₹4,120"
+            4120.0,
+            0.0
           ],
           [
             "free dental camp",
             15,
-            "₹3,560"
+            3560.0,
+            0.0
           ],
           [
             "teeth whitening kit",
             12,
-            "₹2,890"
+            2890.0,
+            0.0
           ],
           [
             "dental college admission",
             9,
-            "₹1,980"
+            1980.0,
+            0.0
           ],
           [
             "how to stop tooth pain at home",
             8,
-            "₹1,610"
+            1610.0,
+            0.0
           ]
         ],
         "row_count": 21,
         "truncated": true,
         "handle": null
       },
-      "impact": {
-        "metric": "cost_micros",
-        "value": 18240000000,
-        "value_display": "₹18,240",
-        "window_days": 14,
-        "search_terms": 21
-      }
+      "recommended_actions": [],
+      "quick_win": false,
+      "not_evaluated_reason": null,
+      "docs": "https://adcopilot.cloud/docs/checks/wasted_spend#g16"
     },
     {
       "check_id": "G24",
@@ -210,7 +231,7 @@ type: fixed
   "notes": [
     "Findings are ordered failures first, then by severity. Severity is the kind of fault, not the amount of money: re-rank by impact before reporting."
   ],
-  "narrative": "**full_audit** — account 4455667788, 2026-09-30 to 2026-10-13 (14 days), amounts in INR. Health score 58/100 (grade D), from the 58 of 73 checks that gave a result. 1 failing, 2 warning, 55 passing (top 3 listed); 15 checks not evaluated.",
+  "narrative": "**full_audit** — account 4455667788, 2026-09-30 to 2026-10-13 (14 days), amounts in INR. Health score 58/100 (grade D), from the 58 of 73 checks that gave a result. 2 failing, 1 warning, 55 passing (top 3 listed); 15 checks not evaluated.",
   "health": {
     "score": 58,
     "grade": "D",
@@ -219,12 +240,20 @@ type: fixed
   },
   "related_reads": [
     {
-      "tool": "analyze_search_terms",
+      "tool": "analyze_waste",
       "args": {
         "customer_id": "4455667788",
         "days": 14
       },
-      "why": "21 search terms took ₹18,240 of the ₹45,210 spent with no conversion; the search-terms read lists the costliest by name and groups them into themes."
+      "why": "1 failing check in wasted spend, led by \"Wasted spend on irrelevant terms\"; this read goes deeper on that area."
+    },
+    {
+      "tool": "conversion_setup_audit",
+      "args": {
+        "customer_id": "4455667788",
+        "days": 14
+      },
+      "why": "1 failing check in conversion tracking, led by \"Google tag firing\"; this read goes deeper on that area."
     }
   ]
 }

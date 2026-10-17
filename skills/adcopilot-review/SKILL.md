@@ -99,11 +99,14 @@ Then, in this order, stopping only when this answer's reads are spent:
    fourteen days ending on the account's yesterday (`search` over `campaign`,
    with `segments.date`), folded into two weeks so every headline number has a
    comparison. No lens returns a time series, so this read is yours to make.
-   End your own `search` reads on the `date_range.end` your lens results
-   carry, and say the dates once. AdCopilot ends every report window on the
-   account's yesterday, the last full day in the account's own time zone
-   (UTC's, when it could not read the zone), so the audit and your reads
-   cover the same days. When a finding names a shorter window, say its dates.
+   End your own `search` reads on the `date_range.end` that `full_audit` and
+   the other lenses carry, and say the dates once. AdCopilot ends those
+   windows on the account's yesterday, the last full day in the account's own
+   time zone (UTC's, when it could not read the zone), so the audit and your
+   reads cover the same days. `budget_pacing` and `change_history` are the
+   exceptions: they run through the account's today, so give their dates on
+   their own and never end a `search` read on them. When a finding names a
+   shorter window, say its dates.
    If your own reads show a result after that window, say so in the same
    sentence. A window a finding gives only as a length ends on the result's
    `date_range.end` unless it says otherwise.
