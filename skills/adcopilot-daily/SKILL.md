@@ -73,7 +73,7 @@ Claude's Free plan has no scheduled tasks; say so plainly — there, AdCopilot's
 
 1. A routine runs in Anthropic's cloud, where this plugin's own connector is not available: AdCopilot has to be added there once, at claude.ai/customize/connectors, signed in with the same Google account.
 2. Show them the instructions and the schedule — weekdays at 8:07am — and offer to create the routine now. On their yes, use the `schedule` skill with both. If it is not in your list, they type `/schedule weekdays at 8:07am` followed by the instructions.
-3. Leave the routine only the connectors it needs. A routine runs its tools without asking, so the read-only instructions are what keep it to reads: keep them exactly as written.
+3. Leave the routine only the connectors it needs. A routine runs its tools without asking, so the read-only instructions are what keep it to reads: keep them exactly as written. Only pausing or switching on a campaign is refused there, because Claude Code (version 2.1.214 or later) asks before it and nobody is there to answer.
 4. Run it once, and check that it finished without stopping.
 
 A local task, or a `claude -p` line in cron, runs only while the computer is awake: a fallback, not the recommendation.

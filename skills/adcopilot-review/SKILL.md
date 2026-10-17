@@ -11,7 +11,7 @@ A thin answer is the failure here. Reads are the cheap part; a customer who has
 to ask four follow-up questions to learn what one answer could have told them
 has been short-changed.
 
-Call `get_org_context` with `source: "claude-plugin/0.2.11"` first, before any
+Call `get_org_context` with `source: "claude-plugin/0.2.12"` first, before any
 other tool — the marker is how the server records that this workspace uses the
 plugin, and without it the customer keeps being told to install what they
 already have. Send `source` exactly as written, the version included: it tells
@@ -20,8 +20,8 @@ AdCopilot which of this plugin's steps are installed here. When the answer's
 describing the account, not this request: do this request as written here, keep
 any limit `next_step` adds, and offer that skill's steps afterwards unless this
 request already covered them. Then follow the answer's `next_step`, `playbook`
-and `cross_reads` — they carry the read ceiling for this account's situation
-and the house rails. Everything below runs inside them.
+and `cross_reads` — they carry how many reads this answer is sized for and the
+house rails. Everything below runs inside them.
 
 On an account with campaigns to read — the answer's situation is
 `ADS_DORMANT`, `ADS_ACTIVE_UNTRACKED` or `ADS_ACTIVE_TRACKED` — the answer also
@@ -33,13 +33,14 @@ when it is missing the list below stands in for it.
 
 ## Spend the reads you are given
 
-`cross_reads.ads_reads_max` is a ceiling, not a target to stay under. Use it.
-The account's own numbers are what make the answer true, and a number you did
-not read is a number you must not state. Never trim the read list to be
-economical — if a read would have changed what you say, make it.
+`cross_reads.ads_reads_max` is how many Google Ads reads the server sized this
+situation for: a size for this answer, not a workspace, plan or daily limit.
+Use all of it. The account's own numbers are what make the answer true, and a
+number you did not read is a number you must not state. Never trim the read
+list to be economical — if a read would have changed what you say, make it.
 
-On a day with few look-ups left, `cross_reads` also carries `reads_left_today`,
-and `ads_reads_max` has already been sized to leave room for the fix: spend
+Only when `cross_reads.reads_left_today` is present is the day itself short.
+Then `ads_reads_max` has already been sized to leave room for the fix: spend
 those reads, then propose. The change they say yes to, and its read-back, are
 what the rest of the day is for.
 
@@ -53,9 +54,12 @@ on the question, at most three, then answer from all you hold. Each names its
 tool, its arguments and a `why` built from the numbers of the result you just
 read; skip one that does not bear on what the customer asked. Never repeat a
 read you hold. Offer, do not chase, the `related_reads` those reads bring back.
-They are reads only: a change still waits for the customer's yes. The ceiling
-above still holds: if it is reached before a related read, say which one you did
-not run. In a scheduled run, skip them.
+They are reads only: a change is still only proposed. They count toward this
+answer's reads. If this answer's reads are spent before a related read, offer
+it as the next read in one statement, never a second question and never as a
+limit you hit ("The next read would show how each campaign bids; say the word
+and I will run it."). Never offer a read for what a result you hold already
+shows. In a scheduled run, skip them.
 
 ## The sequence
 
@@ -65,15 +69,18 @@ runs deep today, but if that run can't finish it falls back to a quick audit
 (the result says so); an explicit `deep` never does. A quick audit scores three
 of the seventy-three checks over the month to date — not an audit, and not what
 the customer asked for. Deep attempts all seventy-three over your window and
-reports how many it could actually evaluate; say that number rather than letting
-an unevaluated check pass as a pass.
+says which it could not evaluate. Give coverage as the count the result
+gives, "N of 73 checks gave a result", never as a percentage next to the count,
+and give reasons for the rest only in the result's own words. An unevaluated
+check is not a pass, and a reason you supply yourself is a guess.
 
 One lens is ONE read and answers what a dozen hand-written queries would. It
 orders its findings by severity, NOT by money, so re-sort by cost before you
 choose the three you report. For the cost ranking itself, `analyze_waste` is the
-read; `analyze_search_terms` groups the searches into negative-keyword
-candidates by theme, which is a different job. Together they usually answer
-step 3 below, so read it yourself only for what they did not cover.
+read; `analyze_search_terms` names the searches that cost money and converted
+nothing, costliest first, and groups them into negative-keyword themes.
+Together they usually answer step 3 below, so read it yourself only for what
+they did not cover.
 
 A question narrower than the whole account starts with the lens that answers it
 rather than with `full_audit`: `analyze_waste` for money spent on nothing,
@@ -86,12 +93,20 @@ adding or fixing, `quality_score_breakdown` for ad rank and Quality Score,
 one of these already returns: the lens reads the account the way Google counts
 it, and a hand-written query reads one slice of it.
 
-Then, in this order, stopping only when the ceiling is reached:
+Then, in this order, stopping only when this answer's reads are spent:
 
 1. **The period against the one before it.** Campaign metrics by day for the
-   last fourteen days (`search` over `campaign`, with `segments.date`), folded
-   into two weeks so every headline number has a comparison. No lens returns a
-   time series, so this read is yours to make.
+   fourteen days ending on the account's yesterday (`search` over `campaign`,
+   with `segments.date`), folded into two weeks so every headline number has a
+   comparison. No lens returns a time series, so this read is yours to make.
+   End your own `search` reads on the `date_range.end` your lens results
+   carry, and say the dates once. AdCopilot ends every report window on the
+   account's yesterday, the last full day in the account's own time zone
+   (UTC's, when it could not read the zone), so the audit and your reads
+   cover the same days. When a finding names a shorter window, say its dates.
+   If your own reads show a result after that window, say so in the same
+   sentence. A window a finding gives only as a length ends on the result's
+   `date_range.end` unless it says otherwise.
 2. **Where the money went inside that.** Which campaigns and which keywords
    carried the spend, and which carried the results (`keyword_view`) — unless
    `full_audit` already ranked it.
@@ -99,6 +114,20 @@ Then, in this order, stopping only when the ceiling is reached:
    and no conversions, worst first — usually the largest finding.
    `analyze_search_terms` is one read for six query shapes and all six
    negative-keyword themes: use it, never `search_term_view` written by hand.
+   Before you give a count of searches, look for their names in every result
+   you hold: `analyze_search_terms`' "Costliest search terms with no
+   conversion" (the costliest first, with their clicks and cost, and how many
+   there are) and the wasted-spend check's evidence in `full_audit` or
+   `analyze_waste` (G16, each search with its clicks and cost). When one lists
+   them, name the top ones with their cost in this answer. When that list says
+   no conversion was recorded anywhere in the account, they cost the most and
+   are not proven waste: say so, and propose blocking one that fits no theme
+   only once tracking is checked. When what you hold only counts them (G16
+   lists none on an account that counted no result in its window), say how many
+   there are and what they cost, and that the reads count them without naming
+   them. Offer a read for searches no result you hold names only when a
+   `related_reads` entry's `why` says that read shows them; one that only names
+   the area, such as wasted spend, is not that promise.
 4. **Whether delivery is being held back.** `budget_pacing` — one read for the
    month-to-date projection against each daily budget. A campaign at its cap
    every day is turning away traffic the customer is willing to pay for, and
@@ -187,6 +216,12 @@ helps with nothing. Reporting a number without its comparison: "₹8,700 last
 week" means nothing until it sits next to the week before. Proposing negatives
 without reading the terms they block: a phrase negative is a blunt instrument
 and a careless one blocks searches the customer wants.
+
+Calling anything a limit that no call returned. Say daily limit, quota or
+"today's look-ups" only when `cross_reads.reads_left_today` is present or a
+call returned the daily-cap refusal. When `org.ops_today_cap` is null the plan
+has no daily limit: a read you did not make is an offer for the next turn,
+never a limit you hit, and it needs no reason.
 
 ## What is next
 

@@ -1,11 +1,11 @@
 ---
 name: negatives
-description: Find the searches that cost money and brought nothing in the last seven days, grouped by theme, and propose never-show-for words (negative keywords) for them — added only after the customer's yes, then read back.
+description: Find the searches that cost money and brought nothing in the last seven days, grouped by theme, and propose never-show-for words (negative keywords) for them — added only after the customer's yes, while the write tools stay on Needs approval, then read back.
 ---
 
 No skill: the connector's tools explain themselves.
 
-`get_org_context` first, with `source: "claude-plugin/0.2.11"`. Send `source`
+`get_org_context` first, with `source: "claude-plugin/0.2.12"`. Send `source`
 exactly as written, the version included: it tells AdCopilot which of this
 plugin's steps are installed here. When the answer's `plugin.skill` names an
 AdCopilot skill other than this one, `next_step` is describing the account, not
@@ -15,13 +15,17 @@ them. Then `analyze_search_terms` with `days: 7`. It groups the searches that
 took clicks and converted nothing into themes — people looking for jobs, for
 something free, for information, for a competitor, and the words this workspace
 already said it never wants to show for — and names a ready call for each
-theme.
+theme. It also lists the costliest of them, any theme or none, with no ready
+call ("Costliest search terms with no conversion"): name the top ones, and
+leave one that fits no theme to the customer, as it can be what they sell. When
+it says nothing was recorded anywhere in the account, say they cost the most
+and are not proven waste.
 
 When a lens or `search` result ends with `related_reads`, run the ones that
 bear on the question, at most three, then answer from all you hold; never
 repeat a read you hold, and offer, do not chase, the `related_reads` those
-reads bring back. They are reads only: a change still waits for the customer's
-yes. In a scheduled run, skip them.
+reads bring back. They are reads only: a change is still only proposed. In a
+scheduled run, skip them.
 
 A finding that says "if X" is not a step until you have checked X. Either make
 the read it names and say what you found, or carry the condition into your own

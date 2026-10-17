@@ -3,17 +3,17 @@ name: audit
 description: Audit the account — the connector's full check list, then this month's budget pacing — and keep what is only newness out of the findings.
 ---
 
-No skill: `full_audit` and `budget_pacing` explain themselves. Run `full_audit`
-at `depth: deep`, then `budget_pacing`. Separate real findings from newness: a
-new account scores badly for reasons that are only its age — keywords with no
-impressions yet, a Quality Score of 0 because Google has not rated the keyword
-yet, a bidding strategy still learning.
+No skill: `full_audit` and `budget_pacing` explain themselves. `get_org_context`
+first, then `full_audit` at `depth: deep`, then `budget_pacing`. Separate real
+findings from newness: a new account scores badly for reasons that are only its
+age — keywords with no impressions yet, a Quality Score of 0 because Google has
+not rated the keyword yet, a bidding strategy still learning.
 
 `full_audit` ends with `related_reads` when a section failed: run the ones that
 bear on the audit, at most three, then answer from all you hold. A lens result
 (`budget_pacing` included) may carry its own: the same rule, and never repeat a
 read you hold. Offer, do not chase, the `related_reads` those reads bring back.
-They are reads only: a change still waits for the customer's yes. In a
+They are reads only: a change is still only proposed. In a
 scheduled run, skip them. For anything you want to know that one of the lenses
 (`analyze_waste`, `analyze_search_terms`, `quality_score_breakdown`,
 `rsa_asset_report`, `bidding_audit`, `keyword_opportunities`, `day_of_week`,
@@ -32,7 +32,7 @@ lost to budget describes the budgets of those thirty days, not today's — say t
 window, or read the latest day.
 
 Every `get_org_context` call here, the first one and the tools refresh alike,
-carries `source: "claude-plugin/0.2.11"`. Send `source` exactly as written, the
+carries `source: "claude-plugin/0.2.12"`. Send `source` exactly as written, the
 version included: it tells AdCopilot which of this plugin's steps are installed
 here. When the answer's `plugin.skill` names an AdCopilot skill other than this
 one, `next_step` is describing the account, not this request: do this request

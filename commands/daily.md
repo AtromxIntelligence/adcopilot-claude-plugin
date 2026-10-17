@@ -1,6 +1,6 @@
 ---
 name: daily
-description: The daily check-in — this month's pacing, the last seven days' searches that cost money and brought nothing, any ad Google has stopped, and what changed since yesterday — as far as the connector's read cap allows.
+description: The daily check-in — this month's pacing, the last seven days' searches that cost money and brought nothing, any ad Google has stopped, and what changed since yesterday — as far as the reads AdCopilot sizes for one answer allow.
 ---
 
 No skill: the connector's tools explain themselves. This is the check-in a
@@ -8,21 +8,26 @@ person asks for. If this conversation was started by a schedule — a Claude
 scheduled task or a Claude Code routine, with nobody there to answer — follow
 the `adcopilot-daily` skill's run instead, and none of what follows.
 
-`get_org_context` first, with `source: "claude-plugin/0.2.11"`. Send `source`
+`get_org_context` first, with `source: "claude-plugin/0.2.12"`. Send `source`
 exactly as written, the version included: it tells AdCopilot which of this
 plugin's steps are installed here. When the answer's `plugin.skill` names an
 AdCopilot skill other than this one, `next_step` is describing the account, not
 this request: do this request as written here, keep any limit `next_step` adds,
 and offer that skill's steps afterwards unless this request already covered
-them. Then four reads, in this order, stopping at the read cap it sets and
-saying which you did not reach and why:
+them. `cross_reads.ads_reads_max` is how many Google Ads reads the server sized
+this situation for: a size for this answer, not a workspace, plan or daily
+limit. Only when `cross_reads.reads_left_today` is present is the day itself
+short. Then four reads, in this order, stopping when this answer's reads are
+spent and offering the one you did not reach as the next read, never as a limit
+you hit:
 
 1. **Pacing** — `budget_pacing`: whether this month's spend is on track against
    each daily budget, and any campaign limited by budget.
 2. **The searches** — `analyze_search_terms` with `days: 7`: what people
-   searched in the last seven days that cost money and brought nothing, in the
-   tool's themes. The wrong ones are candidates for never-show-for words
-   (Google's word: negative keywords).
+   searched in the last seven days that cost money and brought nothing, the
+   costliest by name with their cost (its "Costliest search terms with no
+   conversion") and the tool's themes. The wrong ones are candidates for
+   never-show-for words (Google's word: negative keywords).
 3. **Ads Google stopped** — `search` on `ad_group_ad` with
    `ad_group_ad.policy_summary.approval_status`: any ad disapproved or limited,
    with Google's stated reason.
@@ -33,9 +38,8 @@ saying which you did not reach and why:
 When a lens or `search` result ends with `related_reads`, run the ones that
 bear on the question, at most three, then answer from all you hold; never
 repeat a read you hold, and offer, do not chase, the `related_reads` those
-reads bring back. They are reads only: a change still waits for the customer's
-yes. In a scheduled run, skip them. The read cap above still holds: say which
-you did not reach.
+reads bring back. They are reads only: a change is still only proposed. In a
+scheduled run, skip them. They count toward this answer's reads, as above.
 
 A finding that says "if X" is not a step until you have checked X. Either make
 the read it names and say what you found, or carry the condition into your own

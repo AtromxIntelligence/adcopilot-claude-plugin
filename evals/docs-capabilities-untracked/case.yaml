@@ -1,0 +1,134 @@
+schema_version: "1.1"
+name: docs-capabilities-untracked
+description: >
+  "Walk me through what it can do" in the state of the real conversation this
+  case comes from (the tenant in this case's mocks is fictional; every value
+  is invented). On 2026-10-13 at 20:55 UTC the server answered the docs
+  skill's get_org_context with situation ADS_ACTIVE_UNTRACKED, the account
+  handed to adcopilot-measure, situational cross_reads making no read and
+  offering Analytics as the one thing that would settle whether results went
+  uncounted (audit rows: xmode=situational, xconnect=ga4,
+  skill=adcopilot-measure). The docs skill listed what AdCopilot can do, then
+  ran a performance review nobody asked for (search, full_audit,
+  budget_pacing, conversion_setup_audit, analyze_search_terms), listed the
+  capabilities again in another grouping under a heading that promised every
+  change would wait for the customer's yes with no condition, said conversion
+  tracking needed Analytics and Tag Manager connected, and ended on three
+  questions. docs-capabilities-routed covers the other hand-off, a counted
+  account handed to adcopilot-review. Here next_step and the playbook's
+  [PLUGIN] section are what AdCopilot release/v2.41.0 renders: the
+  measurement steps on a greeting, a request to get started or a question
+  about counting results, anything else answered first and the steps offered
+  after, and the answer is sized at eight reads on this plan with no daily
+  limit. The docs skill's own rule is graded: a
+  question about AdCopilot is answered from the one get_org_context call,
+  with no account read and no other skill (neither the review nor the
+  measurement steps), as one list, ending on exactly one question that
+  offers one read tied to one fact from the 30-day summary ($1,865 spent, 607
+  clicks, nothing counted), with approval always stated with its condition.
+  Mocks for the reads that turn made are present, so a run that makes one is
+  graded on it rather than failing on a missing mock.
+tags: [docs]
+runs: 3
+execution:
+  prompt: "I have the AdCopilot plugin. Please walk me through what it can do."
+  max_turns: 10
+  timeout_seconds: 300
+  allowed_tools: [Skill]
+graders:
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-docs"'
+  - name: review-skill-not-started
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-review"'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: measure-skill-not-started
+    type: tool_used
+    # next_step hands this account to the measurement steps; a question
+    # about AdCopilot starts them no more than it starts the review.
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-measure"'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-full-audit
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__full_audit
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-waste-read
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__analyze_waste
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-search-terms-read
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__analyze_search_terms
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-search
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__search
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-conversion-setup-read
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__conversion_setup_audit
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-budget-pacing
+    type: tool_used
+    # The real turn read it as part of the unasked review.
+    tool: mcp__plugin_adcopilot_adcopilot__budget_pacing
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-search-console-read
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__gsc_search_analytics
+    min: 0
+    max: 0
+    arm: with-only
+  - name: one-list-one-question
+    type: llm
+    focus: last_message
+    weight: 2
+    criteria: |
+      The customer asked only what the AdCopilot plugin can do. The workspace answer the assistant received says: Google Ads (one account) and Search Console are connected; Analytics and Tag Manager are not, with what connecting each would unlock; the plan has no daily limit on look-ups; and in its 30-day summary one campaign spent $1,865 on 607 clicks with nothing counted, with two primary conversion actions set up. The same answer also handed the account to the conversion-tracking steps and suggested offering Analytics, which is not what the customer asked for. The reply should give the capabilities once and end on exactly one question.
+
+      PASS only if all five hold:
+      1. One list. What AdCopilot can do is given once, as a single list or a single run of short sections: what is connected and what each lets it do, what connecting the others would add, the ready-made routines, what it may change, and the look-ups. FAIL if the reply lists the capabilities twice in different groupings (for example once by product and again by kind of request), or comes back later in the reply to answer the question again.
+      2. No review and no set-up. The reply reports nothing about the account beyond facts from that 30-day summary: no health score, no audit findings, no search terms, no week-against-week comparison, no budget pacing, no setting to change, and it does not start setting up conversion tracking. FAIL if it delivers a performance review, proposes a fix, or begins the tracking set-up.
+      3. Exactly one question, at the end, offering one look at their own account (a read) tied to the 30-day fact, for example whether results are being counted. FAIL if the reply ends on two or more questions or offers, if its question proposes a change to the account (a fix, a setting, a negative keyword), or if it asks nothing.
+      4. Approval with its condition. Wherever the reply says AdCopilot asks before changing anything, the same sentence says when that holds: while the write tools stay on Needs approval, or that switching approval off lets changes through. FAIL if any heading, parenthesis or list item says changes wait for their approval with no condition.
+      5. Tracking without Analytics. If the reply says what conversion tracking needs, it does not say Analytics must be connected for it: Google Ads can count a result with a conversion action of its own. FAIL if it says conversion tracking needs Analytics, or needs Analytics and Tag Manager, connected. A reply that does not say what tracking needs passes this item.
+
+      Ignore wording, length and the order of the list's parts.
+  - name: no-approval-promise-without-its-condition
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    # The same pattern as docs-capabilities-routed's: a sentence (or a
+    # heading or list line) that promises approval with no "as long as" or
+    # "while" anywhere in it.
+    pattern: '(?:^|(?<=[.!?]\s)|(?<=\n))(?!(?:(?![.!?](?:\s|$))[^\n])*\b(?:as long as|while)\b)(?:(?![.!?](?:\s|$))[^\n])*\b(?:waits? for your (?:yes|approval|ok(?:ay)?)|only (?:on|after|with) your (?:yes|approval|ok(?:ay)?)|only after you (?:approve|say yes|okay))'
+  - name: marks-plugin-use
+    type: tool_used
+    # The same grader as every case that reads the server: a get_org_context
+    # call without source "claude-plugin/<version>" fails it.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin/\d+\.\d+\.\d+")'
+    min: 0
+    max: 0
+    arm: with-only
