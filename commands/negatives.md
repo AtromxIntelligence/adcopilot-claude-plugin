@@ -1,6 +1,6 @@
 ---
 name: negatives
-description: Find the searches that cost money and brought nothing in the last seven days, grouped by theme, and propose never-show-for words (negative keywords) for them — added only after the customer's yes, then read back.
+description: Find the searches that cost money and brought nothing in the last seven days, grouped by theme, and propose never-show-for words (negative keywords) for them — added only after the customer's yes, while the write tools stay on Needs approval, then read back.
 ---
 
 No skill: the connector's tools explain themselves.

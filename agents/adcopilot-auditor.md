@@ -144,7 +144,8 @@ in the report is one-way, say so.
 Then one line the reader needs, and this report is the only place it can go:
 nothing above has been applied, and any of these changes happens only after the
 customer says yes in their own conversation — the one that asked for this audit —
-never here. A priced proposal with an undo beside it reads as a change already
+while AdCopilot's write tools stay on Needs approval there, and never here. A
+priced proposal with an undo beside it reads as a change already
 made unless that line stands next to it.
 
 Close with what you could not check and why, so nobody mistakes a gap for a

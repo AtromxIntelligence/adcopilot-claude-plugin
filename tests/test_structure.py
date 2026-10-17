@@ -1913,12 +1913,30 @@ class ApprovalCondition(unittest.TestCase):
     your yes" in three places. Every sentence that makes the promise must
     carry its condition ("as long as" or "while") in the same sentence; a
     related read's own sentence says a change is still only proposed, which
-    is a promise of nothing."""
+    is a promise of nothing.
 
-    PROMISE = re.compile(r"waits? for (?:your|the customer's|their|the) yes|"
-                         r"only (?:on|after) your yes", re.I)
+    Fix round 1: the promise is also made in the third person, where the
+    customer reads it: `/adcopilot:negatives`' description in the command
+    picker ("added only after the customer's yes") and the auditor's report
+    line ("happens only after the customer says yes"). The wider pattern runs
+    over what the customer is shown: the README, the manifests, every
+    frontmatter description, and the auditor's report section. A rule the
+    model is given in a body ("Apply it only on their yes") is the model's
+    own and holds whatever the client's approval setting, so it carries no
+    condition and the wider pattern leaves it alone."""
+
+    PROMISE = re.compile(r"waits? for (?:your|the customer's|their|the) "
+                         r"(?:yes|approval)|"
+                         r"only (?:on|after|with) your (?:yes|approval)|"
+                         r"only after you (?:say yes|approve)", re.I)
+    THIRD_PERSON_PROMISE = re.compile(
+        r"only (?:on|after|with) (?:the customer's|their) (?:yes|approval)|"
+        r"only (?:after|once|when) (?:the customer|they) (?:says?|gives?) "
+        r"(?:yes|their yes|approval)|"
+        r"only after (?:the customer|they) approves?", re.I)
     CONDITION = re.compile(r"\b(?:as long as|while)\b", re.I)
     RELATED = "They are reads only: a change is still only proposed"
+    AUDITOR = "agents/adcopilot-auditor.md"
 
     @staticmethod
     def sentences(text):
@@ -1928,13 +1946,66 @@ class ApprovalCondition(unittest.TestCase):
             out += [s for s in re.split(r"(?<=[.!?])\s+(?=[^a-z])", joined) if s]
         return out
 
-    def offenders(self, text):
+    def offenders(self, text, promise=None):
+        promise = promise or self.PROMISE
         return [s for s in self.sentences(text)
-                if self.PROMISE.search(s) and not self.CONDITION.search(s)]
+                if promise.search(s) and not self.CONDITION.search(s)]
 
     def surfaces(self):
         return (["README.md", ".claude-plugin/plugin.json",
                  ".claude-plugin/marketplace.json"] + model_read_files())
+
+    def customer_visible(self):
+        """(label, text) for everything a customer is shown in AdCopilot's
+        own words: the README and manifests whole, each skill's, command's
+        and agent's frontmatter description, and the auditor's report
+        section, which is what its report says."""
+        out = [(rel, read(rel)) for rel in
+               ("README.md", ".claude-plugin/plugin.json",
+                ".claude-plugin/marketplace.json")]
+        for rel in model_read_files():
+            m = re.search(r"^description: (.+)$", frontmatter(read(rel)), re.M)
+            if m:
+                out.append((rel + " (description)", m.group(1)))
+        out.append((self.AUDITOR + " (## The report)",
+                    section(read(self.AUDITOR), "## The report") or ""))
+        return out
+
+    def test_the_wider_guard_catches_the_third_person_promise(self):
+        for bad in ("Propose never-show-for words for them — added only after "
+                    "the customer's yes, then read back.",
+                    "Nothing above has been applied, and any of these changes "
+                    "happens only after the customer says yes in their own "
+                    "conversation — the one that asked for this audit — never "
+                    "here."):
+            with self.subTest(bad=bad):
+                self.assertEqual(self.offenders(bad, self.THIRD_PERSON_PROMISE), [bad])
+        for good in ("Propose never-show-for words for them — added only after "
+                     "the customer's yes, while the write tools stay on Needs "
+                     "approval, then read back.",
+                     "Any of these changes happens only after the customer says "
+                     "yes in their own conversation, while AdCopilot's write "
+                     "tools stay on Needs approval there, and never here."):
+            with self.subTest(good=good):
+                self.assertEqual(self.offenders(good, self.THIRD_PERSON_PROMISE), [])
+
+    def test_nothing_the_customer_is_shown_promises_it_in_the_third_person(self):
+        labels = [label for label, _text in self.customer_visible()]
+        self.assertIn("commands/negatives.md (description)", labels)
+        self.assertIn(self.AUDITOR + " (## The report)", labels)
+        for label, text in self.customer_visible():
+            with self.subTest(surface=label):
+                self.assertEqual(self.offenders(text, self.THIRD_PERSON_PROMISE), [])
+
+    def test_the_two_third_person_sentences_carry_it(self):
+        desc = re.search(r"^description: (.+)$",
+                         frontmatter(read("commands/negatives.md")), re.M).group(1)
+        self.assertIn("added only after the customer's yes, while the write "
+                      "tools stay on Needs approval, then read back.", desc)
+        self.assertIn("happens only after the customer says yes in their own "
+                      "conversation — the one that asked for this audit — while "
+                      "AdCopilot's write tools stay on Needs approval there, and "
+                      "never here.", flat(self.AUDITOR))
 
     def test_the_guard_catches_the_words_it_is_for(self):
         for bad in ("They are reads only: a change still waits for the customer's yes.",
