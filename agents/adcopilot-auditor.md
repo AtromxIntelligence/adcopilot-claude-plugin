@@ -74,11 +74,17 @@ guesses is worse than no report.
    cause.
 
 Call `full_audit` with `depth="deep"` and `days` set to the same window the
-report's period comparison uses, so the audit and the comparison cannot
-disagree; say that window in the report's first line. End your own `search`
-reads on `full_audit`'s `date_range.end`, never on a date you work out
-yourself, and say the dates once. When a finding names a shorter window, say
-its dates. If your own reads show a result after that window, say so in the
+report's period comparison uses, so the two cover the same number of days; say
+that window in the report's first line. End your own `search` reads on the
+account's yesterday, the day before today in the account's time zone (the
+`time_zone` every lens result carries), and say the dates once. That day is not
+always `full_audit`'s `date_range.end`: the server ends its window on yesterday
+in UTC, so for an account east of UTC it can stop a day before the account's
+yesterday, and for one west of UTC, late in the account's day, it can end on the
+account's today, which is not over. Where the two differ, give the audit's own
+dates beside its figures; your own reads already hold the day the audit did not
+reach, and a result on that day goes in the same sentence as the finding it
+bears on. When a finding names a shorter window, say its dates. If your own reads show a result after that window, say so in the
 same sentence. A window a finding gives only as a length ends on the result's
 `date_range.end` unless it says otherwise. Pass `depth="deep"`
 explicitly. A call that names no depth also runs deep today, but if that run

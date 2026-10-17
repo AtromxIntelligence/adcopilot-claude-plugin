@@ -194,9 +194,28 @@ SHORT_DAY = ("Only when `cross_reads.reads_left_today` is present is the day "
 # 0.2.12: one set of dates inside one answer. The same review put "the last 7
 # days (7-13 Oct)" from its own search next to a tag finding whose seven days
 # ended on 12 Oct, and gave coverage as "73% of its 73 checks".
-DATE_END_RULE = ("End your own `search` reads on `full_audit`'s "
-                 "`date_range.end`, never on a date you work out yourself, and "
-                 "say the dates once.")
+#
+# Fix round 1: the reads end on the account's own yesterday, not on
+# `full_audit`'s `date_range.end`. The server ends that window on yesterday in
+# UTC (`gaql._window`, used by `_context.build_context`, origin/develop
+# 37bd01de), and the conversation ran at 20:55 UTC on 13 Oct, 02:25 on 14 Oct
+# in India: the audit's window ended on 12 Oct and the account's only result
+# came on 13 Oct. Tied to `date_range.end`, the review would have dropped that
+# result and its "result after that window" sentence could never have fired.
+DATE_END_RULE = ("End your own `search` reads on the account's yesterday, the "
+                 "day before today in the account's time zone (the `time_zone` "
+                 "every lens result carries), and say the dates once.")
+UTC_WINDOW_RULE = ("That day is not always `full_audit`'s `date_range.end`: the "
+                   "server ends its window on yesterday in UTC, so for an "
+                   "account east of UTC it can stop a day before the account's "
+                   "yesterday, and for one west of UTC, late in the account's "
+                   "day, it can end on the account's today, which is not over.")
+MISSED_DAY_RULE = ("Where the two differ, give the audit's own dates beside its "
+                   "figures;")
+# What 0.2.12's first text said, which tied the reads to the UTC day.
+STALE_DATE_RULE = re.compile(r"never on a date you work out yourself|"
+                             r"End your own `search` reads on `full_audit`'s|"
+                             r"fourteen days ending on `full_audit`'s")
 FINDING_WINDOW_RULE = ("When a finding names a shorter window, say its dates. "
                        "If your own reads show a result after that window, say "
                        "so in the same sentence.")
@@ -1931,31 +1950,48 @@ class ApprovalCondition(unittest.TestCase):
 
 
 class DatesAndCounts(unittest.TestCase):
-    """0.2.12: the review and the auditor end their own reads on the audit's
-    last day and say the dates once; a finding with a shorter window is given
-    its dates, with any later result said in the same sentence; and coverage is
-    a count of the checks that could run, with reasons only in the result's
-    own words. `/adcopilot:weekly` dates its own two weeks and any other
-    window the same way."""
+    """0.2.12: the review and the auditor end their own reads on the account's
+    yesterday, in the account's time zone, and say the dates once; where
+    `full_audit`'s UTC window ends on another day they give the audit's own
+    dates beside its figures, and a result on the day the audit did not reach
+    goes in the same sentence as the finding; a finding with a shorter window
+    is given its dates; and coverage is a count of the checks that could run,
+    with reasons only in the result's own words. `/adcopilot:weekly` dates its
+    own two weeks and any other window the same way."""
 
     REVIEW = "skills/adcopilot-review/SKILL.md"
     AUDITOR = "agents/adcopilot-auditor.md"
     WEEKLY = "commands/weekly.md"
 
-    def test_the_review_and_the_auditor_end_on_the_audits_last_day(self):
+    def test_the_review_and_the_auditor_end_on_the_accounts_yesterday(self):
         for rel in (self.REVIEW, self.AUDITOR):
             with self.subTest(file=rel):
-                self.assertEqual(flat(rel).count(DATE_END_RULE), 1)
+                text = flat(rel)
+                self.assertEqual(text.count(DATE_END_RULE), 1)
+                self.assertEqual(text.count(UTC_WINDOW_RULE), 1)
+                self.assertEqual(text.count(MISSED_DAY_RULE), 1)
+                self.assertIn("a result on that day goes in the same sentence "
+                              "as the finding it bears on", text)
+
+    def test_nothing_ties_the_reads_to_the_utc_day(self):
+        for rel in model_read_files():
+            with self.subTest(file=rel):
+                found = STALE_DATE_RULE.search(flat(rel))
+                self.assertIsNone(found, found and found.group(0))
 
     def test_the_review_reads_its_fourteen_days_to_that_day(self):
         seq = " ".join((section(read(self.REVIEW), "## The sequence") or "").split())
         step1 = seq[seq.index("1. **The period against the one before it.**"):
                     seq.index("2. **Where the money went")]
-        self.assertIn("the fourteen days ending on `full_audit`'s "
-                      "`date_range.end`", step1)
+        self.assertIn("the fourteen days ending on the account's yesterday", step1)
         self.assertIn(DATE_END_RULE, step1)
+        self.assertIn(UTC_WINDOW_RULE, step1)
         self.assertIn(FINDING_WINDOW_RULE, step1)
         self.assertNotIn("for the last fourteen days", step1)
+        # The rule about a result after a finding's window comes after the
+        # sentence that makes the reads reach past the audit's last day, so it
+        # can fire.
+        self.assertLess(step1.index(UTC_WINDOW_RULE), step1.index(FINDING_WINDOW_RULE))
 
     def test_a_shorter_window_is_dated(self):
         for rel in (self.REVIEW, self.AUDITOR, self.WEEKLY):

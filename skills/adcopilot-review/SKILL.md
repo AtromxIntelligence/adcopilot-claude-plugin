@@ -94,16 +94,22 @@ it, and a hand-written query reads one slice of it.
 Then, in this order, stopping only when this answer's reads are spent:
 
 1. **The period against the one before it.** Campaign metrics by day for the
-   fourteen days ending on `full_audit`'s `date_range.end` (`search` over
-   `campaign`, with `segments.date`), folded into two weeks so every headline
-   number has a comparison. No lens returns a time series, so this read is
-   yours to make. End your own `search` reads on `full_audit`'s
-   `date_range.end`, never on a date you work out yourself, and say the dates
-   once. When you opened with another lens, its own `date_range.end` is that
-   day. When a finding names a shorter window, say its dates. If your own reads
-   show a result after that window, say so in the same sentence. A window a
-   finding gives only as a length ends on the result's `date_range.end` unless
-   it says otherwise.
+   fourteen days ending on the account's yesterday (`search` over `campaign`,
+   with `segments.date`), folded into two weeks so every headline number has a
+   comparison. No lens returns a time series, so this read is yours to make.
+   End your own `search` reads on the account's yesterday, the day before
+   today in the account's time zone (the `time_zone` every lens result
+   carries), and say the dates once. That day is not always `full_audit`'s
+   `date_range.end`: the server ends its window on yesterday in UTC, so for an
+   account east of UTC it can stop a day before the account's yesterday, and
+   for one west of UTC, late in the account's day, it can end on the account's
+   today, which is not over. Where the two differ, give the audit's own dates
+   beside its figures; your fourteen days already hold the day the audit did
+   not reach, and a result on that day goes in the same sentence as the
+   finding it bears on. When a finding names a shorter window, say its dates.
+   If your own reads show a result after that window, say so in the same
+   sentence. A window a finding gives only as a length ends on the result's
+   `date_range.end` unless it says otherwise.
 2. **Where the money went inside that.** Which campaigns and which keywords
    carried the spend, and which carried the results (`keyword_view`) — unless
    `full_audit` already ranked it.
