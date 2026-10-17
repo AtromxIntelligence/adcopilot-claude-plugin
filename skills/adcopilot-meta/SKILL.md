@@ -149,7 +149,9 @@ client asks for confirmation before activation. Meta's pages do not say its
 server asks as well. That asking is yours to do: ask the customer yourself
 before you activate anything or change anything that spends, and do not treat a
 paused start as permission. If the customer wants
-Meta's change tools to prompt them every time, the guide shows where in Claude.
+Meta's change tools to prompt them every time, the guide shows where in Claude;
+in Cursor, they keep those tools off the allowlist (Cursor's cloud agents never
+ask).
 
 Whoever has full control of a business portfolio can set rules in Meta Business
 Suite for what AI agents may do on an ad account, and Meta says its server

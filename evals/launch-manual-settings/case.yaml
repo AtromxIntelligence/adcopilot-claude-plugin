@@ -56,21 +56,22 @@ graders:
   - name: reads-auto-apply-through-the-api
     type: regex
     target: mock_calls
-    # A tool's NAME can also appear in the call log as an argument of get_org_context
-    # (tools: [...] asks for its text). That is a read, not a call; the lookbehind skips it.
-    pattern: '(?<!\\?"tools\\?"[^\n]{0,200})list_auto_apply_subscriptions'
+    # Anchored on the call's own "tool": a tool's NAME also appears in the call
+    # log as an argument of get_org_context (tools: [...] asks for its text) and
+    # in v2.41.0's playbook and question_map text, and neither is a call.
+    pattern: '"tool"\s*:\s*"[^"]*list_auto_apply_subscriptions"'
     arm: with-only
   - name: never-switches-it-on
     type: regex
     target: mock_calls
     match: not_contains
-    pattern: '(?<!\\?"tools\\?"[^\n]{0,200})set_campaign_status'
+    pattern: '"tool"\s*:\s*"[^"]*set_campaign_status"'
     arm: with-only
   - name: never-pauses-in-a-single-prompt-run
     type: regex
     target: mock_calls
     match: not_contains
-    pattern: '(?<!\\?"tools\\?"[^\n]{0,200})pause_auto_apply_subscription'
+    pattern: '"tool"\s*:\s*"[^"]*pause_auto_apply_subscription"'
     arm: with-only
   - name: settings-read-back-and-right
     type: llm

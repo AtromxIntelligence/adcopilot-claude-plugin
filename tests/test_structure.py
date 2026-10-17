@@ -14,9 +14,10 @@ What it pins, and why each one is here:
   that drifts is a flow that offers differently, or stops offering, so the
   copies are compared byte for byte.
 - The stop condition is the server's own (`situations.schedule_offer`):
-  `routine.daily.status` `user_set`, a date in
-  `routine.scheduled_last_seen_at`, or `routine.own_schedule` `saved` or
-  `unavailable` (plan B9), and nothing else. If AdCopilot renames a field the
+  `routine.daily.status` `user_set`, a scheduled run seen on two different
+  days (`routine.scheduled_first_seen_at` and
+  `routine.scheduled_last_seen_at`), or `routine.own_schedule` `saved`,
+  `unavailable` or `declined` (plan B9, D160), and nothing else. If AdCopilot renames a field the
   offer never stops; if the plugin stops on more than the server does, the
   plugin is silent while the server's next_step asks for the offer; if it
   stops on less, a Claude with no scheduled tasks is offered one every
@@ -379,6 +380,7 @@ class DailyHabitBlock(unittest.TestCase):
         # routine["scheduled_last_seen_at"]).
         block = self.blocks()[HABIT_CARRIERS[0]] or ""
         for field in ("`routine.daily.status` is `user_set`",
+                      "`routine.scheduled_first_seen_at`",
                       "`routine.scheduled_last_seen_at`", "`in_app`",
                       "`routine.own_schedule` is `saved`, `unavailable` or "
                       "`declined`"):
@@ -406,10 +408,24 @@ class DailyHabitBlock(unittest.TestCase):
         # None for any named client that is not Claude, Cursor included).
         # The plugin no longer decides from the routine fields alone.
         block = " ".join((self.blocks()[HABIT_CARRIERS[0]] or "").split())
-        self.assertIn("and only when `get_org_context` hands you its recipe: "
-                      "`routine.schedule` is present.", block)
-        self.assertIn("AdCopilot sends it exactly when its "
-                      "`overlays.schedule_offer` is set", block)
+        self.assertIn("and only when both hold: Google Ads is connected and "
+                      "readable with a campaign switched on, and "
+                      "`get_org_context` hands you its recipe, "
+                      "`routine.schedule`.", block)
+        self.assertIn("AdCopilot sends `routine.schedule` only when its "
+                      "`overlays.schedule_offer` is set, which is its own "
+                      "decision for this workspace and this AI client: no "
+                      "schedule is reported, the call is not a scheduled run",
+                      block)
+        # situations.schedule_offer believes a scheduled run only once it has
+        # been seen on two separate UTC days (_seen_on_two_days); one sighting
+        # can be a chat that ran the pasted request instead of saving it.
+        self.assertIn("when a scheduled run has checked in on two different "
+                      "days (`routine.scheduled_first_seen_at` and "
+                      "`routine.scheduled_last_seen_at` hold dates on different "
+                      "days)", block)
+        self.assertNotIn("`routine.scheduled_last_seen_at` holds a date", block)
+        self.assertNotIn("sends it exactly when", block)
         self.assertIn("Never make the offer without it, and never work it out "
                       "from the other fields.", block)
         self.assertIn("Word it for where they are, by `routine.schedule.offer`: "
@@ -2702,9 +2718,12 @@ class V241Alignment(unittest.TestCase):
         exception = ("`set_campaign_status`, the tool that pauses a campaign or "
                      "switches one on")
         routed = {"README.md": "The plugin's skills pause or switch on a "
-                               "campaign only with that tool.",
+                               "campaign only with that tool, never with a "
+                               "status in a change to the campaign's settings "
+                               "(`update_campaign`)",
                   self.DOCS: "This plugin pauses or switches on a campaign only "
-                             "with that tool."}
+                             "with that tool, never with a status in a change to "
+                             "the campaign's settings (`update_campaign`)"}
         for rel in ("README.md", self.DOCS):
             with self.subTest(file=rel):
                 text = flat(rel)
@@ -2714,10 +2733,13 @@ class V241Alignment(unittest.TestCase):
                 self.assertIn("a run with nobody there to answer cannot use it", text)
                 self.assertIn("the Claude desktop app may also ask every time", text)
                 self.assertIn(routed[rel], text)
-                # How far it goes on v2.41.0: a settings change can carry a
-                # status, and the flag does not hold it.
-                self.assertIn("AdCopilot v2.41.0 also lets a change to a "
-                              "campaign's settings", text)
+                # How far it goes, in words that stay true on v2.41.0 (where
+                # `update_campaign` also takes a status, unflagged) and once
+                # the server refuses a status there (adcopilot#852): the
+                # plugin never sends one, and a settings change follows the
+                # client's settings. No evergreen sentence pins v2.41.0's
+                # update_campaign behaviour.
+                self.assertNotIn("v2.41.0 also lets", text)
         morning = " ".join((section(read("README.md"),
                                     "### Every morning, without asking") or "").split())
         self.assertIn("AdCopilot marks `set_campaign_status`, the tool that pauses "
@@ -2975,6 +2997,41 @@ class V241Alignment(unittest.TestCase):
                     self.assertRegex(log("2026-10-14"), re.compile(other))
                     self.assertRegex(log("2026-10-12"), re.compile(other))
                     self.assertNotRegex(log("2026-09-29"), re.compile(other))
+        # The Cursor round closes the graders' blind spot: the same days in
+        # double quotes, a `<` bound on the day after, a single day, and a
+        # DURING range that takes in the account's unfinished today.
+        def logged(cond, as_string):
+            inp = {"resource": "campaign", "conditions": [cond]}
+            return json.dumps([{"tool": mcp, "input": json.dumps(inp)
+                                if as_string else inp}])
+        for as_string in (False, True):
+            for cond, right in (
+                    ('segments.date BETWEEN "2026-09-30" AND "2026-10-13"', True),
+                    ('segments.date <= "2026-10-13"', True),
+                    ("segments.date < '2026-10-14'", True),
+                    ('segments.date < "2026-10-14"', True),
+                    ("segments.date = '2026-10-13'", True),
+                    ('segments.date BETWEEN "2026-09-30" AND "2026-10-14"', False),
+                    ('segments.date <= "2026-10-12"', False),
+                    ("segments.date < '2026-10-15'", False),
+                    ("segments.date < '2026-10-13'", False),
+                    ("segments.date = '2026-10-14'", False),
+                    ("segments.date DURING TODAY", False),
+                    ("segments.date DURING THIS_MONTH", False),
+                    ("segments.date during this_week_mon_today", False)):
+                with self.subTest(cond=cond, as_string=as_string):
+                    if right:
+                        self.assertRegex(logged(cond, as_string), re.compile(ends, flags))
+                        self.assertNotRegex(logged(cond, as_string), re.compile(other))
+                    else:
+                        self.assertNotRegex(logged(cond, as_string), re.compile(ends, flags))
+                        self.assertRegex(logged(cond, as_string), re.compile(other))
+            for cond in ("segments.date < '2026-09-30'",
+                         'segments.date BETWEEN "2026-09-16" AND "2026-09-29"',
+                         "segments.date >= '2026-10-13'",
+                         "segments.date DURING LAST_14_DAYS"):
+                with self.subTest(earlier=cond, as_string=as_string):
+                    self.assertNotRegex(logged(cond, as_string), re.compile(other))
         cov, cflags = grader(self.DATES, "coverage-is-a-count-not-a-percentage")
         self.assertRegex("Coverage was 73% of its 73 checks.", re.compile(cov, cflags))
         self.assertNotRegex("The audit's score comes from the 58 of 73 checks "
@@ -3110,8 +3167,12 @@ class CursorPath(unittest.TestCase):
         review = flat("skills/adcopilot-review/SKILL.md")
         self.assertIn("else `declined` — only from Claude", review)
         self.assertIn("In Cursor (" + CURSOR_TELL + ") there is none", review)
-        self.assertIn("only when `get_org_context` hands you its recipe, "
-                      "`routine.schedule`", review)
+        self.assertIn("and `get_org_context` hands you its recipe, "
+                      "`routine.schedule`, which AdCopilot sends only when its "
+                      "`overlays.schedule_offer` is set", review)
+        self.assertIn("when a scheduled run has checked in on two different "
+                      "days (`routine.scheduled_first_seen_at` and "
+                      "`routine.scheduled_last_seen_at`)", review)
         daily = flat("skills/adcopilot-daily/SKILL.md")
         self.assertIn("Never call `save_org_context` with `routine.own_schedule` "
                       "from Cursor", daily)
@@ -3174,6 +3235,118 @@ class CursorPath(unittest.TestCase):
         before_surfaces = install.split("\n### ", 1)[0]
         self.assertIn("\n" + GOOGLE_ACCESS_DISCLOSURE + "\n", before_surfaces)
         self.assertEqual(flat("README.md").count(GOOGLE_ACCESS_DISCLOSURE), 1)
+
+
+
+class OlderFixturesOnV241(unittest.TestCase):
+    """The Cursor round re-renders the older cases' get_org_context answers
+    with release/v2.41.0's own code (967d743b), as the five 0.2.12 fixtures
+    were: situations.classify on each fixture's own data, plugin_skill,
+    next_step, render_playbook, cross_reads, question_map,
+    schedule_recipe.as_data and tools_adcopilot._hints. setup-signed-out's
+    answer is the client's sign-in error, not a server answer, and the
+    suite-wide evals/mocks fixture is left as it is."""
+
+    CASES = ("audit-stale-tools", "daily-scheduled-run", "habit-offer-chat",
+             "habit-offer-code", "habit-offer-untold",
+             "habit-recorded-stays-quiet", "launch-manual-settings",
+             "launch-unserved-campaign", "measure-import-trap",
+             "measure-teaches", "review-follows-related-reads",
+             "review-spends-the-depth", "seo-discovered-is-not-a-verdict",
+             "seo-two-numbers-that-lie")
+    OFFER = {"habit-offer-chat": "claude", "habit-offer-code": "claude_code",
+             "habit-offer-untold": "both", "audit-stale-tools": "claude_code",
+             "measure-import-trap": "claude_code"}
+
+    def ctx(self, case):
+        text = read("evals/%s/mocks/adcopilot/get_org_context.md" % case)
+        if case == "audit-stale-tools":
+            return json.loads(re.search(r"\n\n(\{\"org\".*?\})\n\n", text, re.S).group(1))
+        return mock(case, "get_org_context")
+
+    def test_each_is_v241s_rendering(self):
+        for case in self.CASES:
+            with self.subTest(case=case):
+                text = read("evals/%s/mocks/adcopilot/get_org_context.md" % case)
+                head = re.match(r"^---\n(.*?)\n---\n", text, re.S).group(1)
+                self.assertIn("Re-rendered with AdCopilot release/v2.41.0's own "
+                              "code (967d743b", " ".join(head.replace("#", " ").split()))
+                ctx = self.ctx(case)
+                self.assertNotIn("focus", ctx["overlays"])
+                for key in ("schedule_offer", "quota_sized", "plugin_offer",
+                            "checkin_later", "site_health"):
+                    self.assertIn(key, ctx["overlays"])
+                if case == "daily-scheduled-run":
+                    self.assertNotIn("plugin", ctx)
+                else:
+                    self.assertEqual(ctx["plugin"]["version"], manifest_version())
+                for acct in (k for k in ctx["ads_probe"] if k.isdigit()):
+                    last = ctx["ads_probe"][acct]["last_30d"]
+                    self.assertRegex(last["start_date"], r"^\d{4}-\d\d-\d\d$")
+                    self.assertRegex(last["end_date"], r"^\d{4}-\d\d-\d\d$")
+                    self.assertIn("cost_micros", last)
+                routine = ctx["routine"]
+                for key in ("scheduled_first_seen_at", "scheduled_last_seen_at",
+                            "own_schedule", "own_schedule_at"):
+                    self.assertIn(key, routine)
+
+    def test_routine_schedule_is_there_exactly_when_the_offer_is(self):
+        for case in self.CASES:
+            with self.subTest(case=case):
+                ctx = self.ctx(case)
+                offer = ctx["overlays"]["schedule_offer"]
+                self.assertEqual(offer, self.OFFER.get(case))
+                if offer:
+                    self.assertEqual(ctx["routine"]["schedule"]["offer"], offer)
+                    self.assertEqual(ctx["routine"]["schedule"]["instructions"],
+                                     SCHEDULED_CHECKIN.format(
+                                         account="Google Ads account 123-456-7890"))
+                else:
+                    self.assertNotIn("schedule", ctx["routine"])
+
+    def test_the_habit_cases_say_where_they_are_as_v241_does(self):
+        self.assertEqual(self.ctx("habit-offer-untold")["surface"], "other")
+        for case in ("habit-offer-chat", "habit-offer-code"):
+            self.assertEqual(self.ctx(case)["surface"], "claude")
+        quiet = self.ctx("habit-recorded-stays-quiet")["routine"]
+        self.assertNotEqual(quiet["scheduled_first_seen_at"][:10],
+                            quiet["scheduled_last_seen_at"][:10])
+        # On a turn a skill owns, v2.41.0 leaves the offer to the skill.
+        for case in ("habit-offer-chat", "habit-offer-code", "habit-offer-untold"):
+            self.assertNotIn("Before you finish, offer", self.ctx(case)["next_step"])
+
+    def test_no_call_log_grader_is_decided_by_the_fixture_alone(self):
+        # mock_calls carries every mocked call's output too, so a grader that
+        # matches a tool's NAME would be decided by the playbook's or
+        # question_map's text. The call-log graders are anchored on the
+        # call's own "tool".
+        for case in self.CASES + ("review-uncapped-no-limit-words",
+                                  "review-question-first-roomy",
+                                  "docs-capabilities-untracked",
+                                  "docs-capabilities-routed",
+                                  "review-account-day-named-searches"):
+            text = read("evals/%s/mocks/adcopilot/get_org_context.md" % case)
+            output = re.match(r"^---\n.*?\n---\n(.*)$", text, re.S).group(1)
+            record = json.dumps({"tool": "mcp__plugin_adcopilot_adcopilot__get_org_context",
+                                 "input": {"source": "claude-plugin/%s" % manifest_version()},
+                                 "output": output}, separators=(",", ":"),
+                                ensure_ascii=False)
+            case_text = read("evals/%s/case.yaml" % case)
+            for block in re.split(r"\n  - name: ", case_text)[1:]:
+                name = block.split("\n", 1)[0]
+                if not (re.search(r"^\s+type: regex\s*$", block, re.M)
+                        and re.search(r"^\s+target: mock_calls\s*$", block, re.M)):
+                    continue
+                if name == "read-the-server-first":
+                    continue
+                plain = re.search(r"^\s+pattern: ([^'\s][^\n]*?)\s*$", block, re.M)
+                if plain:
+                    pattern = plain.group(1)
+                    flags = re.I if re.search(r"^\s+flags: i\s*$", block, re.M) else 0
+                else:
+                    pattern, flags = grader(case, name)
+                with self.subTest(case=case, grader=name):
+                    self.assertIsNone(re.search(pattern, record, flags))
 
 
 if __name__ == "__main__":

@@ -3,22 +3,29 @@ type: fixed
 # The same fictional tenant three months in: two Search campaigns, results
 # counted, $4,318 over the last thirty days. Field names and nesting follow the
 # live get_org_context answer and every value is invented.
-# This copy carries `question_map` as v2.34.19 returns it for ADS_ACTIVE_TRACKED
-# (situations.QUESTION_MAP, read 2026-10-10); the rest is the review case's.
+# This copy is the review case's.
 # situation ADS_ACTIVE_TRACKED, so cross_reads offers six reads in Google Ads
-# and no cross-product allowance. The playbook is that situation's text
-# including "biggest money first", which is why the money order is NOT what
-# this case measures the skill by - the server says it, so the skill does not
-# earn it. Read live on 2026-10-06, the server still says "At most four reads
-# in Google Ads" and does not name the lenses: the six and the lens-first
-# sentence are what adcopilot#658 introduces, and this fixture is written to
-# that. The direction is deliberate and conservative - it hands the
-# tools-only arm MORE help than today's server does, which makes the measured
-# delta smaller, never larger - and it means the fixture does not go stale the
-# day #658 ships. The daily
+# and no cross-product allowance. The call carries the plugin marker, so
+# plugin.skill names adcopilot-review and v2.41.0's playbook is [RAILS],
+# [RECAP] and [PLUGIN]: the branch that says "biggest money first" is left to
+# the installed skill on both of the tools-only ablation's arms, and the money
+# order is still not what this case measures the skill by. The daily
 # check-in is the customer's own (routine.daily.status user_set, with
-# scheduled_last_seen_at set), so no habit offer is owed and next_step does not
-# ask for one.
+# scheduled_last_seen_at set) and the weekly summary was offered and declined
+# (skipped), so no habit offer is owed, routine.schedule is absent and
+# next_step asks for none.
+# Re-rendered with AdCopilot release/v2.41.0's own code (967d743b, read only):
+# situation (ADS_ACTIVE_TRACKED), overlays, plugin, next_step, playbook,
+# cross_reads, question_map and hints are what situations.classify,
+# plugin_skill, next_step and cross_reads, onboarding_skill.render_playbook,
+# schedule_recipe.as_data and tools_adcopilot._hints return for this data on
+# 2026-10-06 (UTC), for Claude Code (OAuth client "Claude Code (adcopilot)"),
+# carrying the plugin marker claude-plugin/0.2.12, with every product's
+# showing already given. The data carries what v2.41.0 reads: last_30d names
+# its thirty days and its cost in micros, the profile's first-campaign record
+# holds the probe's enabled_seen_at, Analytics and Tag Manager rows are
+# {resource_id, display_name, enabled}, and the routine block carries
+# scheduled_first_seen_at, own_schedule and own_schedule_at.
 ---
 {
   "org": {
@@ -66,10 +73,9 @@ type: fixed
       "connect_url": "https://app.example.invalid/connect/ga4",
       "properties": [
         {
-          "property": "properties/987654321",
+          "resource_id": "properties/987654321",
           "display_name": "Example Bakery",
-          "time_zone": "America/New_York",
-          "currency_code": "USD"
+          "enabled": true
         }
       ],
       "property_defaults": {
@@ -109,6 +115,9 @@ type: fixed
         }
       },
       "last_30d": {
+        "start_date": "2026-09-06",
+        "end_date": "2026-10-05",
+        "cost_micros": 4318000000,
         "cost_display": "$4,318",
         "clicks": 1948,
         "impressions": 61200,
@@ -152,7 +161,8 @@ type: fixed
       "name": "Example Bakery | Search | Wedding cakes",
       "built_at": "2026-08-22",
       "campaign_id": "800000001",
-      "customer_id": "1234567890"
+      "customer_id": "1234567890",
+      "enabled_seen_at": "2026-08-23 09:12:40"
     },
     "expertise": "new",
     "stage": "routine",
@@ -199,7 +209,7 @@ type: fixed
     "weekly": {
       "org_id": 1,
       "kind": "weekly",
-      "status": "off",
+      "status": "skipped",
       "surface": null,
       "hour_local": null,
       "weekday": null,
@@ -215,7 +225,10 @@ type: fixed
       "skipped_count": 0,
       "customer_id": null
     },
-    "scheduled_last_seen_at": "2026-10-06"
+    "scheduled_last_seen_at": "2026-10-06",
+    "scheduled_first_seen_at": null,
+    "own_schedule": null,
+    "own_schedule_at": null
   },
   "latest_check_in": {
     "date": "2026-10-06",
@@ -243,30 +256,34 @@ type: fixed
     "quota_low": false,
     "read_only": false,
     "needs_reauth": [],
-    "focus": null,
     "draft_waiting": false,
-    "routine_pending": false
+    "week_one": null,
+    "routine_pending": false,
+    "site_health": [],
+    "checkin_later": false,
+    "schedule_offer": null,
+    "quota_sized": false,
+    "plugin_offer": null
   },
-  "next_step": "Both campaigns are running and results are being counted. Read what they did before proposing anything.",
-  "playbook": "[RAILS] Reads are free. Propose every change and apply it only after a yes. Say nothing you did not read. No account numbers in what you say.\n\nUp to six reads in Google Ads, plus what `cross_reads` names. Open with `full_audit`, then `analyze_search_terms` or `analyze_waste` as its findings point: one lens is ONE read and answers what a dozen queries would.\n\nLead with the week in one line: what they spent, what they got, what a result cost \u2014 each against the week before. Then at most three findings, biggest money first, each with the counts behind it.",
+  "plugin": {
+    "skill": "adcopilot-review",
+    "version": "0.2.12"
+  },
+  "next_step": "The account is running and results are being counted; on a greeting alone, a request to get started or a question about how the ads are doing, follow the AdCopilot review steps installed in this assistant, answer anything else they asked first and then offer those steps, and suggest no bidding change in the two to three weeks after anything went live. They have been here before, so open with one line on what happened last time.",
+  "playbook": "## [RAILS] Never broken\n\n1. **Call `get_org_context` first.** Follow its `next_step` and `cross_reads`; never guess a refusal's cause.\n2. **Reads run freely; every change is proposed first,** money both ways, applied only on their yes here, never unattended; if promised, add: while their AI client asks before each change (in Claude: write tools on Needs approval). Then read back only what its result does not show, say how to undo it, record it, propose the next finding's fix, until none is worth its money.\n3. **Build campaigns switched off (PAUSED).** Never call `set_campaign_status` with ENABLED on one you built: their money, their switch.\n4. **Never delete,** except a negative keyword. Pause, never REMOVED.\n5. **Only `get_org_context` says what is connected;** tools load lazily; a missing tool proves nothing: fetch it, never report a missing permission; unconnected, say what connecting unlocks, invent nothing.\n6. **Never claim what did not happen.** Say when a call failed; nothing is live until it reads switched on; never attribute to them what they did not say; never report a refusal or a limit no call returned.\n7. **Plain words:** no tool or field name, status word or account number aloud.\n\n## [RECAP] Overlay \u2014 the user is coming back\n\nOpen with two sentences: what you did together last time, and what is due\nnow, then go into the branch below. Never re-introduce yourself, re-ask what\nthe saved profile holds, or repeat the intake. A change not made last time\nis proposed again with today's numbers.\n\nIf the account moved since then \u2014 a campaign switched on, a first result, an\nad switched off by Google \u2014 that is the opening sentence.\n\n## [PLUGIN] The installed skill\n\nThe AdCopilot skill adcopilot-review, installed here, carries this situation's steps. On a greeting alone, a request to get started or the request it is for, follow it, inside the rails, with the reads `cross_reads` names. Asked anything else, answer that first with only the reads it needs, then offer it.",
   "cross_reads": {
     "mode": "situational",
-    "say": "Nothing outside Google Ads would change the advice in this situation, so make no cross-product read.",
+    "say": "There is no unprompted read outside Google Ads to make this turn; answer what they ask from what is connected (Google Ads and Analytics).",
     "reads": [],
     "connect": [],
     "skipped": [],
     "ads_reads_max": 6,
     "exempt_ads_left": 0,
     "exempt_cross_left": {
-      "ga4": 0,
-      "search_console": 0,
-      "gtm": 0
+      "ga4": 16
     },
     "cost_today": 0
   },
-  "hints": [
-    "Both campaigns have been running a month; read what they did before proposing anything."
-  ],
   "question_map": {
     "note": "The read that answers each kind of question. A lens result's related_reads names the next one from its own numbers; run the ones that bear on the question, at most three. Reads only.",
     "reads": {
@@ -280,6 +297,7 @@ type: fixed
       "what to do": "full_audit (depth deep)"
     }
   },
+  "hints": [],
   "tools_revision": "fixture-4",
   "tools_revision_note": "Every AdCopilot tool description ends with \"Tools revision: <this value>.\" A description that shows a different revision or none is out of date: get_org_context with tools=[those tool names] returns the current text, to read before relying on those tools."
 }

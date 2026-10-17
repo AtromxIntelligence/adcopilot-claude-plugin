@@ -4,20 +4,21 @@ description: >
   /adcopilot:daily on claude.ai, one month into the first campaign (the tenant
   in this case's mocks is fictional; every value is invented). AdCopilot's
   emailed check-in is on and no schedule is reported, so the plugin owes its
-  daily-habit offer; the server's next_step also asks for a check-in offer, as
-  the current server does while the weekly is off. The run must do the
-  check-in on the four reads 0.2.4 names — pacing, seven days of search terms,
-  disapprovals, change history — add nothing without a yes, and end with ONE
-  short offer worded for Claude chat: a scheduled task, never /schedule or a
-  routine, and no steps until the customer says yes. Since 0.2.11 the offer
-  comes right after the first finding the morning check also reads — here
-  the searches that took clicks and converted nothing — tied to it, with the
-  value line, not at the end of the reply. The customer's own line says where
-  they are, because the eval harness runs in Claude Code.
-  Deterministic graders test the four reads by their inputs in the call log,
-  the absence of a write and of the unattended skill, and that the offer
-  carries the value line; meaning is two rubrics at weight 2 — the check-in,
-  and the offer — so either dead fails the case.
+  daily-habit offer; on this turn, which the review skill owns, AdCopilot
+  v2.41.0 leaves the schedule offer to the plugin (next_step carries none) and
+  hands over routine.schedule, offer "claude", which is what the daily-habit
+  block now waits for. The run must do the check-in on the four reads 0.2.4
+  names — pacing, seven days of search terms, disapprovals, change history — add
+  nothing without a yes, and end with ONE short offer worded for Claude chat: a
+  scheduled task, never /schedule or a routine, and no steps until the customer
+  says yes. Since 0.2.11 the offer comes right after the first finding the
+  morning check also reads — here the searches that took clicks and converted
+  nothing — tied to it, with the value line, not at the end of the reply. The
+  customer's own line says where they are, because the eval harness runs in
+  Claude Code. Deterministic graders test the four reads by their inputs in the
+  call log, the absence of a write and of the unattended skill, and that the
+  offer carries the value line; meaning is two rubrics at weight 2 — the
+  check-in, and the offer — so either dead fails the case.
 tags: [habit]
 runs: 3
 execution:

@@ -240,29 +240,31 @@ Then the daily habit, on the same terms every other flow uses it. In Cursor
 instructions or the person say so) there is none: make no offer, never run
 `claude mcp` to work out where you are, and record nothing about a schedule.
 Everywhere else, one offer, at most once in a conversation, and only when
+Google Ads is connected and readable with a campaign switched on and
 `get_org_context` hands you its recipe, `routine.schedule`, which AdCopilot
-sends exactly when its `overlays.schedule_offer` is set: its own decision for
-this AI client, made when Google Ads is connected and readable, the account has
-a campaign switched on, no schedule is reported and the client is Claude or
-Claude Code. It reports one when `routine.daily.status` is `user_set`, when
-`routine.scheduled_last_seen_at` holds a date, or when `routine.own_schedule`
-is `saved`, `unavailable` or `declined`, and then it sends no
-`routine.schedule`. AdCopilot's own emailed check-in (`routine.daily.status`
-`in_app`) is not their schedule. Word it by `routine.schedule.offer`, as the
-daily-habit block every other flow carries does. Its moment is right after the
-first finding in the reply that the morning check also reads (searches that
-spent with no sale, a campaign out of budget or off its budget pace, a
-disapproved ad, a drop against the 7-day average, a change nobody asked for),
-tied to that finding as that block words it (it would have caught this on its
-first morning; it only reads; "All clear" or "Needs a look" plus one yes/no
-fix); for any other finding, even one that costs money (a tracking fault, a
-Quality Score problem, a targeting problem), or none, the close, before any
-question the reply ends on, without saying the check would have caught it. If
-the server's `next_step` also asks for a check-in offer, this one answers it —
-never two. A no ends it for this conversation: ask once whether their Claude
-can create scheduled tasks, and record `routine.own_schedule` `unavailable` if
-it cannot, else `declined` — only from Claude, because AdCopilot keeps it for
-the whole workspace and a record made from Cursor or another client would stop
-the offer in their Claude too. On a yes, follow the `adcopilot-daily` skill's
-set-up rather than inventing steps here. Leave it for another day when the
-reply ends on something they must fix first.
+sends only when its `overlays.schedule_offer` is set: its own decision for this
+workspace and this AI client, made when no schedule is reported, the call is
+not a scheduled run and the client is Claude or Claude Code. It reports one
+when `routine.daily.status` is `user_set`, when a scheduled run has checked in
+on two different days (`routine.scheduled_first_seen_at` and
+`routine.scheduled_last_seen_at`), or when `routine.own_schedule` is `saved`,
+`unavailable` or `declined`, and then it sends no `routine.schedule`.
+AdCopilot's own emailed check-in (`routine.daily.status` `in_app`) is not their
+schedule. Word it by `routine.schedule.offer`, as the daily-habit block every
+other flow carries does. Its moment is right after the first finding in the
+reply that the morning check also reads (searches that spent with no sale, a
+campaign out of budget or off its budget pace, a disapproved ad, a drop against
+the 7-day average, a change nobody asked for), tied to that finding as that
+block words it (it would have caught this on its first morning; it only reads;
+"All clear" or "Needs a look" plus one yes/no fix); for any other finding, even
+one that costs money (a tracking fault, a Quality Score problem, a targeting
+problem), or none, the close, before any question the reply ends on, without
+saying the check would have caught it. If the server's `next_step` also asks
+for a check-in offer, this one answers it — never two. A no ends it for this
+conversation: ask once whether their Claude can create scheduled tasks, and
+record `routine.own_schedule` `unavailable` if it cannot, else `declined` —
+only from Claude, because AdCopilot keeps it for the whole workspace and a
+record made from Cursor or another client would stop the offer in their Claude
+too. On a yes, follow the `adcopilot-daily` skill's set-up rather than
+inventing steps here. Leave it for another day when the reply ends on something
+they must fix first.

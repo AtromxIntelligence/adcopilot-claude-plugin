@@ -104,9 +104,9 @@ Worth stating plainly, because it is the question behind most hesitation:
   later) asks before every use of it whatever its settings, and a run with
   nobody there to answer cannot use it; the Claude desktop app may also ask
   every time for it. This plugin pauses or switches on a campaign only with
-  that tool. AdCopilot v2.41.0 also lets a change to a campaign's settings
-  carry a status, and that change follows the client's settings like any other.
-  Only a new campaign is still built paused regardless.
+  that tool, never with a status in a change to the campaign's settings
+  (`update_campaign`), which follows the client's settings like any other
+  change. Only a new campaign is still built paused regardless.
   Never state the approval as unconditional: name the hard stop, because a
   customer who has turned it off deserves to know what they turned off. That
   holds wherever approval comes up — a heading, a parenthesis, a list item:

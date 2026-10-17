@@ -2,17 +2,19 @@ schema_version: "1.1"
 name: habit-offer-untold
 description: >
   The same tenant and command as habit-offer-code (fictional; every value is
-  invented), typed the way a real customer types it: the bare command, with
-  no line saying where they are. Every other habit case says, and the
-  daily-habit block believes what they say, so the tell it falls back on
-  (Claude Code is where `claude mcp list` runs) is only exercised here. The
-  eval harness is Claude Code, so the offer must be worded for Claude Code —
-  a routine made with /schedule — not a claude.ai scheduled task, even though
-  get_org_context reports "surface": "claude", which the server reports for
-  Claude Code too. The claude.ai side of the tell cannot be run in this
-  harness. The check-in itself is habit-offer-chat's to judge; here only the
-  reads that prove it ran are checked deterministically, and the offer is the
-  rubric's.
+  invented), typed the way a real customer types it: the bare command, with no
+  line saying where they are. Every other habit case says, and the daily-habit
+  block believes what they say, so the tell it falls back on (Claude Code is
+  where `claude mcp list` runs) is only exercised here. The eval harness is
+  Claude Code, so the offer must be worded for Claude Code — a routine made with
+  /schedule — not a claude.ai scheduled task, and get_org_context does not say
+  where it is either: for a connection whose client name AdCopilot could not
+  read, v2.41.0 reports "surface": "other" and routine.schedule.offer "both",
+  the one value the block leaves to the tell (a named Claude client gets
+  "claude" or "claude_code"). The claude.ai side of the tell cannot be run in
+  this harness. The check-in itself is habit-offer-chat's to judge; here only
+  the reads that prove it ran are checked deterministically, and the offer is
+  the rubric's.
 tags: [habit]
 runs: 2
 execution:
