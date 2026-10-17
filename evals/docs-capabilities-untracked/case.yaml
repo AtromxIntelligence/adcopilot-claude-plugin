@@ -15,9 +15,12 @@ description: >
   change would wait for the customer's yes with no condition, said conversion
   tracking needed Analytics and Tag Manager connected, and ended on three
   questions. docs-capabilities-routed covers the other hand-off, a counted
-  account handed to adcopilot-review. Here next_step says the installed
-  measurement steps "cover this turn, so follow them" and the playbook's
-  [PLUGIN] section says "follow it"; the docs skill's own rule is graded: a
+  account handed to adcopilot-review. Here next_step and the playbook's
+  [PLUGIN] section are what AdCopilot release/v2.41.0 renders: the
+  measurement steps on a greeting, a request to get started or a question
+  about counting results, anything else answered first and the steps offered
+  after, and the answer is sized at eight reads on this plan with no daily
+  limit. The docs skill's own rule is graded: a
   question about AdCopilot is answered from the one get_org_context call,
   with no account read and no other skill (neither the review nor the
   measurement steps), as one list, ending on exactly one question that

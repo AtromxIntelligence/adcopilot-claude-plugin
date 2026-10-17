@@ -7,17 +7,18 @@ description: >
   reads the server sizes an untracked account's answer at, counted 27 searches
   it could not name, and told the customer "I hit today's read limit for this
   review before listing those searches, so that's one more look-up", a minute
-  after saying the plan had no daily limit. Here `ops_today_cap` is null,
-  `cross_reads.ads_reads_max` is 5 and there is no `reads_left_today`: the
-  number is the size of one answer, not a limit on the day, the plan or the
-  workspace. `full_audit`'s `related_reads` names `analyze_waste`, so an answer
-  that follows the review's sequence has a read left over once its five are
-  spent. What is graded is how that read is spoken of: offered as the next
-  read, never as a limit that was hit. Whether it is made is not graded,
-  because whether related reads should run past the answer's size on such a
-  plan is still an open decision; 0.2.12 keeps the stop and changes the words.
-  `get_org_context`'s next_step, playbook and plugin block are the server's own
-  texts for this state (AdCopilot origin/develop 37bd01de). Tool schemas are
+  after saying the plan had no daily limit. Here `ops_today_cap` is null and
+  there is no `reads_left_today`. From AdCopilot v2.41.0 such a day sizes this
+  answer at eight Google Ads reads, not five (`situations.ads_reads_max`,
+  `roomy_day`): the five the branch names, then up to three related reads.
+  The number is the size of one answer, not a limit on the day, the plan or
+  the workspace. `full_audit`'s `related_reads` names `analyze_waste`; a read
+  can still be left over once the eight are spent. What is graded is how
+  limits are spoken of: a read not made is offered as the next read, never as
+  a limit that was hit. `review-question-first-roomy` grades that the eight
+  are used. `get_org_context`'s next_step, playbook and cross_reads are what
+  AdCopilot release/v2.41.0 renders for this state, and `analyze_search_terms`
+  carries v2.41.0's list of the costliest searches. Tool schemas are
   review-spends-the-depth's.
 tags: [review]
 runs: 3

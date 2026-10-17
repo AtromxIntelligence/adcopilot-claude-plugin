@@ -2,8 +2,9 @@
 type: fixed
 # The deep audit of the same fictional account (every value invented): $1,865
 # over 2026-09-06..2026-10-05, nothing counted. It scored 55 of the 73 checks.
-# The tag check names only a length ("the last 7 days"), as the live server's
-# does, and its seven days end on date_range.end. related_reads names
+# As AdCopilot v2.41.0 words it (#822), the tag check names its seven days
+# (29 Sep to 5 Oct, ending on date_range.end) and the health line counts the
+# checks that gave a result (health.checks_evaluated of checks_total). related_reads names
 # analyze_waste (and conversion_setup_audit), as the live result did in the
 # conversation this case comes from. The case does not grade whether
 # analyze_waste is run: on a five-read answer it may be the read left over, and
@@ -14,6 +15,7 @@ type: fixed
   "depth": "deep",
   "customer_id": "1234567890",
   "currency": "USD",
+  "time_zone": "America/New_York",
   "date_range": {
     "start": "2026-09-06",
     "end": "2026-10-05",
@@ -21,7 +23,9 @@ type: fixed
   },
   "health": {
     "score": 41,
-    "grade": "F"
+    "grade": "F",
+    "checks_evaluated": 55,
+    "checks_total": 73
   },
   "coverage": {
     "checks_in_registry": 73,
@@ -44,7 +48,7 @@ type: fixed
       "severity": "critical",
       "section": "conversion_tracking",
       "title": "Google tag firing",
-      "detail": "2 of your 2 main conversion actions recorded no result in the last 7 days while the account took 141 clicks. That is what a missing or broken tag on the page where the result happens looks like.",
+      "detail": "2 primary action(s) recorded no conversion at all in the 7 days from 29 Sep to 5 Oct while the account took 141 clicks, which is what a tag that is missing or broken on the key page looks like.",
       "impact": {
         "metric": "clicks_without_signal",
         "value": 141,
@@ -101,5 +105,6 @@ type: fixed
       },
       "why": "2 of 2 primary conversion actions recorded nothing in 7 days while the account took 141 clicks; the setup read says what is counted."
     }
-  ]
+  ],
+  "narrative": "**full_audit** \u2014 account 1234567890, 2026-09-06 to 2026-10-05 (30 days), amounts in USD. Health score 41/100 (grade F), from the 55 of 73 checks that gave a result. 1 failing, 2 warning, 52 passing (top 3 listed); 18 checks not evaluated."
 }

@@ -2,18 +2,25 @@
 type: fixed
 # A fictional tenant (every value is invented) on a plan with NO daily limit:
 # plan pro, ops_today_cap null. One Search campaign has spent $1,865 over the
-# last thirty days on 607 clicks and counted nothing, with two primary
-# conversion actions set up, so the server classifies it ADS_ACTIVE_UNTRACKED
-# (actions exist, zero conversions on 50+ clicks) and sizes the answer at five
-# Google Ads reads (situations._ADS_READS_MAX). It is not metered, so
-# cross_reads carries NO reads_left_today: nothing about the day is short.
-# This call carries the plugin marker, so plugin.skill names the measurement
-# skill (the server's owner for this situation) and next_step and the playbook
-# are the server's own texts for that hand-off on a returning workspace
-# (origin/develop 37bd01de). The customer asked how the ads are doing, so the
-# review skill answers and offers the measurement steps after.
-# The daily check-in is the customer's own (user_set, with a scheduled run
-# seen), so no habit offer is owed.
+# thirty days 2026-09-06..2026-10-05 (last_30d names them, as v2.41.0's probe
+# does) on 607 clicks and counted nothing, with two primary conversion actions
+# set up, so the server classifies it ADS_ACTIVE_UNTRACKED (actions exist, zero
+# conversions on 50+ clicks). On a day with no daily limit v2.41.0 sizes that
+# answer at EIGHT Google Ads reads (situations.ads_reads_max, roomy_day,
+# _ADS_READS_MAX_ROOMY_DAY): the five the branch names, then up to three
+# related_reads. It is not metered, so cross_reads carries NO reads_left_today:
+# nothing about the day is short. This call carries the plugin marker, so
+# plugin.skill names the measurement skill (the server's owner for this
+# situation), and next_step, playbook and cross_reads are what AdCopilot
+# release/v2.41.0 renders for this state (situations.next_step,
+# onboarding_skill.render_playbook, situations.cross_reads, run on this
+# fixture's situation and overlays, every showcase already given): the
+# measurement steps are followed on a greeting, a request to get started or a
+# question about counting results, and anything else is answered first, then
+# the steps offered. The customer asked how the ads are doing, so the review
+# skill answers and offers the measurement steps after. The daily check-in is
+# the customer's own (user_set, with a scheduled run seen), so no habit offer
+# is owed.
 ---
 {
   "org": {
@@ -92,6 +99,8 @@ type: fixed
         }
       },
       "last_30d": {
+        "start_date": "2026-09-06",
+        "end_date": "2026-10-05",
         "cost_micros": 1865000000,
         "cost_display": "$1,865",
         "clicks": 607,
@@ -214,11 +223,11 @@ type: fixed
     "draft_waiting": false,
     "routine_pending": false
   },
-  "next_step": "Money is going out and results are not being counted; the AdCopilot measurement steps installed in this assistant cover this turn, so follow them, and suggest no change to how they bid until results are counted. They have been here before, so open with one line on what happened last time.",
-  "playbook": "## [RAILS] The rails \u2014 never broken\n\n1. **Call `get_org_context` first.** Follow its `next_step`, `playbook` and\n   `cross_reads`; never guess a refusal's reason.\n2. **Reads run freely; every change is proposed first,** money both ways,\n   applied only on their yes here, never unattended. Then read back only what\n   its result does not show, say how to undo it, record it, and propose the\n   next finding's fix, until none is worth its money.\n3. **New campaigns are built switched off (PAUSED).** Never call\n   `set_campaign_status` with ENABLED on one you built: it is their money, so\n   it is their switch.\n4. **You can never delete,** except a negative keyword. Pause, never REMOVED.\n5. **Only `get_org_context` says what is connected;** tools load lazily, so a\n   missing tool proves nothing: fetch it, never report a missing permission;\n   unconnected, say what connecting unlocks, invent nothing.\n6. **Never claim what did not happen.** Say when a call failed; nothing is live\n   until it reads as switched on; never say they decided or allowed what they\n   did not say; never report a refusal no call returned.\n7. **Plain language only:** no tool or field name, status word or account\n   number aloud.\n\n## [RECAP] Overlay \u2014 the user is coming back\n\nOpen with two sentences: what you did together last time, and what is due\nnow, then go into the branch below. Never re-introduce yourself, re-ask what\nthe saved profile holds, or repeat the intake. A change not made last time\nis proposed again with today's numbers.\n\nIf the account moved since then \u2014 a campaign switched on, a first result, an\nad switched off by Google \u2014 that is the opening sentence.\n\n## [PLUGIN] The installed skill owns this turn\n\nThe AdCopilot skill adcopilot-measure, installed in this assistant, carries this situation's steps: follow it, inside the rails above and with the reads `cross_reads` names, and do not repeat its steps from here.",
+  "next_step": "Money is going out and results are not being counted; on a greeting alone, a request to get started or a question about counting results, follow the AdCopilot measurement steps installed in this assistant, answer anything else they asked first and then offer those steps, and suggest no change to how they bid until results are counted. They have been here before, so open with one line on what happened last time.",
+  "playbook": "## [RAILS] Never broken\n\n1. **Call `get_org_context` first.** Follow its `next_step` and `cross_reads`; never guess a refusal's cause.\n2. **Reads run freely; every change is proposed first,** money both ways, applied only on their yes here, never unattended; if promised, add: while their AI client asks before each change (in Claude: write tools on Needs approval). Then read back only what its result does not show, say how to undo it, record it, propose the next finding's fix, until none is worth its money.\n3. **Build campaigns switched off (PAUSED).** Never call `set_campaign_status` with ENABLED on one you built: their money, their switch.\n4. **Never delete,** except a negative keyword. Pause, never REMOVED.\n5. **Only `get_org_context` says what is connected;** tools load lazily; a missing tool proves nothing: fetch it, never report a missing permission; unconnected, say what connecting unlocks, invent nothing.\n6. **Never claim what did not happen.** Say when a call failed; nothing is live until it reads switched on; never attribute to them what they did not say; never report a refusal or a limit no call returned.\n7. **Plain words:** no tool or field name, status word or account number aloud.\n\n## [RECAP] Overlay \u2014 the user is coming back\n\nOpen with two sentences: what you did together last time, and what is due\nnow, then go into the branch below. Never re-introduce yourself, re-ask what\nthe saved profile holds, or repeat the intake. A change not made last time\nis proposed again with today's numbers.\n\nIf the account moved since then \u2014 a campaign switched on, a first result, an\nad switched off by Google \u2014 that is the opening sentence.\n\n## [PLUGIN] The installed skill\n\nThe AdCopilot skill adcopilot-measure, installed here, carries this situation's steps. On a greeting alone, a request to get started or the request it is for, follow it, inside the rails, with the reads `cross_reads` names. Asked anything else, answer that first with only the reads it needs, then offer it.",
   "cross_reads": {
     "mode": "situational",
-    "say": "One thing would settle this and it is not connected yet. Analytics would show whether the sign-ups happened and went uncounted, or did not happen at all \u2014 connecting it takes about a minute at https://app.example.invalid/accounts. Until then say plainly that the question is open, and do not guess which it was.",
+    "say": "One thing would settle this and it is not connected yet. Analytics would show whether results actually arrived in the window the money was spent, and whether paid visits produced any \u2014 connecting it takes about a minute at https://app.example.invalid/connect/ga4. Until then say plainly that the question is open, and do not guess which it was.",
     "reads": [],
     "connect": [
       {
@@ -226,17 +235,13 @@ type: fixed
         "connect_url": "https://app.example.invalid/connect/ga4",
         "unlocks": "I can see which clicks turned into enquiries.",
         "answers": "Whether results actually arrived in the window the money was spent, and whether paid visits produced any.",
-        "say": "One thing would settle this and it is not connected yet. Analytics would show whether the sign-ups happened and went uncounted, or did not happen at all \u2014 connecting it takes about a minute at https://app.example.invalid/accounts. Until then say plainly that the question is open, and do not guess which it was."
+        "say": "One thing would settle this and it is not connected yet. Analytics would show whether results actually arrived in the window the money was spent, and whether paid visits produced any \u2014 connecting it takes about a minute at https://app.example.invalid/connect/ga4. Until then say plainly that the question is open, and do not guess which it was."
       }
     ],
     "skipped": [],
-    "ads_reads_max": 5,
+    "ads_reads_max": 8,
     "exempt_ads_left": 0,
-    "exempt_cross_left": {
-      "ga4": 0,
-      "search_console": 0,
-      "gtm": 0
-    },
+    "exempt_cross_left": {},
     "cost_today": 0
   },
   "hints": [

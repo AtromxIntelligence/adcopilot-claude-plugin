@@ -61,12 +61,14 @@ guesses is worse than no report.
    carried the spend and which carried the results. Name the ones doing neither.
 4. **What was paid for and should not have been.** Search terms with cost and
    no conversions, worst first. Group them: a competitor's brand, the wrong
-   product, the wrong language, plainly off-topic. Name the top ones with
-   their cost from any result you hold that lists them: the wasted-spend
-   check's evidence in `full_audit` or `analyze_waste` (G16, each search with
-   its clicks and cost), or a list `analyze_search_terms` returns. When what
-   you hold only counts them, say so, and name a read as the one that shows
-   them only when a `related_reads` entry's `why` says it does.
+   product, the wrong language, plainly off-topic. Name the top ones with their
+   cost from any result you hold that lists them: `analyze_search_terms`'
+   "Costliest search terms with no conversion", or the wasted-spend check's
+   evidence in `full_audit` or `analyze_waste` (G16, each search with its
+   clicks and cost). When that list says no conversion was recorded anywhere in
+   the account, call them the costliest searches, not proven waste, as it does.
+   When what you hold only counts them, say so, and name a read as the one that
+   shows them only when a `related_reads` entry's `why` says it does.
 5. **Whether delivery is held back.** Budgets at their cap every day, and
    anything Google has disapproved or switched off.
 6. **Structure worth saying out loud.** One keyword or one campaign taking
@@ -81,24 +83,19 @@ guesses is worse than no report.
 Call `full_audit` with `depth="deep"` and `days` set to the same window the
 report's period comparison uses, so the two cover the same number of days; say
 that window in the report's first line. End your own `search` reads on the
-account's yesterday, the day before today in the account's time zone (the
-`time_zone` every lens result carries), and say the dates once. That day is not
-always `full_audit`'s `date_range.end`: the server ends its window on yesterday
-in UTC, so for an account east of UTC it can stop a day before the account's
-yesterday, and for one west of UTC, late in the account's day, it can end on the
-account's today, which is not over. Where the two differ, give the audit's own
-dates beside its figures; your own reads already hold the day the audit did not
-reach, and a result on that day goes in the same sentence as the finding it
-bears on. When a finding names a shorter window, say its dates. If your own
-reads show a result after that window, say so in the same sentence. A window a
-finding gives only as a length ends on the result's `date_range.end` unless it
-says otherwise. Pass `depth="deep"` explicitly. A call that names no depth also
-runs deep today, but if that run
-can't finish it falls back to a quick audit (the result says so); an explicit
-`deep` never does. A quick audit scores three of the seventy-three checks over
-the month to date — not an audit, and not what you promised. Deep walks the
-whole registry over the window you ask for, in one read, and says which checks
-it could not evaluate. Give coverage as a count, "N of 73 checks could run",
+`date_range.end` your lens results carry, and say the dates once. AdCopilot ends
+every report window on the account's yesterday, the last full day in the
+account's own time zone (UTC's, when it could not read the zone), so the audit
+and your reads cover the same days. When a finding names a shorter window, say
+its dates. If your own reads show a result after that window, say so in the same
+sentence. A window a finding gives only as a length ends on the result's
+`date_range.end` unless it says otherwise. Pass `depth="deep"` explicitly. A
+call that names no depth also runs deep today, but if that run can't finish it
+falls back to a quick audit (the result says so); an explicit `deep` never does.
+A quick audit scores three of the seventy-three checks over the month to date —
+not an audit, and not what you promised. Deep walks the whole registry over the
+window you ask for, in one read, and says which checks it could not evaluate.
+Give coverage as the count the result gives, "N of 73 checks gave a result",
 never as a percentage next to the count, and give reasons for the rest only in
 the result's own words.
 

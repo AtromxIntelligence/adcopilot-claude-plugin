@@ -15,14 +15,14 @@ Call `get_org_context` (with `source: "claude-plugin/0.2.12"`) first. Send
 this plugin's steps are installed here. A question about AdCopilot itself is
 answered from that one call, plus the documentation site where this file says
 so. Make no Google Ads, Analytics, Search Console or Tag Manager read for it,
-and start no other AdCopilot skill. The answer's `next_step`, `playbook` (a
-section saying an installed skill owns the turn, or that they are coming back,
-included), `cross_reads` and `question_map` describe the account, not this
-question: do not follow them on this turn. Keep from them only a limit
-`next_step` names (look-ups left today, a teammate's login) and the facts
-below. If the customer says yes to the read you offer, that is a new request,
-and the skill that answers it runs then. The answer carries the facts most of
-these questions want:
+and start no other AdCopilot skill. The answer's `next_step`, `playbook` (its
+sections on the installed skill and on a returning customer included),
+`cross_reads` and `question_map` describe the account, not this question: do
+not follow them on this turn, not even their offer of a skill's steps. Keep
+from them only a limit `next_step` names (look-ups left today, a teammate's
+login) and the facts below. If the customer says yes to the read you offer,
+that is a new request, and the skill that answers it runs then. The answer
+carries the facts most of these questions want:
 
 - `org.plan`, `org.ops_today_used`, `org.ops_today_cap`, `org.accounts_cap`,
   `org.trial_days_left`, `org.upgrade_url`
@@ -45,9 +45,9 @@ what AdCopilot may change, with its condition (below); and the plan's look-ups.
 That is the whole answer: never a second list in another grouping, and never
 come back later in the same reply to answer it again. One fact from
 `get_org_context`'s 30-day summary (an account's `last_30d` in `ads_probe`,
-with its dates when `last_30d` carries them) may be the reason for the offer
-that ends the reply. Anything that needs a read is that offer, not part of the
-answer.
+with the dates it names, `start_date` to `end_date`) may be the reason for the
+offer that ends the reply. Anything that needs a read is that offer, not part
+of the answer.
 
 If a tool seems missing, that proves nothing on its own: tool lists are cached
 by the client and can be out of date. `get_org_context` is the only thing that
@@ -90,16 +90,19 @@ Worth stating plainly, because it is the question behind most hesitation:
   AdCopilot proposes a change and the client asks before it runs — while the
   write tools stay on **Needs approval** in claude.ai, Cowork and the desktop
   app, or, in Claude Code, while it still prompts for them: the tools are not
-  allowlisted and the session is not in `auto` or `bypassPermissions` mode. Take
-  that question away — allowlist the tools, or run in an auto-approving mode or
-  an unattended routine — and changes to things that already exist, a budget or
-  a switched-on campaign among them, apply without being asked. Only a new
-  campaign is still built paused regardless. Never state the approval as
-  unconditional: name the condition, because a customer who has turned it off
-  deserves to know what they turned off. That holds wherever approval comes
-  up — a heading, a parenthesis, a list item: write that every change waits
-  for their yes only with its condition beside it, while the write tools stay
-  on **Needs approval**.
+  allowlisted and the session is not in `auto` or `bypassPermissions` mode.
+  Take that question away — allowlist the tools, or run in an auto-approving
+  mode or an unattended routine — and changes to things that already exist, a
+  budget or a switched-on campaign among them, apply without being asked. The
+  one exception is pausing or switching on a campaign: Claude Code (version
+  2.1.214 or later) asks before every one whatever its settings, and a run with
+  nobody there to answer cannot make it; the Claude desktop app may also ask
+  every time for it. Only a new campaign is still built paused regardless.
+  Never state the approval as unconditional: name the condition, because a
+  customer who has turned it off deserves to know what they turned off. That
+  holds wherever approval comes up — a heading, a parenthesis, a list item:
+  write that every change waits for their yes only with its condition beside
+  it, while the write tools stay on **Needs approval**.
 - A campaign AdCopilot builds is created paused. Switching it on is the
   customer's click, in Google Ads.
 - It reads only the ad accounts switched on in the workspace, and never sees a

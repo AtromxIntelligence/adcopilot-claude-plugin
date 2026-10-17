@@ -3,11 +3,11 @@ name: audit
 description: Audit the account — the connector's full check list, then this month's budget pacing — and keep what is only newness out of the findings.
 ---
 
-No skill: `full_audit` and `budget_pacing` explain themselves. Run `full_audit`
-at `depth: deep`, then `budget_pacing`. Separate real findings from newness: a
-new account scores badly for reasons that are only its age — keywords with no
-impressions yet, a Quality Score of 0 because Google has not rated the keyword
-yet, a bidding strategy still learning.
+No skill: `full_audit` and `budget_pacing` explain themselves. `get_org_context`
+first, then `full_audit` at `depth: deep`, then `budget_pacing`. Separate real
+findings from newness: a new account scores badly for reasons that are only its
+age — keywords with no impressions yet, a Quality Score of 0 because Google has
+not rated the keyword yet, a bidding strategy still learning.
 
 `full_audit` ends with `related_reads` when a section failed: run the ones that
 bear on the audit, at most three, then answer from all you hold. A lens result

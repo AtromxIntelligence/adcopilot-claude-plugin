@@ -1,18 +1,24 @@
 ---
 type: fixed
-# A fictional tenant (every value is invented), returning, on a plan with no
-# daily limit (pro, ops_today_cap null). Google Ads and Search Console are
-# connected, Analytics and Tag Manager are not. One of three Search campaigns
-# is on and has spent $341 over the last thirty days on 46 clicks with nothing
-# counted; under the server's 50-click line an account with a primary action
-# and no result stays ADS_ACTIVE_TRACKED (situations._untracked_subcase), so
-# this is a state the live server reaches. Every server text here is the live
-# one for that state, on a call that carries the plugin marker (origin/develop
-# 37bd01de): plugin.skill names adcopilot-review; next_step is the review
-# hand-off plus the returning sentence; the playbook is [RAILS], [RECAP] and
-# [PLUGIN]; and cross_reads is Search Console's first showing, which says to
-# "make every read below". All of it describes the account. The question is
-# about AdCopilot itself, so the docs skill reads none of it as an order.
+# A fictional tenant (every value is invented): returning, on a plan with no
+# daily limit (pro, ops_today_cap null). One of three Search campaigns is on
+# and has spent $341 over the thirty days last_30d names
+# (2026-09-15..2026-10-14) on 46 clicks with nothing counted; under the
+# server's 50-click line an account with a primary action and no result stays
+# ADS_ACTIVE_TRACKED (situations._untracked_subcase), so the server hands it to
+# the review steps.
+# Search Console is connected and has not had its first showing, so cross_reads
+# is a showcase that names one Search Console read. next_step, playbook and
+# cross_reads are what AdCopilot release/v2.41.0 renders for this state
+# (situations.next_step, onboarding_skill.render_playbook,
+# situations.cross_reads, on this fixture's situation and overlays):
+# plugin.skill names adcopilot-review; next_step follows the review steps on a
+# greeting, a request to get started or a question about how the ads are
+# doing, answers anything else first and then offers them; cross_reads says
+# "On a greeting alone or a request to get started, ... make every read below"
+# and "Asked anything else, answer that first with only the reads it needs,
+# then offer the rest." The question is about AdCopilot itself, so the docs
+# skill reads none of it as an order.
 ---
 {
   "org": {
@@ -67,8 +73,9 @@ type: fixed
       "connect_url": "https://app.example.invalid/connect/search_console",
       "sites": [
         {
-          "siteUrl": "sc-domain:example-bakery.invalid",
-          "permissionLevel": "siteOwner"
+          "resource_id": "sc-domain:example-bakery.invalid",
+          "display_name": "example-bakery.invalid",
+          "enabled": true
         }
       ]
     },
@@ -97,6 +104,8 @@ type: fixed
         }
       },
       "last_30d": {
+        "start_date": "2026-09-15",
+        "end_date": "2026-10-14",
         "cost_micros": 341000000,
         "cost_display": "$341",
         "clicks": 46,
@@ -219,19 +228,19 @@ type: fixed
     "draft_waiting": false,
     "routine_pending": false
   },
-  "next_step": "The account is running and results are being counted; the AdCopilot review steps installed in this assistant cover this answer, so follow them, and suggest no bidding change in the two to three weeks after anything went live. They have been here before, so open with one line on what happened last time.",
-  "playbook": "## [RAILS] The rails \u2014 never broken\n\n1. **Call `get_org_context` first.** Follow its `next_step`, `playbook` and\n   `cross_reads`; never guess a refusal's reason.\n2. **Reads run freely; every change is proposed first,** money both ways,\n   applied only on their yes here, never unattended. Then read back only what\n   its result does not show, say how to undo it, record it, and propose the\n   next finding's fix, until none is worth its money.\n3. **New campaigns are built switched off (PAUSED).** Never call\n   `set_campaign_status` with ENABLED on one you built: it is their money, so\n   it is their switch.\n4. **You can never delete,** except a negative keyword. Pause, never REMOVED.\n5. **Only `get_org_context` says what is connected;** tools load lazily, so a\n   missing tool proves nothing: fetch it, never report a missing permission;\n   unconnected, say what connecting unlocks, invent nothing.\n6. **Never claim what did not happen.** Say when a call failed; nothing is live\n   until it reads as switched on; never say they decided or allowed what they\n   did not say; never report a refusal no call returned.\n7. **Plain language only:** no tool or field name, status word or account\n   number aloud.\n\n## [RECAP] Overlay \u2014 the user is coming back\n\nOpen with two sentences: what you did together last time, and what is due\nnow, then go into the branch below. Never re-introduce yourself, re-ask what\nthe saved profile holds, or repeat the intake. A change not made last time\nis proposed again with today's numbers.\n\nIf the account moved since then \u2014 a campaign switched on, a first result, an\nad switched off by Google \u2014 that is the opening sentence.\n\n## [PLUGIN] The installed skill owns this turn\n\nThe AdCopilot skill adcopilot-review, installed in this assistant, carries this situation's steps: follow it, inside the rails above and with the reads `cross_reads` names, and do not repeat its steps from here.",
+  "next_step": "The account is running and results are being counted; on a greeting alone, a request to get started or a question about how the ads are doing, follow the AdCopilot review steps installed in this assistant, answer anything else they asked first and then offer those steps, and suggest no bidding change in the two to three weeks after anything went live. They have been here before, so open with one line on what happened last time.",
+  "playbook": "## [RAILS] Never broken\n\n1. **Call `get_org_context` first.** Follow its `next_step` and `cross_reads`; never guess a refusal's cause.\n2. **Reads run freely; every change is proposed first,** money both ways, applied only on their yes here, never unattended; if promised, add: while their AI client asks before each change (in Claude: write tools on Needs approval). Then read back only what its result does not show, say how to undo it, record it, propose the next finding's fix, until none is worth its money.\n3. **Build campaigns switched off (PAUSED).** Never call `set_campaign_status` with ENABLED on one you built: their money, their switch.\n4. **Never delete,** except a negative keyword. Pause, never REMOVED.\n5. **Only `get_org_context` says what is connected;** tools load lazily; a missing tool proves nothing: fetch it, never report a missing permission; unconnected, say what connecting unlocks, invent nothing.\n6. **Never claim what did not happen.** Say when a call failed; nothing is live until it reads switched on; never attribute to them what they did not say; never report a refusal or a limit no call returned.\n7. **Plain words:** no tool or field name, status word or account number aloud.\n\n## [RECAP] Overlay \u2014 the user is coming back\n\nOpen with two sentences: what you did together last time, and what is due\nnow, then go into the branch below. Never re-introduce yourself, re-ask what\nthe saved profile holds, or repeat the intake. A change not made last time\nis proposed again with today's numbers.\n\nIf the account moved since then \u2014 a campaign switched on, a first result, an\nad switched off by Google \u2014 that is the opening sentence.\n\n## [PLUGIN] The installed skill\n\nThe AdCopilot skill adcopilot-review, installed here, carries this situation's steps. On a greeting alone, a request to get started or the request it is for, follow it, inside the rails, with the reads `cross_reads` names. Asked anything else, answer that first with only the reads it needs, then offer it.",
   "cross_reads": {
     "mode": "showcase",
-    "say": "This is the first look at what Search Console adds to the Google Ads answer, so make every read below \u2014 it is on us, not their daily allowance. Say which property or site you read and what each read showed, in one line each, then give the answer the Ads account alone could not. They have not connected Analytics and Tag Manager. Say what each would add in ONE short line at the end: Analytics \u2014 then I can see which clicks turned into enquiries; Tag Manager \u2014 then I can put the Analytics tag and conversion tags on the site without anyone editing its code. Each takes about a minute at https://app.example.invalid/accounts. Say nothing about what is in them: nothing has been read. Mention it this once and move on.",
+    "say": "On a greeting alone or a request to get started, this is the first look at what Search Console adds to the Google Ads answer, so make every read below \u2014 it is on us, not their daily allowance. Say which property or site you read and what each read showed, in one line each, then give the answer the Ads account alone could not. Asked anything else, answer that first with only the reads it needs, then offer the rest. They have not connected Analytics and Tag Manager. Say what each would add in ONE short line at the end: Analytics \u2014 then I can see which clicks turned into enquiries; Tag Manager \u2014 then I can put the Analytics tag and conversion tags on the site without anyone editing its code. Each takes about a minute at https://app.example.invalid/connect/ga4. Say nothing about what is in them: nothing has been read. Mention it this once and move on.",
     "reads": [
       {
         "product": "search_console",
         "tool": "gsc_search_analytics",
         "args": {
           "siteUrl": "sc-domain:example-bakery.invalid",
-          "start_date": "2026-09-14",
-          "end_date": "2026-10-11",
+          "start_date": "2026-09-15",
+          "end_date": "2026-10-12",
           "dimensions": [
             "query",
             "country"
@@ -267,9 +276,7 @@ type: fixed
     "ads_reads_max": 6,
     "exempt_ads_left": 0,
     "exempt_cross_left": {
-      "ga4": 1,
-      "search_console": 1,
-      "gtm": 1
+      "search_console": 4
     },
     "cost_today": 0
   },

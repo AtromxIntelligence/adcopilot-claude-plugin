@@ -200,33 +200,41 @@ LEFT_OVER_READ = ("If this answer's reads are spent before a related read, "
 # days (7-13 Oct)" from its own search next to a tag finding whose seven days
 # ended on 12 Oct, and gave coverage as "73% of its 73 checks".
 #
-# Fix round 1: the reads end on the account's own yesterday, not on
-# `full_audit`'s `date_range.end`. The server ends that window on yesterday in
-# UTC (`gaql._window`, used by `_context.build_context`, origin/develop
-# 37bd01de), and the conversation ran at 20:55 UTC on 13 Oct, 02:25 on 14 Oct
-# in India: the audit's window ended on 12 Oct and the account's only result
-# came on 13 Oct. Tied to `date_range.end`, the review would have dropped that
-# result and its "result after that window" sentence could never have fired.
-DATE_END_RULE = ("End your own `search` reads on the account's yesterday, the "
-                 "day before today in the account's time zone (the `time_zone` "
-                 "every lens result carries), and say the dates once.")
-UTC_WINDOW_RULE = ("That day is not always `full_audit`'s `date_range.end`: the "
-                   "server ends its window on yesterday in UTC, so for an "
-                   "account east of UTC it can stop a day before the account's "
-                   "yesterday, and for one west of UTC, late in the account's "
-                   "day, it can end on the account's today, which is not over.")
-MISSED_DAY_RULE = ("Where the two differ, give the audit's own dates beside its "
-                   "figures;")
-# What 0.2.12's first text said, which tied the reads to the UTC day.
+# Fix round 1 ended the reads on the account's own yesterday, because the
+# server ended `full_audit`'s window on yesterday in UTC: the conversation ran
+# at 20:55 UTC on 13 Oct, 02:25 on 14 Oct in India, the audit's window ended on
+# 12 Oct and the account's only result came on 13 Oct.
+#
+# v2.41 alignment: AdCopilot v2.41.0 (D185, ONE CLOCK, #832) ends every report
+# window on the account's last full day in its own time zone
+# (`gaql.report_today`, `gaql._window(time_zone=...)` in
+# `_context.build_context`; UTC's day only when the customer read gave no
+# zone). So `date_range.end` IS the account's yesterday, and the reads end on
+# it: one set of dates, read off the result rather than worked out from a
+# clock the model may not hold (an eval's fixtures are dated, its run is not).
+DATE_END_RULE = ("End your own `search` reads on the `date_range.end` your lens "
+                 "results carry, and say the dates once.")
+ONE_CLOCK_RULE = ("AdCopilot ends every report window on the account's "
+                  "yesterday, the last full day in the account's own time zone "
+                  "(UTC's, when it could not read the zone), so the audit and "
+                  "your reads cover the same days.")
+# What earlier 0.2.12 text said: first the UTC day, then the account's day
+# against a UTC audit window, which v2.41.0 no longer has.
 STALE_DATE_RULE = re.compile(r"never on a date you work out yourself|"
                              r"End your own `search` reads on `full_audit`'s|"
-                             r"fourteen days ending on `full_audit`'s")
+                             r"fourteen days ending on `full_audit`'s|"
+                             r"yesterday in UTC|east of UTC|west of UTC|"
+                             r"the day the audit did not reach|"
+                             r"which AdCopilot works out in UTC")
 FINDING_WINDOW_RULE = ("When a finding names a shorter window, say its dates. "
                        "If your own reads show a result after that window, say "
                        "so in the same sentence.")
-COVERAGE_RULE = ('Give coverage as a count, "N of 73 checks could run", never as '
-                 "a percentage next to the count, and give reasons for the rest "
-                 "only in the result's own words.")
+# v2.41 alignment: the result states the count itself (#822: "from the 53 of
+# 73 checks that gave a result", `envelope.health_counts`), in words chosen so
+# a quick audit's 70 untried checks do not read as stopped ("could run" would).
+COVERAGE_RULE = ('Give coverage as the count the result gives, "N of 73 checks '
+                 'gave a result", never as a percentage next to the count, and '
+                 "give reasons for the rest only in the result's own words.")
 
 # 0.2.12: the docs skill answers a question about AdCopilot from the one
 # get_org_context call. On 2026-10-14 "walk me through what it can do" got a
@@ -1819,8 +1827,10 @@ class ReadCeiling(unittest.TestCase):
     the reason itself: "I hit today's read limit". Every surface that names
     the ceiling now says what it is, when the day really is short, and that a
     read left over is offered, not announced as a limit. The stop itself is
-    kept: whether related reads should run past it on uncapped plans is a
-    separate decision."""
+    kept. AdCopilot v2.41.0 answered the open question on the server's side:
+    on a day with no daily limit (or one at least Scale's) an untracked
+    account's answer is sized at eight reads instead of five, the five the
+    branch names and up to three related reads (situations.ads_reads_max)."""
 
     MENTIONS = re.compile(r"ads_reads_max|\bceiling\b|\bread cap\b", re.I)
     SURFACES = [
@@ -2038,14 +2048,13 @@ class ApprovalCondition(unittest.TestCase):
 
 
 class DatesAndCounts(unittest.TestCase):
-    """0.2.12: the review and the auditor end their own reads on the account's
-    yesterday, in the account's time zone, and say the dates once; where
-    `full_audit`'s UTC window ends on another day they give the audit's own
-    dates beside its figures, and a result on the day the audit did not reach
-    goes in the same sentence as the finding; a finding with a shorter window
-    is given its dates; and coverage is a count of the checks that could run,
-    with reasons only in the result's own words. `/adcopilot:weekly` dates its
-    own two weeks and any other window the same way."""
+    """0.2.12, aligned with AdCopilot v2.41.0: the review and the auditor end
+    their own reads on the `date_range.end` their lens results carry, which
+    v2.41.0 makes the account's own yesterday, and say the dates once; a
+    finding with a shorter window is given its dates; and coverage is the
+    count the result gives of the checks that gave a result, with reasons
+    only in the result's own words. `/adcopilot:weekly` dates its own two
+    weeks and any other window the same way."""
 
     REVIEW = "skills/adcopilot-review/SKILL.md"
     AUDITOR = "agents/adcopilot-auditor.md"
@@ -2056,10 +2065,9 @@ class DatesAndCounts(unittest.TestCase):
             with self.subTest(file=rel):
                 text = flat(rel)
                 self.assertEqual(text.count(DATE_END_RULE), 1)
-                self.assertEqual(text.count(UTC_WINDOW_RULE), 1)
-                self.assertEqual(text.count(MISSED_DAY_RULE), 1)
-                self.assertIn("a result on that day goes in the same sentence "
-                              "as the finding it bears on", text)
+                self.assertEqual(text.count(ONE_CLOCK_RULE), 1)
+                # The date rule comes before the reason it holds.
+                self.assertLess(text.index(DATE_END_RULE), text.index(ONE_CLOCK_RULE))
 
     def test_nothing_ties_the_reads_to_the_utc_day(self):
         for rel in model_read_files():
@@ -2073,13 +2081,10 @@ class DatesAndCounts(unittest.TestCase):
                     seq.index("2. **Where the money went")]
         self.assertIn("the fourteen days ending on the account's yesterday", step1)
         self.assertIn(DATE_END_RULE, step1)
-        self.assertIn(UTC_WINDOW_RULE, step1)
+        self.assertIn(ONE_CLOCK_RULE, step1)
         self.assertIn(FINDING_WINDOW_RULE, step1)
         self.assertNotIn("for the last fourteen days", step1)
-        # The rule about a result after a finding's window comes after the
-        # sentence that makes the reads reach past the audit's last day, so it
-        # can fire.
-        self.assertLess(step1.index(UTC_WINDOW_RULE), step1.index(FINDING_WINDOW_RULE))
+        self.assertLess(step1.index(ONE_CLOCK_RULE), step1.index(FINDING_WINDOW_RULE))
 
     def test_a_shorter_window_is_dated(self):
         for rel in (self.REVIEW, self.AUDITOR, self.WEEKLY):
@@ -2091,6 +2096,9 @@ class DatesAndCounts(unittest.TestCase):
             with self.subTest(file=rel):
                 self.assertEqual(flat(rel).count(COVERAGE_RULE), 1)
         self.assertNotIn("say that number rather than", flat(self.REVIEW))
+        for rel in model_read_files():
+            with self.subTest(file=rel):
+                self.assertNotIn("checks could run", flat(rel))
 
     def test_the_weekly_says_its_dates_once(self):
         self.assertIn("Say the two weeks' dates once, in the first line.",
@@ -2133,6 +2141,24 @@ class WasteList(unittest.TestCase):
     def test_a_count_alone_is_said_as_a_count(self):
         self.assertIn("When what you hold only counts them", self.step3())
 
+    def test_the_costliest_list_is_named_and_its_caveat_kept(self):
+        # v2.41 alignment (#820): `analyze_search_terms` returns O-NEG-TOP,
+        # "Costliest search terms with no conversion", every zero-conversion
+        # search over the click floor ranked by cost; with nothing recorded
+        # anywhere in the account its sentence says they are "the searches
+        # that cost the most, not proven waste".
+        step3 = self.step3()
+        self.assertIn('"Costliest search terms with no conversion"', step3)
+        self.assertIn("not proven waste", step3)
+        auditor = flat(self.AUDITOR)
+        self.assertIn('"Costliest search terms with no conversion"', auditor)
+        self.assertIn("not proven waste", auditor)
+        for rel in ("commands/daily.md", "commands/negatives.md"):
+            with self.subTest(file=rel):
+                self.assertIn("Costliest search terms with no conversion", flat(rel))
+        self.assertNotIn("into negative-keyword candidates by theme, which is a "
+                         "different job", flat(self.REVIEW))
+
     def test_another_read_only_when_its_why_says_it_shows_them(self):
         step3 = self.step3()
         self.assertIn("Offer a read for searches no result you hold names only "
@@ -2171,11 +2197,15 @@ class DocsAnswersFromTheOneCall(unittest.TestCase):
 
     def test_it_follows_none_of_the_accounts_steps_on_this_turn(self):
         text = self.text()
-        self.assertIn("The answer's `next_step`, `playbook` (a section saying an "
-                      "installed skill owns the turn, or that they are coming "
-                      "back, included), `cross_reads` and `question_map` "
-                      "describe the account, not this question: do not follow "
-                      "them on this turn.", text)
+        # v2.41 alignment (#829): the playbook's section is "[PLUGIN] The
+        # installed skill" and no longer says the skill owns the turn; it and
+        # next_step answer a question first and offer the steps after.
+        self.assertIn("The answer's `next_step`, `playbook` (its sections on the "
+                      "installed skill and on a returning customer included), "
+                      "`cross_reads` and `question_map` describe the account, "
+                      "not this question: do not follow them on this turn, not "
+                      "even their offer of a skill's steps.", text)
+        self.assertNotIn("owns the turn", text)
         self.assertIn("Keep from them only a limit `next_step` names", text)
 
     def test_the_capabilities_answer_is_one_list(self):
@@ -2195,7 +2225,10 @@ class DocsAnswersFromTheOneCall(unittest.TestCase):
     def test_one_fact_may_be_the_reason_for_the_offer(self):
         can = " ".join((section(read(self.DOCS), "## What AdCopilot can do") or "").split())
         self.assertIn("One fact from `get_org_context`'s 30-day summary", can)
-        self.assertIn("with its dates when `last_30d` carries them", can)
+        # v2.41 alignment (#821): `last_30d` names its window whenever it
+        # was read (`context_probe._apply`, `start_date` and `end_date`).
+        self.assertIn("with the dates it names, `start_date` to `end_date`", can)
+        self.assertNotIn("when `last_30d` carries them", can)
 
     def test_it_ends_on_exactly_one_question(self):
         nxt = " ".join((section(read(self.DOCS), "## What is next") or "").split())
@@ -2276,21 +2309,38 @@ class ReleaseNoteAndMarker(unittest.TestCase):
 
 # The server's own hand-off text for a running, counted account (AdCopilot
 # situations._PLUGIN_STEP["adcopilot-review"]) and its returning-customer
-# sentence (_RETURNING_SENTENCE), both on origin/develop 37bd01de.
+# sentence (_RETURNING_SENTENCE), as release/v2.41.0 words them (#829: the
+# steps are followed on a greeting, a request to get started or the request
+# they are for, and anything else is answered first, then the steps offered).
 SERVER_REVIEW_STEP = ("The account is running and results are being counted; "
-                      "the AdCopilot review steps installed in this assistant "
-                      "cover this answer, so follow them, and suggest no "
-                      "bidding change in the two to three weeks after anything "
-                      "went live.")
+                      "on a greeting alone, a request to get started or a "
+                      "question about how the ads are doing, follow the "
+                      "AdCopilot review steps installed in this assistant, "
+                      "answer anything else they asked first and then offer "
+                      "those steps, and suggest no bidding change in the two "
+                      "to three weeks after anything went live.")
 SERVER_RETURNING = ("They have been here before, so open with one line on what "
                     "happened last time.")
 # The hand-off for an account spending with nothing counted
-# (situations._PLUGIN_STEP["adcopilot-measure"], origin/develop 37bd01de):
-# what the real turn's get_org_context carried (skill=adcopilot-measure).
+# (situations._PLUGIN_STEP["adcopilot-measure"], release/v2.41.0): the real
+# turn's get_org_context carried skill=adcopilot-measure, and v2.41.0 words
+# that hand-off so a question is answered first.
 SERVER_MEASURE_STEP = ("Money is going out and results are not being counted; "
-                       "the AdCopilot measurement steps installed in this "
-                       "assistant cover this turn, so follow them, and suggest "
-                       "no change to how they bid until results are counted.")
+                       "on a greeting alone, a request to get started or a "
+                       "question about counting results, follow the AdCopilot "
+                       "measurement steps installed in this assistant, answer "
+                       "anything else they asked first and then offer those "
+                       "steps, and suggest no change to how they bid until "
+                       "results are counted.")
+# The playbook section an installed skill gets (onboarding_skill
+# ._PLUGIN_SECTION, release/v2.41.0), with the skill named.
+SERVER_PLUGIN_SECTION = ("## [PLUGIN] The installed skill\n\n"
+                         "The AdCopilot skill {skill}, installed here, carries "
+                         "this situation's steps. On a greeting alone, a request "
+                         "to get started or the request it is for, follow it, "
+                         "inside the rails, with the reads `cross_reads` names. "
+                         "Asked anything else, answer that first with only the "
+                         "reads it needs, then offer it.")
 
 
 def never_grader(case_text, tool, needle=None):
@@ -2330,8 +2380,12 @@ class RealTurnDocsCase(unittest.TestCase):
         self.assertEqual(cross["mode"], "situational")
         self.assertEqual(cross["reads"], [])
         self.assertEqual([c["product"] for c in cross["connect"]], ["ga4"])
-        self.assertEqual(cross["ads_reads_max"], 5)
+        # v2.41.0: an untracked account on a day with no daily limit is sized
+        # at eight (situations.ads_reads_max, roomy_day).
+        self.assertEqual(cross["ads_reads_max"], 8)
         self.assertNotIn("reads_left_today", cross)
+        self.assertIn(SERVER_PLUGIN_SECTION.format(skill="adcopilot-measure"),
+                      ctx["playbook"])
         self.assertEqual(ctx["org"]["plan"], "pro")
         self.assertIsNone(ctx["org"]["ops_today_cap"])
         products = ctx["products"]
@@ -2403,8 +2457,10 @@ class NewEvalCases(unittest.TestCase):
         self.assertEqual(ctx["org"]["plan"], "pro")
         self.assertIsNone(ctx["org"]["ops_today_cap"])
         self.assertEqual(ctx["situation"], "ADS_ACTIVE_UNTRACKED")
-        self.assertEqual(ctx["cross_reads"]["ads_reads_max"], 5)
+        # v2.41.0 sizes this answer at eight on a day with no daily limit.
+        self.assertEqual(ctx["cross_reads"]["ads_reads_max"], 8)
         self.assertNotIn("reads_left_today", ctx["cross_reads"])
+        self.assertEqual(ctx["next_step"], SERVER_MEASURE_STEP + " " + SERVER_RETURNING)
         audit = mock(self.UNCAPPED, "full_audit")
         self.assertIn("analyze_waste", [r["tool"] for r in audit["related_reads"]])
 
@@ -2466,7 +2522,16 @@ class NewEvalCases(unittest.TestCase):
         for part in ("[RAILS]", "[RECAP]", "[PLUGIN]", "adcopilot-review"):
             with self.subTest(part=part):
                 self.assertIn(part, ctx["playbook"])
-        self.assertIn("make every read below", ctx["cross_reads"]["say"])
+        say = ctx["cross_reads"]["say"]
+        self.assertIn("make every read below", say)
+        # v2.41.0 (#829): the demonstration is for a greeting or a request to
+        # get started; anything else is answered first.
+        self.assertTrue(say.startswith("On a greeting alone or a request to get "
+                                       "started, "), say[:80])
+        self.assertIn("Asked anything else, answer that first with only the "
+                      "reads it needs, then offer the rest.", say)
+        self.assertIn(SERVER_PLUGIN_SECTION.format(skill="adcopilot-review"),
+                      ctx["playbook"])
         probe = next(v for k, v in ctx["ads_probe"].items() if k.isdigit())
         self.assertGreater(probe["last_30d"]["cost_micros"], 0)
         self.assertEqual(probe["last_30d"]["conversions"], 0)
@@ -2524,6 +2589,161 @@ class NewEvalCases(unittest.TestCase):
             with self.subTest(said=said):
                 self.assertNotRegex(said, rx)
 
+
+
+class V241Alignment(unittest.TestCase):
+    """0.2.12 aligned with AdCopilot v2.41.0 (release/v2.41.0, PR #843): the
+    plugin's text and its newest eval fixtures say what that release does.
+
+    - #831: `set_campaign_status` is served with
+      `_meta["anthropic/requiresUserInteraction"]`, so Claude Code (2.1.214 or
+      later) asks before every pause or switch-on whatever its settings, and a
+      run with nobody to answer cannot make one. PRODUCT-FACTS: say it of
+      Claude Code with its version and of that tool alone; of the desktop app
+      no more than that it "may also ask every time for this tool".
+    - #827: a first call that skipped get_org_context can carry a note (once
+      its switch is on), so every surface opens with get_org_context.
+    - #821: the assistant reports no limit no call returned: no surface calls
+      the answer's size a read cap.
+    - #829, #832, #820: the cases that grade a question answered first on a
+      roomy day with eight reads, one set of dates on the account's own
+      yesterday, and the costliest searches named.
+    - #839: nothing here offers a developer token of the customer's own."""
+
+    DOCS = "skills/adcopilot-docs/SKILL.md"
+    QUESTION = "review-question-first-roomy"
+    DATES = "review-account-day-named-searches"
+    UNCAPPED = "review-uncapped-no-limit-words"
+    LENSES = ("full_audit", "analyze_search_terms", "analyze_waste",
+              "conversion_setup_audit", "change_history")
+
+    def test_the_one_tool_claude_code_always_asks_about(self):
+        exception = ("pausing or switching on a campaign: Claude Code (version "
+                     "2.1.214 or later) asks before every one")
+        for rel in ("README.md", self.DOCS):
+            with self.subTest(file=rel):
+                text = flat(rel)
+                self.assertIn(exception, text)
+                self.assertIn("a run with nobody there to answer cannot make it",
+                              text)
+                self.assertIn("the Claude desktop app may also ask every time", text)
+        morning = " ".join((section(read("README.md"),
+                                    "### Every morning, without asking") or "").split())
+        self.assertIn("so Claude Code (version 2.1.214 or later) will not do it "
+                      "with nobody there to answer", morning)
+
+    def test_every_surface_opens_with_get_org_context(self):
+        self.assertIn("`get_org_context` first, then `full_audit` at `depth: "
+                      "deep`, then `budget_pacing`.", flat("commands/audit.md"))
+
+    def test_no_surface_calls_the_answers_size_a_cap(self):
+        for rel in model_read_files():
+            with self.subTest(file=rel):
+                self.assertNotIn("read cap", flat(rel))
+        desc = re.search(r"^description: (.+)$",
+                         frontmatter(read("commands/daily.md")), re.M).group(1)
+        self.assertIn("as far as the reads AdCopilot sizes for one answer allow",
+                      desc)
+
+    def test_no_developer_token_of_their_own_is_offered(self):
+        own = re.compile(r"developer token|bring[- ]your[- ]own|own (?:API )?token|"
+                         r"\bBYO\b", re.I)
+        for rel in (["README.md", ".claude-plugin/plugin.json",
+                     ".claude-plugin/marketplace.json"] + model_read_files()):
+            with self.subTest(file=rel):
+                found = own.search(read(rel))
+                self.assertIsNone(found, found and found.group(0))
+
+    def test_the_release_note_puts_the_server_first(self):
+        notes = section(read("README.md"), "## AdCopilot version") or ""
+        note = " ".join(notes[notes.find("**0.2.12 ("):].split("\n\n", 1)[0].split())
+        self.assertIn("true against AdCopilot v2.41.0, which must be live before "
+                      "this version is published", note)
+        self.assertIn("so that release goes out first", note)
+        self.assertNotIn("no server release has to come first", note)
+        self.assertIn("twenty-eight cases across the suite", flat("README.md"))
+
+    def test_the_question_first_case(self):
+        ctx = mock(self.QUESTION, "get_org_context")
+        self.assertEqual(ctx, mock(self.UNCAPPED, "get_org_context"))
+        self.assertEqual(ctx["situation"], "ADS_ACTIVE_UNTRACKED")
+        self.assertEqual(ctx["plugin"]["skill"], "adcopilot-measure")
+        self.assertIsNone(ctx["org"]["ops_today_cap"])
+        self.assertEqual(ctx["cross_reads"]["ads_reads_max"], 8)
+        self.assertEqual(ctx["next_step"], SERVER_MEASURE_STEP + " " + SERVER_RETURNING)
+        text = read("evals/%s/case.yaml" % self.QUESTION)
+        self.assertIn("tags: [review]\n", text)
+        self.assertTrue(never_grader(text, "Skill", "adcopilot-measure"))
+        self.assertIn("adcopilot-review", grader_block(text, "skill-fired"))
+        pattern, flags = grader(self.QUESTION, "makes-more-than-five-google-ads-reads")
+        rx = re.compile(pattern, flags)
+        mcp = "mcp__plugin_adcopilot_adcopilot__"
+
+        def log(tools):
+            return json.dumps([{"tool": mcp + name, "input": {}} for name in tools])
+
+        five = ["get_org_context", "full_audit", "search", "analyze_search_terms",
+                "budget_pacing", "conversion_setup_audit", "gsc_search_analytics"]
+        self.assertIsNone(rx.search(log(five)))
+        self.assertIsNotNone(rx.search(log(five + ["analyze_waste"])))
+        self.assertEqual(grader(self.QUESTION, "no-limit-words"),
+                         grader(self.UNCAPPED, "no-limit-words"))
+        top = mock(self.QUESTION, "analyze_search_terms")["findings"][0]
+        self.assertEqual(top["title"], "Costliest search terms with no conversion")
+        self.assertIn("not proven waste", top["detail"])
+        self.assertEqual(top["recommended_actions"], [])
+
+    def test_the_account_day_case(self):
+        ctx = mock(self.DATES, "get_org_context")
+        self.assertEqual(ctx["situation"], "ADS_ACTIVE_TRACKED")
+        self.assertEqual(ctx["plugin"]["skill"], "adcopilot-review")
+        self.assertEqual(ctx["next_step"], SERVER_REVIEW_STEP + " " + SERVER_RETURNING)
+        probe = next(v for k, v in ctx["ads_probe"].items() if k.isdigit())
+        self.assertEqual(probe["time_zone"], "Asia/Kolkata")
+        self.assertEqual(probe["last_30d"]["end_date"], "2026-10-13")
+        # Asked at 20:55 UTC on 13 Oct: UTC's yesterday is 12 Oct, the
+        # account's is 13 Oct, and v2.41.0 ends every window on the latter.
+        self.assertTrue(ctx["ads_probe"]["computed_at"].startswith("2026-10-13 20:55"))
+        for tool in self.LENSES:
+            with self.subTest(tool=tool):
+                result = mock(self.DATES, tool)
+                self.assertEqual(result["date_range"]["end"], "2026-10-13")
+                self.assertEqual(result["time_zone"], "Asia/Kolkata")
+        days = sorted({row["segments.date"] for row in mock(self.DATES, "search")["result"]
+                       if "segments.date" in row})
+        self.assertEqual(days[-1], "2026-10-13")
+        audit = mock(self.DATES, "full_audit")
+        self.assertIn("from the 58 of 73 checks that gave a result", audit["narrative"])
+        self.assertIn("in the 7 days from 7 Oct to 13 Oct",
+                      next(f["detail"] for f in audit["findings"] if f["check_id"] == "G-CT3"))
+        self.assertTrue(any(c.get("reason_code") == "NO_MARKET_BENCHMARK"
+                            for c in audit["coverage"]))
+        names = [r[0] for r in mock(self.DATES, "analyze_search_terms")["findings"][0]
+                 ["evidence"]["rows"]]
+        self.assertEqual(names[:2], ["dentist jobs bangalore", "free dental camp"])
+        text = read("evals/%s/case.yaml" % self.DATES)
+        for name in ("search-ends-on-the-accounts-yesterday",
+                     "no-search-ends-on-another-day",
+                     "names-the-two-costliest-searches",
+                     "coverage-is-a-count-not-a-percentage",
+                     "one-set-of-dates-and-named-searches", "marks-plugin-use",
+                     "skill-fired", "no-change-without-a-yes"):
+            with self.subTest(grader=name):
+                self.assertIn("  - name: %s\n" % name, text)
+        ends, flags = grader(self.DATES, "search-ends-on-the-accounts-yesterday")
+        other, _ = grader(self.DATES, "no-search-ends-on-another-day")
+        call = json.dumps([{"tool": "mcp__plugin_adcopilot_adcopilot__search",
+                            "input": {"start_date": "2026-09-30",
+                                      "end_date": "%s"}}])
+        self.assertRegex(call % "2026-10-13", re.compile(ends, flags))
+        self.assertNotRegex(call % "2026-10-13", re.compile(other))
+        for day in ("2026-10-12", "2026-10-14", "2026-10-25"):
+            with self.subTest(day=day):
+                self.assertRegex(call % day, re.compile(other))
+        cov, cflags = grader(self.DATES, "coverage-is-a-count-not-a-percentage")
+        self.assertRegex("Coverage was 73% of its 73 checks.", re.compile(cov, cflags))
+        self.assertNotRegex("The audit's score comes from the 58 of 73 checks "
+                            "that gave a result.", re.compile(cov, cflags))
 
 if __name__ == "__main__":
     unittest.main()

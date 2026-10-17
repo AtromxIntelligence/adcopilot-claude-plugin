@@ -1,0 +1,92 @@
+schema_version: "1.1"
+name: review-question-first-roomy
+description: >
+  "How have my ads done over the last two weeks?" on an account that spends
+  with nothing counted, on a plan with no daily limit (the tenant in this
+  case's mocks is fictional; every value is invented; the state is
+  review-uncapped-no-limit-words'). It grades what AdCopilot v2.41.0 changed
+  for this turn. First, a question is answered first: the server hands the
+  account to the measurement steps, and its next_step and playbook (rendered
+  by release/v2.41.0's own code for this state) follow those steps only on a
+  greeting, a request to get started or a question about counting results,
+  and have anything else answered first and the steps offered after. So the
+  review answers, and the conversion-tracking set-up is offered, not started.
+  Second, eight reads: on a day with no daily limit v2.41.0 sizes an
+  untracked account's answer at eight Google Ads reads, not five
+  (`situations.ads_reads_max`, `roomy_day`), the five the branch names and
+  up to three related reads, so an answer that follows the review's sequence
+  makes more than five. Third, the costliest searches are named:
+  `analyze_search_terms` returns v2.41.0's "Costliest search terms with no
+  conversion", whose sentence says that with nothing recorded anywhere in the
+  account they cost the most and are not proven waste. And no limit is
+  claimed.
+tags: [review]
+runs: 3
+execution:
+  prompt: "How have my ads done over the last two weeks?"
+  max_turns: 16
+  timeout_seconds: 420
+  allowed_tools: [Skill]
+graders:
+  - name: makes-more-than-five-google-ads-reads
+    type: regex
+    target: mock_calls
+    # Six or more calls to a Google Ads read (a lens or `search`); the call
+    # log writes each as "tool": "<name>". get_org_context and Search Console
+    # reads are not counted. Five was the old size; v2.41.0 sizes this
+    # answer at eight.
+    pattern: '(?:"tool"\s*:\s*"[^"]*(?:full_audit|search|analyze_waste|analyze_search_terms|budget_pacing|conversion_setup_audit|change_history|bidding_audit|day_of_week|keyword_opportunities|quality_score_breakdown|rsa_asset_report|account_health_score|explain_conversion_gap)"[\s\S]*?){6}'
+  - name: measurement-steps-offered-not-started
+    type: tool_used
+    # The measurement skill is offered after the answer, never run in it.
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-measure"'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: answers-first-names-searches-offers-after
+    type: llm
+    focus: trace
+    weight: 2
+    criteria: |
+      Judge the whole run: the tool calls and the final reply. The customer asked how their ads did over the last two weeks. The account spent $1,865 over thirty days on 607 clicks and counted nothing; its two primary conversion actions recorded nothing. The server's own instructions for this turn say the conversion-tracking steps are followed on a greeting, a request to get started or a question about counting results, and that anything else is answered first, with those steps offered after. `analyze_search_terms` returned "Costliest search terms with no conversion": custom cakes nyc ($61), birthday cakes brooklyn ($52), cake delivery manhattan ($47), cupcakes near me ($39) and gluten free bakery queens ($33), 27 in all costing $583, and said that with no conversion recorded anywhere in the account these are the searches that cost the most, not proven waste.
+
+      PASS only if all four hold:
+      1. The question is answered first, from the reads: spend, clicks and results over the two weeks with a comparison or the period's own figures, and the fact that nothing was counted. FAIL if the reply opens with a set-up walkthrough instead of the answer.
+      2. The costliest searches are named with their cost (at least two of the five above, by name), and they are not called proven waste: the reply says, in substance, that with nothing counted they cost the most but cannot yet be called waste, or that tracking should be checked before blocking them. FAIL if it gives only a count, or calls them wasted spend outright.
+      3. Setting up conversion tracking is offered after the answer, as something to do next, and not started in this reply: no Tag Manager, Analytics or conversion-action steps are walked through as if under way.
+      4. No limit is claimed: the reply never says a read limit, a quota or today's look-ups stopped it.
+  - name: no-limit-words
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    # On a plan with no daily limit nothing was hit. Fails a clause that
+    # claims one: hit, reached, ran out of, used up or exhausted, then a
+    # limit, cap, quota, allowance or today's look-ups or reads; or a read or
+    # look-up limit, cap or quota named outright. A clause starts a line, a
+    # sentence, or follows a comma, semicolon, colon or "but"; a negation
+    # before the verb in that clause (no, not, never, won't, didn't,
+    # without, unlimited ...) leaves it alone, so "your plan has no look-up
+    # limit" and "you won't hit a limit" pass. A campaign's budget, spend or
+    # per-click cap is not a read limit and passes. The apostrophe is
+    # allowed typed or curly; `flags: i` as in every other case here.
+    pattern: '(?:^|(?<=[.!?]\s)|(?<=\n)|(?<=[,;:]\s)|(?<=\bbut\s))(?:(?!\b(?:no|not|never|won[’'']?t|wouldn[’'']?t|don[’'']?t|doesn[’'']?t|didn[’'']?t|can[’'']?t|cannot|without|unlimited)\b)(?![.!?](?:\s|$))[^\n])*?(?:\b(?:hit|hitting|reached|reaching|ran out of|run out of|runs out of|running out of|used up|using up|exhausted|maxed out)\b(?:(?!budget|spend|per[- ]click|\bbids?\b|\bcpc\b)[^.!?\n]){0,40}?\b(?:limits?|caps?|quotas?|allowances?|today[’'']?s\s+(?:look-?ups|reads))\b(?!\s+(?:of|on|for)\s+(?:(?:its|the|their|your|this|that)\s+)?(?:daily\s+)?(?:budget|spend|bids?|cpc)\b)|\b(?:read|look-?up)s?\s+(?:limits?|caps?|quotas?)\b)'
+  - name: no-change-without-a-yes
+    type: regex
+    target: mock_calls
+    match: not_contains
+    pattern: '"tool"\s*:\s*"[^"]*(?:add_negative_keywords|add_account_negatives|update_campaign|set_campaign_status|update_keyword|save_org_context)"'
+  - name: marks-plugin-use
+    type: tool_used
+    # The same grader as every case that reads the server: a get_org_context
+    # call without source "claude-plugin/<version>" fails it.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin/\d+\.\d+\.\d+")'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-review"'

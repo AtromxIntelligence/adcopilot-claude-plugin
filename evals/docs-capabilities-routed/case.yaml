@@ -11,13 +11,15 @@ description: >
   That turn's server answer handed an untracked account to the measurement
   steps; docs-capabilities-untracked reproduces it. This case is the other
   hand-off, the one with the most pulls toward a review: a counted account
-  handed to adcopilot-review, where next_step says the installed review
-  steps "cover this answer, so follow them", the playbook's [PLUGIN] section
-  says "follow it", its [RECAP] says "then go into the branch below" and
-  cross_reads, on Search Console's first showing, says "make every read
-  below". Every server text in this case's get_org_context is the live one
-  for that state (AdCopilot origin/develop 37bd01de), on a call carrying the
-  plugin marker, so each of those pulls is present. What is graded is the docs skill's own rule: a question about
+  handed to adcopilot-review. Since AdCopilot v2.41.0 the server itself has a
+  question answered first: next_step follows the review steps on a greeting,
+  a request to get started or a question about how the ads are doing and
+  offers them after anything else, the playbook's [PLUGIN] section says the
+  same, and cross_reads, on Search Console's first showing, says "make every
+  read below" only on a greeting or a request to get started. Its [RECAP]
+  still says "then go into the branch below". Every server text in this
+  case's get_org_context is what AdCopilot release/v2.41.0 renders for that
+  state, on a call carrying the plugin marker. What is graded is the docs skill's own rule: a question about
   AdCopilot is answered from the one get_org_context call, with no account
   read and no other skill, as one list, ending on exactly one question that
   offers one read tied to one fact from the 30-day summary ($341 spent, 46

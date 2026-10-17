@@ -1,6 +1,6 @@
 ---
 name: daily
-description: The daily check-in — this month's pacing, the last seven days' searches that cost money and brought nothing, any ad Google has stopped, and what changed since yesterday — as far as the connector's read cap allows.
+description: The daily check-in — this month's pacing, the last seven days' searches that cost money and brought nothing, any ad Google has stopped, and what changed since yesterday — as far as the reads AdCopilot sizes for one answer allow.
 ---
 
 No skill: the connector's tools explain themselves. This is the check-in a
@@ -24,9 +24,10 @@ you hit:
 1. **Pacing** — `budget_pacing`: whether this month's spend is on track against
    each daily budget, and any campaign limited by budget.
 2. **The searches** — `analyze_search_terms` with `days: 7`: what people
-   searched in the last seven days that cost money and brought nothing, in the
-   tool's themes. The wrong ones are candidates for never-show-for words
-   (Google's word: negative keywords).
+   searched in the last seven days that cost money and brought nothing, the
+   costliest by name with their cost (its "Costliest search terms with no
+   conversion") and the tool's themes. The wrong ones are candidates for
+   never-show-for words (Google's word: negative keywords).
 3. **Ads Google stopped** — `search` on `ad_group_ad` with
    `ad_group_ad.policy_summary.approval_status`: any ad disapproved or limited,
    with Google's stated reason.

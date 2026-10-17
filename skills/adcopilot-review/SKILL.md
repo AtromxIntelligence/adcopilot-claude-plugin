@@ -69,18 +69,18 @@ runs deep today, but if that run can't finish it falls back to a quick audit
 (the result says so); an explicit `deep` never does. A quick audit scores three
 of the seventy-three checks over the month to date — not an audit, and not what
 the customer asked for. Deep attempts all seventy-three over your window and
-says which it could not evaluate. Give coverage as a count, "N of 73 checks
-could run", never as a percentage next to the count, and give reasons for the
-rest only in the result's own words. N is the 73 less the checks it did not
-evaluate; an unevaluated check is not a pass, and a reason you supply yourself
-is a guess.
+says which it could not evaluate. Give coverage as the count the result
+gives, "N of 73 checks gave a result", never as a percentage next to the count,
+and give reasons for the rest only in the result's own words. An unevaluated
+check is not a pass, and a reason you supply yourself is a guess.
 
 One lens is ONE read and answers what a dozen hand-written queries would. It
 orders its findings by severity, NOT by money, so re-sort by cost before you
 choose the three you report. For the cost ranking itself, `analyze_waste` is the
-read; `analyze_search_terms` groups the searches into negative-keyword
-candidates by theme, which is a different job. Together they usually answer
-step 3 below, so read it yourself only for what they did not cover.
+read; `analyze_search_terms` names the searches that cost money and converted
+nothing, costliest first, and groups them into negative-keyword themes.
+Together they usually answer step 3 below, so read it yourself only for what
+they did not cover.
 
 A question narrower than the whole account starts with the lens that answers it
 rather than with `full_audit`: `analyze_waste` for money spent on nothing,
@@ -99,16 +99,11 @@ Then, in this order, stopping only when this answer's reads are spent:
    fourteen days ending on the account's yesterday (`search` over `campaign`,
    with `segments.date`), folded into two weeks so every headline number has a
    comparison. No lens returns a time series, so this read is yours to make.
-   End your own `search` reads on the account's yesterday, the day before
-   today in the account's time zone (the `time_zone` every lens result
-   carries), and say the dates once. That day is not always `full_audit`'s
-   `date_range.end`: the server ends its window on yesterday in UTC, so for an
-   account east of UTC it can stop a day before the account's yesterday, and
-   for one west of UTC, late in the account's day, it can end on the account's
-   today, which is not over. Where the two differ, give the audit's own dates
-   beside its figures; your fourteen days already hold the day the audit did
-   not reach, and a result on that day goes in the same sentence as the
-   finding it bears on. When a finding names a shorter window, say its dates.
+   End your own `search` reads on the `date_range.end` your lens results
+   carry, and say the dates once. AdCopilot ends every report window on the
+   account's yesterday, the last full day in the account's own time zone
+   (UTC's, when it could not read the zone), so the audit and your reads
+   cover the same days. When a finding names a shorter window, say its dates.
    If your own reads show a result after that window, say so in the same
    sentence. A window a finding gives only as a length ends on the result's
    `date_range.end` unless it says otherwise.
@@ -120,15 +115,19 @@ Then, in this order, stopping only when this answer's reads are spent:
    `analyze_search_terms` is one read for six query shapes and all six
    negative-keyword themes: use it, never `search_term_view` written by hand.
    Before you give a count of searches, look for their names in every result
-   you hold: the wasted-spend check's evidence in `full_audit` or
-   `analyze_waste` (G16, each search with its clicks and cost) and any list
-   `analyze_search_terms` returns. When one lists them, name the top ones with
-   their cost in this answer. When what you hold only counts them (G16 lists
-   none on an account that counted no result in its window), say how many
+   you hold: `analyze_search_terms`' "Costliest search terms with no
+   conversion" (the costliest first, with their clicks and cost, and how many
+   there are) and the wasted-spend check's evidence in `full_audit` or
+   `analyze_waste` (G16, each search with its clicks and cost). When one lists
+   them, name the top ones with their cost in this answer. When that list says
+   no conversion was recorded anywhere in the account, they cost the most and
+   are not proven waste: say so, and propose blocking one that fits no theme
+   only once tracking is checked. When what you hold only counts them (G16
+   lists none on an account that counted no result in its window), say how many
    there are and what they cost, and that the reads count them without naming
    them. Offer a read for searches no result you hold names only when a
-   `related_reads` entry's `why` says that read shows them; one that only
-   names the area, such as wasted spend, is not that promise.
+   `related_reads` entry's `why` says that read shows them; one that only names
+   the area, such as wasted spend, is not that promise.
 4. **Whether delivery is being held back.** `budget_pacing` — one read for the
    month-to-date projection against each daily budget. A campaign at its cap
    every day is turning away traffic the customer is willing to pay for, and

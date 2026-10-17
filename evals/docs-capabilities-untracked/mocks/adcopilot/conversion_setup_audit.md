@@ -4,7 +4,8 @@ type: fixed
 # review-uncapped-no-limit-words: here only so that a run which
 # makes this read is graded on it rather than failing on a missing mock.
 # Two primary conversion actions, both enabled, neither has recorded anything
-# in thirty days. Every value is invented.
+# in thirty days. The tag check names its seven days, as AdCopilot v2.41.0
+# words it (#822). Every value is invented.
 ---
 {
   "tool": "conversion_setup_audit",
@@ -36,7 +37,7 @@ type: fixed
       "status": "failing",
       "severity": "critical",
       "title": "Google tag firing",
-      "detail": "2 of your 2 main conversion actions recorded no result in the last 7 days while the account took 141 clicks."
+      "detail": "2 primary action(s) recorded no conversion at all in the 7 days from 29 Sep to 5 Oct while the account took 141 clicks, which is what a tag that is missing or broken on the key page looks like."
     }
   ],
   "notes": []

@@ -15,7 +15,11 @@ them. Then `analyze_search_terms` with `days: 7`. It groups the searches that
 took clicks and converted nothing into themes — people looking for jobs, for
 something free, for information, for a competitor, and the words this workspace
 already said it never wants to show for — and names a ready call for each
-theme.
+theme. It also lists the costliest of them, any theme or none, with no ready
+call ("Costliest search terms with no conversion"): name the top ones, and
+leave one that fits no theme to the customer, as it can be what they sell. When
+it says nothing was recorded anywhere in the account, say they cost the most
+and are not proven waste.
 
 When a lens or `search` result ends with `related_reads`, run the ones that
 bear on the question, at most three, then answer from all you hold; never
