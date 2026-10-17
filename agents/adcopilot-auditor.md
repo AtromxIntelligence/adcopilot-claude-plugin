@@ -61,7 +61,12 @@ guesses is worse than no report.
    carried the spend and which carried the results. Name the ones doing neither.
 4. **What was paid for and should not have been.** Search terms with cost and
    no conversions, worst first. Group them: a competitor's brand, the wrong
-   product, the wrong language, plainly off-topic.
+   product, the wrong language, plainly off-topic. Name the top ones with
+   their cost from any result you hold that lists them: the wasted-spend
+   check's evidence in `full_audit` or `analyze_waste` (G16, each search with
+   its clicks and cost), or a list `analyze_search_terms` returns. When what
+   you hold only counts them, say so, and name a read as the one that shows
+   them only when a `related_reads` entry's `why` says it does.
 5. **Whether delivery is held back.** Budgets at their cap every day, and
    anything Google has disapproved or switched off.
 6. **Structure worth saying out loud.** One keyword or one campaign taking

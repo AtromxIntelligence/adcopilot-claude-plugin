@@ -190,6 +190,11 @@ CEILING_RULE_NO_PLAN = ("`cross_reads.ads_reads_max` is how many Google Ads "
                         "this answer, not a workspace or daily limit.")
 SHORT_DAY = ("Only when `cross_reads.reads_left_today` is present is the day "
              "itself short.")
+# How the review offers a related read its answer had no reads left for: a
+# statement, not a question, and never a limit.
+LEFT_OVER_READ = ("If this answer's reads are spent before a related read, "
+                  "offer it as the next read in one statement, never a second "
+                  "question and never as a limit you hit")
 
 # 0.2.12: one set of dates inside one answer. The same review put "the last 7
 # days (7-13 Oct)" from its own search next to a tag finding whose seven days
@@ -1859,10 +1864,22 @@ class ReadCeiling(unittest.TestCase):
         for rel in self.SURFACES:
             with self.subTest(file=rel):
                 self.assertIn("never as a limit you hit", flat(rel))
-        self.assertIn("If this answer's reads are spent before a related read, "
-                      "offer it as the next read in one sentence (\"I can list "
-                      "those searches next. Want me to?\"), never as a limit "
-                      "you hit.", flat(self.REVIEW))
+        self.assertIn(LEFT_OVER_READ, flat(self.REVIEW))
+
+    def test_a_read_left_over_is_a_statement_not_a_second_question(self):
+        # Fix round 1: 0.2.12's first example, "I can list those searches
+        # next. Want me to?", offered to list searches a result may already
+        # name, and put a second question into a reply that already ends on
+        # the first fix's yes or no.
+        offer = flat(self.REVIEW)
+        offer = offer[offer.index(LEFT_OVER_READ):]
+        offer = offer[:offer.index("In a scheduled run, skip them.")]
+        self.assertNotIn("?", offer)
+        self.assertIn("Never offer a read for what a result you hold already "
+                      "shows.", offer)
+        for rel in model_read_files() + ["README.md"]:
+            with self.subTest(file=rel):
+                self.assertNotIn("I can list those searches next", flat(rel))
 
     def test_nothing_announces_the_stop_any_more(self):
         for rel in model_read_files():
@@ -2011,20 +2028,53 @@ class DatesAndCounts(unittest.TestCase):
 
 class WasteList(unittest.TestCase):
     """0.2.12: the review counted 27 searches that cost money and brought
-    nothing, named none, and promised another read would list them, which it
-    would not have. When `analyze_search_terms` lists them, the top ones are
-    named with their cost; another read is promised only when a
-    `related_reads` names one."""
+    nothing, named none, and offered "one more look-up" for them.
 
-    def test_step_three_names_what_the_lens_lists(self):
-        seq = " ".join((section(read("skills/adcopilot-review/SKILL.md"),
-                                "## The sequence") or "").split())
-        step3 = seq[seq.index("3. **What was paid for that should not have been.**"):
-                    seq.index("4. **Whether delivery is being held back.**")]
-        self.assertIn("When it lists the costliest searches with no conversion, "
-                      "name the top ones with their cost.", step3)
-        self.assertIn("Never promise that another read lists searches a total "
-                      "only counts, unless a `related_reads` names one.", step3)
+    Fix round 1. The searches can already be named in a result the review
+    holds: the wasted-spend check (G16) lists each search with its clicks and
+    cost in `full_audit` and `analyze_waste` whenever the account counted a
+    result in the window, and `analyze_search_terms` lists them once server
+    PR #820 ships. In that conversation G16 listed none, because the audit's
+    window (ending 12 Oct, UTC) held no counted result, and the related read
+    the audit named was `analyze_waste`, whose G16 would have listed none
+    either; "unless a `related_reads` names one" let the model promise it
+    anyway. So the names are looked for in every result held, and another
+    read is offered only when a related read's `why` says it shows them."""
+
+    REVIEW = "skills/adcopilot-review/SKILL.md"
+    AUDITOR = "agents/adcopilot-auditor.md"
+
+    def step3(self):
+        seq = " ".join((section(read(self.REVIEW), "## The sequence") or "").split())
+        return seq[seq.index("3. **What was paid for that should not have been.**"):
+                   seq.index("4. **Whether delivery is being held back.**")]
+
+    def test_step_three_looks_for_the_names_in_every_result_held(self):
+        step3 = self.step3()
+        self.assertIn("look for their names in every result you hold", step3)
+        for source in ("`full_audit`", "`analyze_waste`", "G16",
+                       "`analyze_search_terms`"):
+            with self.subTest(source=source):
+                self.assertIn(source, step3)
+        self.assertIn("When one lists them, name the top ones with their cost "
+                      "in this answer.", step3)
+
+    def test_a_count_alone_is_said_as_a_count(self):
+        self.assertIn("When what you hold only counts them", self.step3())
+
+    def test_another_read_only_when_its_why_says_it_shows_them(self):
+        step3 = self.step3()
+        self.assertIn("Offer a read for searches no result you hold names only "
+                      "when a `related_reads` entry's `why` says that read "
+                      "shows them", step3)
+        self.assertNotIn("unless a `related_reads` names one", flat(self.REVIEW))
+
+    def test_the_auditor_names_them_from_what_it_holds(self):
+        text = flat(self.AUDITOR)
+        self.assertIn("Name the top ones with their cost from any result you "
+                      "hold that lists them", text)
+        self.assertIn("only when a `related_reads` entry's `why` says it does",
+                      text)
 
 
 class DocsAnswersFromTheOneCall(unittest.TestCase):

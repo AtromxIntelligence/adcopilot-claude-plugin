@@ -56,8 +56,10 @@ read; skip one that does not bear on what the customer asked. Never repeat a
 read you hold. Offer, do not chase, the `related_reads` those reads bring back.
 They are reads only: a change is still only proposed. They count toward this
 answer's reads. If this answer's reads are spent before a related read, offer
-it as the next read in one sentence ("I can list those searches next. Want me
-to?"), never as a limit you hit. In a scheduled run, skip them.
+it as the next read in one statement, never a second question and never as a
+limit you hit ("The next read would show how each campaign bids; say the word
+and I will run it."). Never offer a read for what a result you hold already
+shows. In a scheduled run, skip them.
 
 ## The sequence
 
@@ -117,9 +119,16 @@ Then, in this order, stopping only when this answer's reads are spent:
    and no conversions, worst first — usually the largest finding.
    `analyze_search_terms` is one read for six query shapes and all six
    negative-keyword themes: use it, never `search_term_view` written by hand.
-   When it lists the costliest searches with no conversion, name the top ones
-   with their cost. Never promise that another read lists searches a total
-   only counts, unless a `related_reads` names one.
+   Before you give a count of searches, look for their names in every result
+   you hold: the wasted-spend check's evidence in `full_audit` or
+   `analyze_waste` (G16, each search with its clicks and cost) and any list
+   `analyze_search_terms` returns. When one lists them, name the top ones with
+   their cost in this answer. When what you hold only counts them (G16 lists
+   none on an account that counted no result in its window), say how many
+   there are and what they cost, and that the reads count them without naming
+   them. Offer a read for searches no result you hold names only when a
+   `related_reads` entry's `why` says that read shows them; one that only
+   names the area, such as wasted spend, is not that promise.
 4. **Whether delivery is being held back.** `budget_pacing` — one read for the
    month-to-date projection against each daily budget. A campaign at its cap
    every day is turning away traffic the customer is willing to pay for, and
