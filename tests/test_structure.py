@@ -2212,15 +2212,38 @@ class DocsAnswersFromTheOneCall(unittest.TestCase):
 class MeasureDescription(unittest.TestCase):
     """0.2.12: the measure skill's description named only the Analytics route,
     and a reply said conversion tracking "needs Analytics and Tag Manager
-    connected". Its body has always had two routes."""
+    connected". Its body has always had two routes.
+
+    Fix round 1: the first 0.2.12 description said the direct route "needs
+    neither Analytics nor Tag Manager", but the body puts that route's
+    Google Ads conversion tag "on the same trigger as step 3", a Tag Manager
+    trigger, and walks no other way onto the site. The description promises
+    only what the body walks: no Analytics, and the tag through Tag
+    Manager."""
+
+    MEASURE = "skills/adcopilot-measure/SKILL.md"
+
+    def desc(self):
+        fm = frontmatter(read(self.MEASURE))
+        return re.search(r"^description: (.+)$", fm, re.M).group(1)
 
     def test_it_names_both_routes(self):
-        fm = frontmatter(read("skills/adcopilot-measure/SKILL.md"))
-        desc = re.search(r"^description: (.+)$", fm, re.M).group(1)
+        desc = self.desc()
         self.assertIn("through Analytics", desc)
         self.assertIn("directly in Google Ads", desc)
-        self.assertIn("needs neither Analytics nor Tag Manager", desc)
         self.assertLessEqual(len(desc), 1024)
+
+    def test_the_direct_route_is_described_as_the_body_walks_it(self):
+        desc = self.desc()
+        direct = desc[desc.index("directly in Google Ads"):]
+        self.assertIn("needs no Analytics", direct)
+        self.assertIn("through Tag Manager", direct)
+        body = read(self.MEASURE).split("\n---\n", 1)[1]
+        self.assertIn("on the same trigger as step 3", body)
+        # A route without Tag Manager may be promised only once the body
+        # walks putting the tag on the site some other way.
+        if not re.search(r"without Tag Manager", body):
+            self.assertNotRegex(desc, r"(?:nor|no|without) Tag Manager")
 
 
 class ReleaseNoteAndMarker(unittest.TestCase):

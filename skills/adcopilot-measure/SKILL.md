@@ -1,6 +1,6 @@
 ---
 name: adcopilot-measure
-description: Set up conversion tracking for Google Ads end to end, by either route — through Analytics (the property and data stream, the Tag Manager tag and trigger, the key event, the Analytics-to-Ads link and the import), or directly in Google Ads with a conversion action of its own, which needs neither Analytics nor Tag Manager (Tag Manager is one way to put its tag on the site). Use when the user asks to count sign-ups, set up conversion tracking, asks about GA4 or Tag Manager for tracking, or asks why Google Ads shows no conversions.
+description: Set up conversion tracking for Google Ads end to end, by either route — through Analytics (the property and data stream, the Tag Manager tag and trigger, the key event, the Analytics-to-Ads link and the import), or directly in Google Ads with a conversion action of its own, which needs no Analytics; its conversion tag goes on the site through Tag Manager, as on the other route. Use when the user asks to count sign-ups, set up conversion tracking, asks about GA4 or Tag Manager for tracking, or asks why Google Ads shows no conversions.
 ---
 
 # AdCopilot measure
