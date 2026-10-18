@@ -3903,6 +3903,111 @@ class ScheduledSourceMarker(unittest.TestCase):
         self.assertNotIn("or saved anything", text)
         self.assertIn("kept a note in AdCopilot", text)
 
+    UNMARKED = "review-scheduled-unmarked"
+
+    def test_a_case_runs_the_review_skill_in_a_task_without_the_marker(self):
+        # The PR #22 review: the case 0.2.13 exists for, a scheduled task in
+        # the customer's own words answered by adcopilot-review, had no eval;
+        # only daily-scheduled-run, where adcopilot-daily answers, graded the
+        # marker. This case's prompt is not AdCopilot's recipe and names no
+        # source, so the marker can come only from the skill.
+        self.assertTrue(os.path.isfile(os.path.join(
+            ROOT, "evals", self.UNMARKED, "case.yaml")), "no %s case" % self.UNMARKED)
+        text = read("evals/%s/case.yaml" % self.UNMARKED)
+        self.assertIn("tags: [review]\n", text)
+        self.assertIn("adcopilot-review", grader_block(text, "skill-fired"))
+        m = re.search(r"^  prompt: \|\n((?:    .*\n)+)", text, re.M)
+        self.assertIsNotNone(m)
+        prompt = " ".join(m.group(1).split())
+        self.assertIn("scheduled task", prompt)
+        self.assertFalse(prompt.startswith("AdCopilot morning check"))
+        for word in ("claude-scheduled", "claude-plugin", "source",
+                     "get_org_context", "morning check"):
+            with self.subTest(absent=word):
+                self.assertNotIn(word, prompt)
+        # The marker grader is daily-scheduled-run's, line for line.
+        def rule(case):
+            block = grader_block(read("evals/%s/case.yaml" % case),
+                                 "marks-the-scheduled-run")
+            return [l.strip() for l in block.splitlines()
+                    if not l.strip().startswith("#")]
+        self.assertEqual(rule(self.UNMARKED), rule(self.CASE))
+        block = grader_block(text, "marks-the-scheduled-run")
+        pattern = re.compile(re.search(r"^\s+input_match: '((?:[^']|'')*)'\s*$",
+                                       block, re.M).group(1).replace("''", "'"))
+        counted = ['{}', '{"source":"claude-plugin/%s"}' % manifest_version(),
+                   '{"source": "claude-plugin"}', '{"source":"chatgpt"}', 'not json']
+        passed = ['{"source":"claude-scheduled"}',
+                  '{"tools":["full_audit"],"source": "claude-scheduled"}']
+        for call in counted:
+            with self.subTest(call=call):
+                self.assertRegex(call, pattern)
+        for call in passed:
+            with self.subTest(call=call):
+                self.assertNotRegex(call, pattern)
+        # A run that never reads the server would pass the grader above on
+        # zero calls; this one fails it.
+        server, _ = grader(self.UNMARKED, "read-the-server-first")
+        self.assertRegex('"tool": "mcp__plugin_adcopilot_adcopilot__get_org_context", '
+                         '"input": "{}"', server)
+        self.assertNotRegex('"tool": "mcp__plugin_adcopilot_adcopilot__full_audit", '
+                            '"input": "{\\"source\\": \\"get_org_context\\"}"', server)
+        # Nothing in Google Ads changes; a note is not graded here.
+        writes, _ = grader(self.UNMARKED, "never-changes-google-ads")
+        self.assertIn("match: not_contains",
+                      grader_block(text, "never-changes-google-ads"))
+        for tool in ("add_negative_keywords", "update_campaign",
+                     "set_campaign_status", "gtm_create_tag",
+                     "ga4_create_conversion_event"):
+            with self.subTest(write=tool):
+                self.assertRegex('"tool": "mcp__plugin_adcopilot_adcopilot__%s"' % tool,
+                                 writes)
+        for tool in ("get_org_context", "full_audit", "analyze_waste",
+                     "analyze_search_terms", "budget_pacing", "search",
+                     "conversion_setup_audit", "save_org_context"):
+            with self.subTest(read=tool):
+                self.assertNotRegex('"tool": "mcp__plugin_adcopilot_adcopilot__%s"' % tool,
+                                    writes)
+
+    def test_the_unmarked_case_is_served_the_scheduled_answer(self):
+        # The answer v2.41.0 gives a call marked claude-scheduled: no plugin
+        # block, so no skill named and the playbook's full branch; the same
+        # data as review-follows-related-reads but the two sightings the call
+        # stamps before the answer is read.
+        ctx = mock(self.UNMARKED, "get_org_context")
+        source = mock("review-follows-related-reads", "get_org_context")
+        self.assertNotIn("plugin", ctx)
+        self.assertNotIn("[PLUGIN]", ctx["playbook"])
+        self.assertIn("[%s]" % ctx["situation"], ctx["playbook"])
+        self.assertNotIn("installed in this assistant", ctx["next_step"])
+        self.assertIsNone(ctx["overlays"]["schedule_offer"])
+        self.assertNotIn("schedule", ctx["routine"])
+        stamp = ctx["routine"]["scheduled_last_seen_at"]
+        self.assertRegex(stamp, r"^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$")
+        self.assertEqual(ctx["routine"]["scheduled_first_seen_at"], stamp)
+        differ = sorted(k for k in set(ctx) | set(source)
+                        if ctx.get(k) != source.get(k))
+        self.assertEqual(differ, ["next_step", "playbook", "plugin", "routine"])
+        rest = dict(ctx["routine"], scheduled_first_seen_at=None,
+                    scheduled_last_seen_at=None)
+        was = dict(source["routine"], scheduled_first_seen_at=None,
+                   scheduled_last_seen_at=None)
+        self.assertEqual(rest, was)
+        head = read("evals/%s/mocks/adcopilot/get_org_context.md" % self.UNMARKED)
+        head = " ".join(re.match(r"^---\n(.*?)\n---\n", head, re.S).group(1)
+                        .replace("#", " ").split())
+        self.assertIn("Re-rendered with AdCopilot release/v2.41.0's own code "
+                      "(967d743b", head)
+        # The other mocks are the source case's, byte for byte.
+        mocks = os.path.join(ROOT, "evals", self.UNMARKED, "mocks", "adcopilot")
+        for name in sorted(os.listdir(mocks)):
+            if name == "get_org_context.md":
+                continue
+            with self.subTest(mock=name):
+                self.assertEqual(
+                    read("evals/%s/mocks/adcopilot/%s" % (self.UNMARKED, name)),
+                    read("evals/review-follows-related-reads/mocks/adcopilot/%s" % name))
+
     def test_the_readme_note_says_both(self):
         notes = section(read("README.md"), "## AdCopilot version") or ""
         start = notes.find("**%s (" % manifest_version())
