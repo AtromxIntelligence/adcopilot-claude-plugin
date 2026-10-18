@@ -1883,6 +1883,24 @@ class Manifest(unittest.TestCase):
             "the manifest (%s) is behind the newest tag (v%s) — bump "
             ".claude-plugin/plugin.json before tagging" % (manifest, newest))
 
+    def test_no_compiled_python_is_tracked(self):
+        """0.2.13's first push committed tests/__pycache__/*.pyc, compiled by
+        the builder's own test run: a plugin install copies the repository,
+        so it would have shipped to every user, and the file recorded the
+        local scratch path it was compiled in. Nothing compiled is tracked,
+        and .gitignore keeps the next one out."""
+        listed = subprocess.run(["git", "ls-files", "-z"], cwd=ROOT,
+                                capture_output=True, text=True)
+        if listed.returncode != 0:
+            self.skipTest("not a git checkout")
+        tracked = [p for p in listed.stdout.split("\0")
+                   if "__pycache__/" in p or p.endswith((".pyc", ".pyo"))]
+        self.assertEqual(tracked, [])
+        ignore = read(".gitignore").splitlines()
+        for rule in ("__pycache__/", "*.pyc"):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, ignore)
+
 
 class AuditorToolList(unittest.TestCase):
     """The auditor subagent reaches the live connector with nobody watching
