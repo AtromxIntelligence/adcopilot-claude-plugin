@@ -4094,6 +4094,29 @@ class ScheduledSourceMarker(unittest.TestCase):
             with self.subTest(part=part):
                 self.assertIn(part, note)
 
+    def test_the_readme_note_says_any_scheduled_task_counts_as_the_check(self):
+        # PR #22, second review: AdCopilot reads the scheduled marker as its
+        # morning check (`tools_adcopilot._SOURCE_DESC`, `scheduled_seen` in
+        # email_automation, engagement_auto, routines, situations, trial_board
+        # and tools_analysis._scheduled_now at d9bd20ae). Once every skill
+        # sends it, a customer's own weekly-report task stops the morning-check
+        # offer and mails. The note says so, so the founder sees it.
+        notes = section(read("README.md"), "## AdCopilot version") or ""
+        start = notes.find("**%s (" % manifest_version())
+        note = " ".join(notes[start:].split("\n\n", 1)[0].split())
+        for part in ("AdCopilot reads a run marked `claude-scheduled` as its "
+                     "morning check",
+                     "a customer's own scheduled task counts as one too",
+                     "the schedule offer in AdCopilot's mails",
+                     "the win-back's second mail and the Free week",
+                     "on the dashboard's Home card",
+                     "sightings on two different days stop the in-chat offer",
+                     "the trial board counts the workspace as scheduled",
+                     "`related_reads`",
+                     "stops being offered the morning check although none runs"):
+            with self.subTest(part=part):
+                self.assertIn(part, note)
+
 
 if __name__ == "__main__":
     unittest.main()
