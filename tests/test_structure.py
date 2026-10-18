@@ -1351,6 +1351,44 @@ class PluginVersionMarker(unittest.TestCase):
         self.assertIn(".claude-plugin/plugin.json", script)
         self.assertIn("*/adcopilot-daily/SKILL.md) ;;", script)
 
+    def test_the_ablation_stub_says_what_a_scheduled_run_sends(self):
+        # PR #22, second review: the stub kept the plugin marker but dropped
+        # the scheduled-run sentence that is now part of the same marker text,
+        # so review-scheduled-unmarked failed its baseline by construction and
+        # the review skill's delta measured the forced marker. The script's
+        # own stub loop runs here on a copy of the skills.
+        import shutil
+        import tempfile
+        bash = shutil.which("bash")
+        if bash is None:
+            self.skipTest("no bash")
+        script = read("evals/ablation/tools-only.sh")
+        loop = re.search(r'(?ms)^for skill in "\$COPY"/skills/\*/SKILL\.md; do$.*?^done$',
+                         script)
+        self.assertIsNotNone(loop, "the stub loop is not where it was")
+        with tempfile.TemporaryDirectory() as work:
+            shutil.copytree(os.path.join(ROOT, "skills"), os.path.join(work, "skills"))
+            done = subprocess.run(
+                [bash, "-c", "set -euo pipefail\n" + loop.group(0)],
+                env=dict(os.environ, COPY=work, VERSION=manifest_version()),
+                capture_output=True, text=True)
+            self.assertEqual(done.returncode, 0, done.stderr)
+            stubs = {name: open(os.path.join(work, "skills", name, "SKILL.md"),
+                                encoding="utf-8").read()
+                     for name in os.listdir(os.path.join(work, "skills"))}
+        for name, stub in sorted(stubs.items()):
+            body = " ".join(stub.split("\n---\n", 1)[1].split())
+            with self.subTest(skill=name):
+                if name == "adcopilot-daily":
+                    self.assertNotIn("source", body)
+                    continue
+                self.assertIn(plugin_marker(), body)
+                self.assertEqual(body.count(SCHEDULED_SOURCE_RULE), 1)
+                self.assertGreater(body.find(SCHEDULED_SOURCE_RULE),
+                                   body.find(plugin_marker()))
+        self.assertNotIn("expected to fail there",
+                         read("evals/review-scheduled-unmarked/case.yaml"))
+
 
 class WhatTheServerDefersTo(unittest.TestCase):
     """From plugin 0.2.7 the server stops sending its own steps for a running,

@@ -15,9 +15,10 @@ description: >
   playbook's full branch, the two sightings the call stamps; its header says
   how it was rendered). analyze_waste still names day_of_week among its
   related reads, which the live server does not; here it tests the review
-  skill's own "In a scheduled run, skip them". On the tools-only ablation's
-  baseline arm the review stub names the plugin marker alone, as the review
-  skill did before 0.2.13, so the marker grader is expected to fail there.
+  skill's own "In a scheduled run, skip them". The tools-only ablation's
+  review stub carries the scheduled-run sentence beside the plugin marker, so
+  the baseline arm is not failed on the marker by construction and this
+  case's delta measures what the review skill's body adds.
   Deterministic graders test the marker, that the server was read, that no
   related read was run, that nothing in Google Ads was changed and that no
   amount is printed in micros; meaning is one rubric at weight 2. Written, not

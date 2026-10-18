@@ -51,8 +51,12 @@ command -v rsync >/dev/null || { echo "rsync is not on PATH" >&2; exit 1; }
 #    the skill bodies alone, and every marks-plugin-use grader needs it, so the
 #    stub keeps that one sentence: without it the baseline arm would fail the
 #    marker on every case and each skill's delta would be the marker's weight,
-#    not what its body teaches. adcopilot-daily's stub stays bare: its run is
-#    marked claude-scheduled, which the server's own instructions already give.
+#    not what its body teaches. From 0.2.13 the marker text also says what a
+#    scheduled run sends instead (claude-scheduled), word for word as every
+#    marked skill says it, so a scheduled case such as review-scheduled-unmarked
+#    is not failed on the marker by construction either. adcopilot-daily's
+#    stub stays bare: its run is marked claude-scheduled, which the server's own
+#    instructions already give.
 rsync -a --exclude .git --exclude 'evals/results' "$ROOT/" "$COPY/"
 VERSION="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$ROOT/.claude-plugin/plugin.json")"
 for skill in "$COPY"/skills/*/SKILL.md; do
@@ -61,7 +65,7 @@ for skill in "$COPY"/skills/*/SKILL.md; do
   marker=""
   case "$skill" in
     */adcopilot-daily/SKILL.md) ;;
-    *) marker=" Call \`get_org_context\` with \`source: \"claude-plugin/$VERSION\"\`, exactly as written." ;;
+    *) marker=" Call \`get_org_context\` with \`source: \"claude-plugin/$VERSION\"\`, exactly as written. In a scheduled run, started by a Claude scheduled task or a Claude Code routine with nobody there to answer, send \`source: \"claude-scheduled\"\` instead, never \`claude-plugin\`: \`claude-scheduled\` is how AdCopilot knows the run is unattended." ;;
   esac
   { printf '%s\n\n' "$fm"; printf 'Help the customer with this through the AdCopilot connector.%s\n' "$marker"; } > "$skill"
 done
