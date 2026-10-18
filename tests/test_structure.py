@@ -3862,6 +3862,13 @@ class ScheduledSourceMarker(unittest.TestCase):
         step6 = releasing[releasing.find("6. The scheduled run"):
                           releasing.find("7. `claude plugin validate")]
         self.assertIn("the set-up sets that one tool to **Always allow**", step6)
+        # The run forbids a change in every product it can reach, so the
+        # release check does too: under "in Google Ads" alone, a run that
+        # created an Analytics event or a Tag Manager tag would pass step 6.
+        products = "in Google Ads, Analytics, Tag Manager or Search Console"
+        run = " ".join((section(read(self.DAILY), "## The run") or "").split())
+        self.assertIn(products, run)
+        self.assertIn("calls no tool that changes anything " + products, step6)
         note = section(read("README.md"), "## AdCopilot version") or ""
         note = " ".join(note[note.find("**%s (" % manifest_version()):]
                         .split("\n\n", 1)[0].split())
