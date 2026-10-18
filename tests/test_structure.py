@@ -2516,11 +2516,15 @@ class RealTurnDocsCase(unittest.TestCase):
 
     def test_its_rubric_and_approval_grader(self):
         text = read("evals/%s/case.yaml" % self.CASE)
-        llm = grader_block(text, "one-list-one-question")
-        self.assertIn("type: llm", llm)
-        self.assertIn("exactly one", llm)
-        self.assertIn("$1,865 on 607 clicks", llm)
-        self.assertIn("Tracking without Analytics", llm)
+        for name in DocsJudgeReplay.ITEMS[self.CASE]:
+            with self.subTest(grader=name):
+                llm = grader_block(text, name)
+                self.assertIn("type: llm", llm)
+                self.assertIn("$1,865 on 607 clicks", llm)
+        self.assertIn("Exactly one question",
+                      grader_block(text, "one-closing-question"))
+        self.assertIn("Tracking without Analytics",
+                      grader_block(text, "tracking-without-analytics"))
         self.assertEqual(grader(self.CASE, "no-approval-promise-without-its-condition"),
                          grader("docs-capabilities-routed",
                                 "no-approval-promise-without-its-condition"))
@@ -2539,6 +2543,125 @@ class RealTurnDocsCase(unittest.TestCase):
                      "gsc_search_analytics"):
             with self.subTest(tool=tool):
                 self.assertIsInstance(mock(self.CASE, tool), dict)
+
+
+class DocsJudgeReplay(unittest.TestCase):
+    """Fix round 2 (2026-10-17), committed locally as 9d60b3c, d90ca35 and
+    467c2a8 and never pushed: the v2.41 alignment was built on the branch as
+    pushed, so it left them out, and the Cursor round's review found them
+    missing. They come back here on the current text, with the approval
+    item in its client-neutral form.
+
+    From the first run of the two docs cases (claudeVersion 2.1.302, judge
+    sonnet, plugin d478dba): every deterministic grader passed on all six
+    runs, and the one rubric grader failed five of them. Each saved reply
+    was put back in front of the suite's own judge, one rubric item at a
+    time. Item 2 failed every reply on 3 of 3 votes, because it allowed
+    nothing about the account "beyond facts from that 30-day summary" while
+    item 1 asks for what is connected, the routines and the look-ups, which
+    the same workspace answer carries. With item 2 allowing what that answer
+    says, all six replies pass it on 3 of 3 votes, and four replies that
+    each review the account (one of them the real 2026-10-14 turn) still
+    fail it on 3 of 3.
+
+    One routed reply failed the approval item on its own text: a routine's
+    line said "Nothing is added until you say yes." with no condition. The
+    docs skill now keeps approval out of the routine lines and says it once,
+    with its condition.
+
+    A strict one-word judge given four or five conditions at once failed a
+    reply it passed on each, so each item is its own llm grader with the
+    same words, and a run's report says which item failed. Written as
+    "PASS only if this holds:" and then the numbered item on its own line,
+    the approval item passed 7 of 8 saved replies it had failed in the
+    unnumbered form, and still failed a reply whose approval line had no
+    condition. The run on 467c2a8 (2026-10-17T15:21Z) passed both docs
+    cases."""
+
+    CASES = ("docs-capabilities-untracked", "docs-capabilities-routed")
+    ITEMS = {
+        "docs-capabilities-untracked": [
+            "one-list", "no-review-no-set-up", "one-closing-question",
+            "approval-with-its-condition", "tracking-without-analytics"],
+        "docs-capabilities-routed": [
+            "one-list", "no-review", "one-closing-question",
+            "approval-with-its-condition"],
+    }
+    REVIEW = {"docs-capabilities-untracked": "no-review-no-set-up",
+              "docs-capabilities-routed": "no-review"}
+    OLD = ("The reply reports nothing about the account beyond facts from "
+           "that 30-day summary")
+    ALLOWED = ("Apart from what the workspace answer itself says (what is "
+               "connected and to which account or site, how many campaigns "
+               "there are and how many are on, which routines are already "
+               "scheduled, the plan and the look-ups used today) and the "
+               "facts in that 30-day summary, with at most a sentence on what "
+               "the 30-day fact could mean as the reason for the closing "
+               "offer, the reply reports nothing about the account: no health "
+               "score, no audit findings, no search terms, no "
+               "week-against-week comparison, no budget pacing figures, no "
+               "setting to change")
+
+    def test_item_two_allows_what_the_workspace_answer_says(self):
+        for case in self.CASES:
+            llm = grader_block(read("evals/%s/case.yaml" % case),
+                               self.REVIEW[case])
+            with self.subTest(case=case):
+                self.assertNotIn(self.OLD, llm)
+                self.assertEqual(llm.count(self.ALLOWED), 1)
+                self.assertIn("Saying what a routine does is not reporting on "
+                              "the account.", llm)
+                self.assertIn("FAIL if it delivers a performance review", llm)
+
+    def test_the_untracked_case_still_fails_a_started_set_up(self):
+        llm = grader_block(read("evals/docs-capabilities-untracked/case.yaml"),
+                           "no-review-no-set-up")
+        self.assertIn("and it does not start setting up conversion tracking.",
+                      llm)
+        self.assertIn("or begins the tracking set-up.", llm)
+
+    def test_each_item_is_its_own_llm_grader(self):
+        for case in self.CASES:
+            text = read("evals/%s/case.yaml" % case)
+            with self.subTest(case=case):
+                self.assertNotIn("one-list-one-question", text)
+                self.assertNotIn("PASS only if all", text)
+                llm = [b for b in re.split(r"\n  - name: ", text)[1:]
+                       if re.search(r"^    type: llm$", b, re.M)]
+                self.assertEqual([b.split("\n", 1)[0] for b in llm],
+                                 self.ITEMS[case])
+                for n, block in enumerate(llm, 1):
+                    # The item keeps its number after a colon and a new line:
+                    # as "PASS only if this holds. Approval with its
+                    # condition. ..." the suite's judge failed the approval
+                    # item on 7 of 8 saved replies; in this form it passes 7
+                    # of the same 8 (fix round 2's replay).
+                    self.assertEqual(block.count(
+                        "      PASS only if this holds:\n      %d. " % n), 1)
+                    self.assertIn("The customer asked only what the AdCopilot "
+                                  "plugin can do.", block)
+                    self.assertIn("focus: last_message", block)
+                    self.assertNotRegex(block, r"^    weight:")
+
+    def test_the_approval_item_keeps_the_client_neutral_condition(self):
+        for case in self.CASES:
+            llm = " ".join(grader_block(read("evals/%s/case.yaml" % case),
+                                        "approval-with-its-condition").split())
+            with self.subTest(case=case):
+                self.assertIn("4. Approval with its condition.", llm)
+                self.assertIn("in Cursor, the Allowlist run mode with the "
+                              "write tools kept off the allowlist", llm)
+                self.assertNotIn("while the write tools stay on Needs "
+                                 "approval", llm)
+
+    def test_a_routine_line_carries_no_approval(self):
+        can = " ".join((section(read("skills/adcopilot-docs/SKILL.md"),
+                                "## What AdCopilot can do") or "").split())
+        self.assertIn("Say what each routine reads and proposes, and leave "
+                      "approval to the part on what AdCopilot may change, "
+                      "where it is said once with its condition: no routine's "
+                      "line adds that nothing happens until they say yes.",
+                      can)
 
 
 class NewEvalCases(unittest.TestCase):
@@ -2664,9 +2787,11 @@ class NewEvalCases(unittest.TestCase):
         self.assertTrue(never("Skill", "adcopilot-review"))
         fired = grader_block(text, "skill-fired")
         self.assertIn("adcopilot-docs", fired)
-        llm = grader_block(text, "one-list-one-question")
-        self.assertIn("type: llm", llm)
-        self.assertIn("exactly one", llm)
+        for name in DocsJudgeReplay.ITEMS[self.ROUTED]:
+            with self.subTest(grader=name):
+                self.assertIn("type: llm", grader_block(text, name))
+        self.assertIn("Exactly one question",
+                      grader_block(text, "one-closing-question"))
 
     def test_the_routed_approval_grader(self):
         pattern, flags = grader(self.ROUTED, "no-approval-promise-without-its-condition")

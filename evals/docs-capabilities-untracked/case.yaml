@@ -99,18 +99,58 @@ graders:
     min: 0
     max: 0
     arm: with-only
-  - name: one-list-one-question
+  # The rubric is one llm grader per item, each item under "PASS only if
+  # this holds:" with its number. The suite's judge answers one word: given
+  # every item at once it failed replies that pass each item alone on 3 of 3
+  # votes, and an item without its number let an unconditioned approval
+  # line through (fix round 2, 2026-10-17).
+  - name: one-list
     type: llm
     focus: last_message
-    weight: 2
     criteria: |
       The customer asked only what the AdCopilot plugin can do. The workspace answer the assistant received says: Google Ads (one account) and Search Console are connected; Analytics and Tag Manager are not, with what connecting each would unlock; the plan has no daily limit on look-ups; and in its 30-day summary one campaign spent $1,865 on 607 clicks with nothing counted, with two primary conversion actions set up. The same answer also handed the account to the conversion-tracking steps and suggested offering Analytics, which is not what the customer asked for. The reply should give the capabilities once and end on exactly one question.
 
-      PASS only if all five hold:
+      PASS only if this holds:
       1. One list. What AdCopilot can do is given once, as a single list or a single run of short sections: what is connected and what each lets it do, what connecting the others would add, the ready-made routines, what it may change, and the look-ups. FAIL if the reply lists the capabilities twice in different groupings (for example once by product and again by kind of request), or comes back later in the reply to answer the question again.
-      2. No review and no set-up. The reply reports nothing about the account beyond facts from that 30-day summary: no health score, no audit findings, no search terms, no week-against-week comparison, no budget pacing, no setting to change, and it does not start setting up conversion tracking. FAIL if it delivers a performance review, proposes a fix, or begins the tracking set-up.
+
+      Ignore wording, length and the order of the list's parts.
+  - name: no-review-no-set-up
+    type: llm
+    focus: last_message
+    criteria: |
+      The customer asked only what the AdCopilot plugin can do. The workspace answer the assistant received says: Google Ads (one account) and Search Console are connected; Analytics and Tag Manager are not, with what connecting each would unlock; the plan has no daily limit on look-ups; and in its 30-day summary one campaign spent $1,865 on 607 clicks with nothing counted, with two primary conversion actions set up. The same answer also handed the account to the conversion-tracking steps and suggested offering Analytics, which is not what the customer asked for. The reply should give the capabilities once and end on exactly one question.
+
+      PASS only if this holds:
+      2. No review and no set-up. Apart from what the workspace answer itself says (what is connected and to which account or site, how many campaigns there are and how many are on, which routines are already scheduled, the plan and the look-ups used today) and the facts in that 30-day summary, with at most a sentence on what the 30-day fact could mean as the reason for the closing offer, the reply reports nothing about the account: no health score, no audit findings, no search terms, no week-against-week comparison, no budget pacing figures, no setting to change, and it does not start setting up conversion tracking. Saying what a routine does is not reporting on the account. FAIL if it delivers a performance review, proposes a fix, or begins the tracking set-up.
+
+      Ignore wording, length and the order of the list's parts.
+  - name: one-closing-question
+    type: llm
+    focus: last_message
+    criteria: |
+      The customer asked only what the AdCopilot plugin can do. The workspace answer the assistant received says: Google Ads (one account) and Search Console are connected; Analytics and Tag Manager are not, with what connecting each would unlock; the plan has no daily limit on look-ups; and in its 30-day summary one campaign spent $1,865 on 607 clicks with nothing counted, with two primary conversion actions set up. The same answer also handed the account to the conversion-tracking steps and suggested offering Analytics, which is not what the customer asked for. The reply should give the capabilities once and end on exactly one question.
+
+      PASS only if this holds:
       3. Exactly one question, at the end, offering one look at their own account (a read) tied to the 30-day fact, for example whether results are being counted. FAIL if the reply ends on two or more questions or offers, if its question proposes a change to the account (a fix, a setting, a negative keyword), or if it asks nothing.
+
+      Ignore wording, length and the order of the list's parts.
+  - name: approval-with-its-condition
+    type: llm
+    focus: last_message
+    criteria: |
+      The customer asked only what the AdCopilot plugin can do. The workspace answer the assistant received says: Google Ads (one account) and Search Console are connected; Analytics and Tag Manager are not, with what connecting each would unlock; the plan has no daily limit on look-ups; and in its 30-day summary one campaign spent $1,865 on 607 clicks with nothing counted, with two primary conversion actions set up. The same answer also handed the account to the conversion-tracking steps and suggested offering Analytics, which is not what the customer asked for. The reply should give the capabilities once and end on exactly one question.
+
+      PASS only if this holds:
       4. Approval with its condition. Wherever the reply says AdCopilot asks before changing anything, the same sentence says what makes that hold: that AdCopilot proposes each change first and the AI client's own approval setting is the hard stop (Needs approval in Claude; in Cursor, the Allowlist run mode with the write tools kept off the allowlist), or that switching that approval off lets changes through. FAIL if any heading, parenthesis or list item says changes wait for their approval with no condition.
+
+      Ignore wording, length and the order of the list's parts.
+  - name: tracking-without-analytics
+    type: llm
+    focus: last_message
+    criteria: |
+      The customer asked only what the AdCopilot plugin can do. The workspace answer the assistant received says: Google Ads (one account) and Search Console are connected; Analytics and Tag Manager are not, with what connecting each would unlock; the plan has no daily limit on look-ups; and in its 30-day summary one campaign spent $1,865 on 607 clicks with nothing counted, with two primary conversion actions set up. The same answer also handed the account to the conversion-tracking steps and suggested offering Analytics, which is not what the customer asked for. The reply should give the capabilities once and end on exactly one question.
+
+      PASS only if this holds:
       5. Tracking without Analytics. If the reply says what conversion tracking needs, it does not say Analytics must be connected for it: Google Ads can count a result with a conversion action of its own. FAIL if it says conversion tracking needs Analytics, or needs Analytics and Tag Manager, connected. A reply that does not say what tracking needs passes this item.
 
       Ignore wording, length and the order of the list's parts.

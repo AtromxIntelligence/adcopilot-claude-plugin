@@ -42,6 +42,9 @@ lets them do; what connecting each of the others would unlock; the routines
 installed here (the daily check-in, the weekly summary, the audit, the
 negative-keyword clean-up, the first-campaign launch, conversion tracking);
 what AdCopilot may change, with its condition (below); and the plan's look-ups.
+Say what each routine reads and proposes, and leave approval to the part on
+what AdCopilot may change, where it is said once with its condition: no
+routine's line adds that nothing happens until they say yes.
 That is the whole answer: never a second list in another grouping, and never
 come back later in the same reply to answer it again. One fact from
 `get_org_context`'s 30-day summary (an account's `last_30d` in `ads_probe`,
