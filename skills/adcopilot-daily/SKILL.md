@@ -12,12 +12,14 @@ Two jobs. Work out which one this is before anything else:
 
 A person who opens a finished run and answers the question it ended on is in neither: that is "After the run", at the end.
 
+Only the run sends `source: "claude-scheduled"`. With a person here, in the set-up or after the run, call `get_org_context` with `source: "claude-plugin/0.2.13"`, never `claude-scheduled`: that tells AdCopilot nobody is there. Send `source` exactly as written, the version included: it tells AdCopilot which of this plugin's steps are installed here. When the answer's `plugin.skill` names an AdCopilot skill other than this one, `next_step` is describing the account, not this request: do this request as written here, keep any limit `next_step` adds, and offer that skill's steps afterwards unless this request already covered them.
+
 ## The run
 
 Nobody reads this until it has finished, so a question is a run that stops half-way.
 
 1. `get_org_context` first, with `source: "claude-scheduled"` — never `claude-plugin` in a run, even with this plugin here. That is how AdCopilot knows the schedule works, and why the offer to set one up stops.
-2. Read only. Call no tool that changes anything — nothing that creates, adds, updates, sets, pauses, links, attaches, enables or submits, in Google Ads, Analytics, Tag Manager or Search Console — and not `save_org_context` either: the source marker already records the run. A finding that names the exact call that fixes it is reported, never run.
+2. Read only. Call no tool that changes anything — nothing that creates, adds, updates, sets, pauses, links, attaches, enables or submits, in Google Ads, Analytics, Tag Manager or Search Console. `save_org_context` is allowed for AdCopilot's own notes only, the `stage` reached and a `session_note` of what the run found, and for nothing else: it never changes Google Ads. A finding that names the exact call that fixes it is reported, never run.
 3. Ask nothing. Never stop for an answer and never end on a request for one. If something is unknown — which account, a read refused, a product to re-add, the day's operations used up — say so in one line and carry on with the rest.
 4. Never offer to schedule anything. This is the schedule.
 5. Skip `related_reads`. A lens result in this run may end with them; the five reads below are the run, each is counted, and nobody is there to choose among more. Do not run one, and do not mention that it was there.

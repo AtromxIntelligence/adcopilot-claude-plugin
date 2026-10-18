@@ -10,9 +10,12 @@ never from memory. The product changes; this file does not move with it, so
 every number in your answer comes from a live read or from the documentation
 site, and nothing comes from recall.
 
-Call `get_org_context` (with `source: "claude-plugin/0.2.12"`) first. Send
+Call `get_org_context` (with `source: "claude-plugin/0.2.13"`) first. Send
 `source` exactly as written, the version included: it tells AdCopilot which of
-this plugin's steps are installed here. A question about AdCopilot itself is
+this plugin's steps are installed here. In a scheduled run, started by a Claude
+scheduled task or a Claude Code routine with nobody there to answer, send
+`source: "claude-scheduled"` instead, never `claude-plugin`: that is how
+AdCopilot knows the run is unattended. A question about AdCopilot itself is
 answered from that one call, plus the documentation site where this file says
 so. Make no Google Ads, Analytics, Search Console or Tag Manager read for it,
 and start no other AdCopilot skill. The answer's `next_step`, `playbook` (its

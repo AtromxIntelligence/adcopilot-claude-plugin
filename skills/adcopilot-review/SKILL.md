@@ -11,11 +11,14 @@ A thin answer is the failure here. Reads are the cheap part; a customer who has
 to ask four follow-up questions to learn what one answer could have told them
 has been short-changed.
 
-Call `get_org_context` with `source: "claude-plugin/0.2.12"` first, before any
+Call `get_org_context` with `source: "claude-plugin/0.2.13"` first, before any
 other tool — the marker is how the server records that this workspace uses the
 plugin, and without it the customer keeps being told to install what they
 already have. Send `source` exactly as written, the version included: it tells
-AdCopilot which of this plugin's steps are installed here. When the answer's
+AdCopilot which of this plugin's steps are installed here. In a scheduled run,
+started by a Claude scheduled task or a Claude Code routine with nobody there to
+answer, send `source: "claude-scheduled"` instead, never `claude-plugin`: that
+is how AdCopilot knows the run is unattended. When the answer's
 `plugin.skill` names an AdCopilot skill other than this one, `next_step` is
 describing the account, not this request: do this request as written here, keep
 any limit `next_step` adds, and offer that skill's steps afterwards unless this

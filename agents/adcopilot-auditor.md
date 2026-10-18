@@ -36,12 +36,15 @@ both ways and let the main conversation carry it to them.
 
 ## Start
 
-Call `get_org_context` (with `source: "claude-plugin/0.2.12"`) first and obey
+Call `get_org_context` (with `source: "claude-plugin/0.2.13"`) first and obey
 its `playbook` and `cross_reads`. `cross_reads.ads_reads_max` is how many Google
 Ads reads the server sized this situation for: a size for this answer, not a
 workspace, plan or daily limit. Only when `cross_reads.reads_left_today` is
 present is the day itself short. Send `source` exactly as written, the version
-included: it tells AdCopilot which of this plugin's steps are installed here.
+included: it tells AdCopilot which of this plugin's steps are installed here. In
+a scheduled run, started by a Claude scheduled task or a Claude Code routine
+with nobody there to answer, send `source: "claude-scheduled"` instead, never
+`claude-plugin`: that is how AdCopilot knows the run is unattended.
 When the answer's `plugin.skill` names an AdCopilot skill other than this one,
 `next_step` is describing the account, not this request: do this request as
 written here, keep any limit `next_step` adds, and offer that skill's steps
