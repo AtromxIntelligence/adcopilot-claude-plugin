@@ -216,16 +216,16 @@ SERVER_PLUGIN_SOURCE = "claude-plugin"
 SCHEDULED_SOURCE_RULE = ("In a scheduled run, started by a Claude scheduled "
                          "task or a Claude Code routine with nobody there to "
                          "answer, send `source: \"claude-scheduled\"` instead, "
-                         "never `claude-plugin`: that is how AdCopilot knows "
-                         "the run is unattended.")
+                         "never `claude-plugin`: `claude-scheduled` is how "
+                         "AdCopilot knows the run is unattended.")
 # adcopilot-daily's own pair: the run sends the scheduled marker (its step 1),
 # and a person's set-up or reply sends the versioned plugin marker, never the
 # scheduled one.
 DAILY_WITH_A_PERSON = ("Only the run sends `source: \"claude-scheduled\"`. "
                        "With a person here, in the set-up or after the run, "
                        "call `get_org_context` with `source: "
-                       "\"claude-plugin/%s\"`, never `claude-scheduled`: that "
-                       "tells AdCopilot nobody is there.")
+                       "\"claude-plugin/%s\"`, never `claude-scheduled`, "
+                       "which would tell AdCopilot nobody is there.")
 # The run keeps no note (PR #22, second review). Founder answer 6 let it keep
 # AdCopilot's own notes, but the server annotates save_org_context as a write
 # (`tools_adcopilot._WRITE`, readOnlyHint false), so Claude lists it with the
