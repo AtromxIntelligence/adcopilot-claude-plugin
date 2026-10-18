@@ -24,12 +24,13 @@ What it pins, and why each one is here:
   conversation after AdCopilot has recorded that it cannot.
 - The unattended run. `adcopilot-daily` passes `claude-scheduled`, never
   `claude-plugin`, and its instructions say read-only and ask-nothing — the
-  two properties a scheduled run with nobody to answer depends on. From
-  0.2.13 the run may keep AdCopilot's own notes with `save_org_context` (the
-  stage and a session note, nothing else), which never change Google Ads, and
-  the Claude app's set-up sets that one tool to Always allow, since Claude
-  lists it with the write tools and a note that waits for approval stops the
-  run.
+  two properties a scheduled run with nobody to answer depends on. It calls
+  no `save_org_context` either: Claude lists that tool with the write tools,
+  every set-up keeps those on Needs approval (the plugin's own steps since
+  0.2.4, and AdCopilot's `schedule_recipe.ALWAYS_ALLOW_STEP`), and a note
+  that waits for approval stops the run. Founder answer 6 (notes in a run)
+  waits for AdCopilot's step, docs and mails to change first (PR #22, second
+  review).
   With no account named it never falls back to a manager account, which
   Google refuses metrics for.
 - Honesty about what keeps a run to reads (D71's family). Nothing on the
@@ -225,18 +226,26 @@ DAILY_WITH_A_PERSON = ("Only the run sends `source: \"claude-scheduled\"`. "
                        "call `get_org_context` with `source: "
                        "\"claude-plugin/%s\"`, never `claude-scheduled`: that "
                        "tells AdCopilot nobody is there.")
-# 0.2.13 (founder answer 6): the run may keep AdCopilot's own notes.
-RUN_NOTES = ("`save_org_context` is allowed for AdCopilot's own notes only, "
-             "the `stage` reached and a `session_note` of what the run found, "
-             "and for nothing else: it never changes Google Ads.")
-# The PR #22 review: Claude lists save_org_context with the write tools (the
-# server annotates it readOnlyHint false), so the set-up lets that one tool run
-# unasked, or a run that keeps a note stops at an approval prompt.
-SET_UP_NOTE_ALLOWED = ("Among the write and delete tools, set "
-                       "`save_org_context` alone to **Always allow** too: it "
-                       "writes only AdCopilot's own notes, never Google Ads, "
-                       "and a run that keeps one would otherwise stop there to "
-                       "ask.")
+# The run keeps no note (PR #22, second review). Founder answer 6 let it keep
+# AdCopilot's own notes, but the server annotates save_org_context as a write
+# (`tools_adcopilot._WRITE`, readOnlyHint false), so Claude lists it with the
+# write tools, and every set-up keeps those on Needs approval: the plugin's own
+# steps from 0.2.4 to 0.2.12 and AdCopilot's `schedule_recipe.ALWAYS_ALLOW_STEP`
+# at d9bd20ae. A scheduled run cannot answer that prompt, so a run that keeps a
+# note never finishes. The ban stays until the server's step, docs and mails
+# say Always allow for that tool and existing schedulers have been told.
+RUN_NO_NOTE = ("and not `save_org_context` either, even where AdCopilot's "
+               "instructions ask for notes as you go: the source marker "
+               "already records the run, and the set-up keeps that tool on "
+               "**Needs approval**, so a note would stop the run at a prompt "
+               "nobody can answer.")
+# The 0.2.13 first draft's two sentences, which would have stalled every run
+# set up before them.
+RUN_NOTES = ("`save_org_context` is allowed for AdCopilot's own notes only")
+SET_UP_NOTE_ALLOWED = ("set `save_org_context` alone to **Always allow**")
+# The set-up's first Claude step as every plugin version since 0.2.4 and the
+# server's own step word it: every write and delete tool keeps asking.
+SET_UP_WRITES_ASK = ("The write and delete tools stay on **Needs approval**.")
 
 # The rule for a finding whose own text carries a condition (plugin #10). The
 # same words on every surface that relays a lens's findings.
@@ -778,10 +787,10 @@ class UnattendedRun(unittest.TestCase):
         run = section(self.skill(), "## The run") or ""
         self.assertRegex(run, r"Read only\.")
         self.assertRegex(run, r"Ask nothing\.")
-        # 0.2.13 (founder answer 6): save_org_context is named as the one tool
-        # the run may call, for AdCopilot's own notes only.
+        # save_org_context is named as a tool the run does not call (PR #22,
+        # second review: a note would wait at an approval prompt).
         self.assertIn("save_org_context", run)
-        self.assertEqual(" ".join(run.split()).count(RUN_NOTES), 1)
+        self.assertEqual(" ".join(run.split()).count(RUN_NO_NOTE), 1)
         self.assertRegex(run, r"Never offer to schedule")
 
     def test_the_lenses(self):
@@ -3757,10 +3766,10 @@ class ScheduledSourceMarker(unittest.TestCase):
     words carry no marker, answered by the review skill, sent the plugin
     marker, and the server (`tools_adcopilot._note_source`, and from
     release/v2.42.0 `scheduled_guard.note_front_door`) never saw a scheduled
-    run. Founder answer 6: the run may use `save_org_context` for
-    AdCopilot's own notes (stage, session note), which never change Google
-    Ads; v2.42.0's guard leaves that tool alone too (`scheduled_guard.guarded`:
-    the internal product is not refused)."""
+    run. Founder answer 6 would let the run use `save_org_context` for
+    AdCopilot's own notes, and v2.42.0's guard leaves that tool alone
+    (`scheduled_guard.guarded`), but Claude asks before it on every set-up
+    made so far, so the run still keeps no note (PR #22, second review)."""
 
     DAILY = "skills/adcopilot-daily/SKILL.md"
     REVIEW = "skills/adcopilot-review/SKILL.md"
@@ -3827,41 +3836,41 @@ class ScheduledSourceMarker(unittest.TestCase):
         # Its own words, not the other files' sentence.
         self.assertEqual(flat(self.DAILY).count(SCHEDULED_SOURCE_RULE), 0)
 
-    def test_the_run_keeps_adcopilots_notes_and_nothing_else(self):
+    def test_the_run_keeps_no_note(self):
+        # PR #22, second review: Claude asks before save_org_context on every
+        # set-up made so far (the plugin's own steps up to 0.2.12 and
+        # AdCopilot's ALWAYS_ALLOW_STEP), so a run that keeps a note waits at
+        # a prompt nobody answers. The run keeps its ban, with the reason, and
+        # the first draft's allowance is gone.
         run = " ".join((section(read(self.DAILY), "## The run") or "").split())
-        self.assertEqual(run.count(RUN_NOTES), 1)
-        self.assertIn("never changes Google Ads", RUN_NOTES)
+        self.assertEqual(run.count(RUN_NO_NOTE), 1)
         self.assertIn("Call no tool that changes anything", run)
-        for gone in ("not `save_org_context` either",
-                     "the source marker already records the run"):
-            with self.subTest(gone=gone):
-                self.assertNotIn(gone, run)
+        self.assertNotIn(RUN_NOTES, run)
+        self.assertNotIn("`session_note`", run)
 
-    def test_the_set_up_lets_the_runs_note_through(self):
-        # The PR #22 review: the server annotates save_org_context as a write
-        # (`tools_adcopilot._WRITE`, readOnlyHint false), so Claude lists it
-        # with the write and delete tools. A set-up that keeps all of those on
-        # Needs approval stops a run that keeps a note at an approval prompt,
-        # which the run's own rules forbid ("a question is a run that stops
-        # half-way"). The Claude app's first step lets that one tool through,
-        # and only that one.
+    def test_the_set_up_keeps_every_write_tool_asking(self):
+        # The run keeps no note, so the set-up has no reason to let one tool
+        # run unasked: Claude's tool permissions apply to every chat on the
+        # connector, where save_org_context also takes a profile patch, a
+        # decision and a routine. The step says what every earlier version
+        # and AdCopilot's own step say.
         setup = section(read(self.DAILY), "## The set-up") or ""
         claude = setup[setup.find("**Claude — claude.ai, Cowork, the desktop app:**"):]
         step1 = " ".join(claude[claude.find("\n1. "):claude.find("\n2. ")].split())
-        self.assertIn(SET_UP_NOTE_ALLOWED, step1)
-        self.assertIn("Every other write and delete tool stays on "
-                      "**Needs approval**.", step1)
-        self.assertNotIn("The write and delete tools stay on **Needs approval**.",
-                         step1)
-        # The run may keep a note exactly when the set-up lets it through.
+        self.assertIn(SET_UP_WRITES_ASK, step1)
+        self.assertNotIn(SET_UP_NOTE_ALLOWED, step1)
+        self.assertEqual(" ".join(read(self.DAILY).split()).count("**Always allow**"), 1)
+        # The run keeps no note exactly while the set-up keeps it asking.
         run = " ".join((section(read(self.DAILY), "## The run") or "").split())
-        self.assertEqual(RUN_NOTES in run, SET_UP_NOTE_ALLOWED in step1)
+        self.assertEqual(RUN_NO_NOTE in run, SET_UP_WRITES_ASK in step1)
 
-    def test_the_release_check_expects_the_note_to_run_unasked(self):
+    def test_the_release_check_expects_no_note(self):
         releasing = " ".join((section(read("README.md"), "## Releasing") or "").split())
         step6 = releasing[releasing.find("6. The scheduled run"):
                           releasing.find("7. `claude plugin validate")]
-        self.assertIn("the set-up sets that one tool to **Always allow**", step6)
+        self.assertIn("and no `save_org_context` either (the set-up keeps that "
+                      "tool asking first, so a note would stop the run)", step6)
+        self.assertNotIn("**Always allow**", step6)
         # The run forbids a change in every product it can reach, so the
         # release check does too: under "in Google Ads" alone, a run that
         # created an Analytics event or a Tag Manager tag would pass step 6.
@@ -3872,36 +3881,29 @@ class ScheduledSourceMarker(unittest.TestCase):
         note = section(read("README.md"), "## AdCopilot version") or ""
         note = " ".join(note[note.find("**%s (" % manifest_version()):]
                         .split("\n\n", 1)[0].split())
-        self.assertIn("`save_org_context` alone to **Always allow**", note)
+        self.assertNotIn(SET_UP_NOTE_ALLOWED, note)
+        for part in ("still calls no `save_org_context`",
+                     "a run that kept a note would stop there and never finish",
+                     "set `save_org_context` to **Always allow** and the people "
+                     "who have already scheduled the check have been told"):
+            with self.subTest(part=part):
+                self.assertIn(part, note)
 
-    def test_the_scheduled_case_lets_notes_through_and_nothing_else(self):
+    def test_the_scheduled_case_fails_any_save(self):
+        # A note included: on the set-ups that exist, it stops the run.
         text = read("evals/%s/case.yaml" % self.CASE)
         saves = [b for b in re.split(r"\n  - name: ", text)[1:]
                  if re.search(r"^\s+tool: \S*__save_org_context\s*$", b, re.M)]
         self.assertEqual(len(saves), 1, "one grader on save_org_context")
-        block = grader_block(text, "notes-only-to-adcopilot")
+        block = grader_block(text, "never-writes-to-adcopilot")
         for line in ("type: tool_used", "min: 0", "max: 0"):
             with self.subTest(line=line):
                 self.assertRegex(block, r"(?m)^\s+%s\s*$" % re.escape(line))
-        m = re.search(r"^\s+input_match: '((?:[^']|'')*)'\s*$", block, re.M)
-        self.assertIsNotNone(m, "the grader counts by input")
-        pattern = re.compile(m.group(1).replace("''", "'"))
-        counted = ['{"routine":{"own_schedule":"saved"}}',
-                   '{"stage":"routine","patch":{"what_we_sell":"bread"}}',
-                   '{"decision": {"what": "lower the budget"}}',
-                   '{"session_note":"Needs a look","routine": {"daily": {}}}']
-        passed = ['{"stage":"routine","session_note":"Needs a look: overspend."}',
-                  '{"session_note": "All clear on 23 Sep."}',
-                  '{"stage": "routine"}']
-        for call in counted:
-            with self.subTest(call=call):
-                self.assertRegex(call, pattern)
-        for call in passed:
-            with self.subTest(call=call):
-                self.assertNotRegex(call, pattern)
-        self.assertNotIn("never-writes-to-adcopilot", text)
-        self.assertNotIn("or saved anything", text)
-        self.assertIn("kept a note in AdCopilot", text)
+        # Counted on every call, whatever it carries.
+        self.assertNotIn("input_match", block)
+        self.assertNotIn("notes-only-to-adcopilot", text)
+        self.assertNotIn("kept a note in AdCopilot", text)
+        self.assertIn("or saved anything", text)
 
     UNMARKED = "review-scheduled-unmarked"
 
@@ -4013,7 +4015,7 @@ class ScheduledSourceMarker(unittest.TestCase):
         start = notes.find("**%s (" % manifest_version())
         note = " ".join(notes[start:].split("\n\n", 1)[0].split())
         for part in ('`source: "claude-scheduled"`', "never `claude-plugin`",
-                     "`save_org_context`", "never change Google Ads",
+                     "`save_org_context`",
                      "no server release has to come first"):
             with self.subTest(part=part):
                 self.assertIn(part, note)

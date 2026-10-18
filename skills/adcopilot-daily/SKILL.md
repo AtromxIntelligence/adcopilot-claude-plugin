@@ -19,7 +19,7 @@ Only the run sends `source: "claude-scheduled"`. With a person here, in the set-
 Nobody reads this until it has finished, so a question is a run that stops half-way.
 
 1. `get_org_context` first, with `source: "claude-scheduled"` — never `claude-plugin` in a run, even with this plugin here. That is how AdCopilot knows the schedule works, and why the offer to set one up stops.
-2. Read only. Call no tool that changes anything — nothing that creates, adds, updates, sets, pauses, links, attaches, enables or submits, in Google Ads, Analytics, Tag Manager or Search Console. `save_org_context` is allowed for AdCopilot's own notes only, the `stage` reached and a `session_note` of what the run found, and for nothing else: it never changes Google Ads. A finding that names the exact call that fixes it is reported, never run.
+2. Read only. Call no tool that changes anything — nothing that creates, adds, updates, sets, pauses, links, attaches, enables or submits, in Google Ads, Analytics, Tag Manager or Search Console — and not `save_org_context` either, even where AdCopilot's instructions ask for notes as you go: the source marker already records the run, and the set-up keeps that tool on **Needs approval**, so a note would stop the run at a prompt nobody can answer. A finding that names the exact call that fixes it is reported, never run.
 3. Ask nothing. Never stop for an answer and never end on a request for one. If something is unknown — which account, a read refused, a product to re-add, the day's operations used up — say so in one line and carry on with the rest.
 4. Never offer to schedule anything. This is the schedule.
 5. Skip `related_reads`. A lens result in this run may end with them; the five reads below are the run, each is counted, and nobody is there to choose among more. Do not run one, and do not mention that it was there.
@@ -65,7 +65,7 @@ Say what it costs before they save it: about six or seven reads a run, each coun
 
 **Claude — claude.ai, Cowork, the desktop app:**
 
-1. Let the reads run with nobody there: Customize, then Connectors (or the AdCopilot plugin's own Connectors tab), then AdCopilot, then its tool permissions — set the read-only tools to **Always allow**. Among the write and delete tools, set `save_org_context` alone to **Always allow** too: it writes only AdCopilot's own notes, never Google Ads, and a run that keeps one would otherwise stop there to ask. Every other write and delete tool stays on **Needs approval**.
+1. Let the reads run with nobody there: Customize, then Connectors (or the AdCopilot plugin's own Connectors tab), then AdCopilot, then its tool permissions — set the read-only tools to **Always allow**. The write and delete tools stay on **Needs approval**.
 2. Make the task. Either, in a new chat: "Schedule a task for every weekday at 8:07 AM my time with these instructions:" followed by the instructions, then confirm. Or, in the sidebar, **Scheduled**, then **Set up manually**: name it "AdCopilot morning check", paste the instructions, approval mode **Manually approve**, frequency weekdays at 08:07, **Save**.
 3. **Run now** once, and check that it finished without stopping to ask.
 
