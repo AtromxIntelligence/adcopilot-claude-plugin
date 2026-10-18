@@ -1244,7 +1244,11 @@ class PluginVersionMarker(unittest.TestCase):
                         m.group(1), manifest_version(),
                         "%s marks plugin use as %s but the manifest is %s — move "
                         "every copy with the bump" % (rel, m.group(0), manifest_version()))
-        self.assertGreaterEqual(seen, 14, "expected the 14 marker sites, saw %d" % seen)
+        # 13 from 0.2.13's second review: one in each marked file. Connect's
+        # and launch's later steps say "the `source` the first rule gives",
+        # "the same `source`" and "the `source` given under Arriving mid-arc",
+        # so a scheduled run meets the literal only beside its exception.
+        self.assertGreaterEqual(seen, 13, "expected the 13 marker sites, saw %d" % seen)
 
     def test_no_bare_marker_is_left(self):
         # Outside the four commands' no-skills exception, nowhere.
@@ -2491,9 +2495,9 @@ class ReleaseNoteAndMarker(unittest.TestCase):
                         seen += 1
                         with self.subTest(file=rel):
                             self.assertEqual(m.group(1), manifest_version())
-        # 16 at 0.2.13: three in adcopilot-connect, two in adcopilot-launch,
-        # one in each other marked file, adcopilot-daily now among them.
-        self.assertGreaterEqual(seen, 16)
+        # 13 at 0.2.13: one in each marked file, adcopilot-daily among them
+        # (connect had three and launch two until the second review).
+        self.assertGreaterEqual(seen, 13)
 
 
 # The server's own hand-off text for a running, counted account (AdCopilot
@@ -3808,6 +3812,38 @@ class ScheduledSourceMarker(unittest.TestCase):
                     self.assertGreater(text.find(SCHEDULED_SOURCE_RULE),
                                        text.find(NO_SKILLS))
         self.assertEqual(checked, 12)
+
+    def test_the_plugin_marker_is_written_once_beside_its_exception(self):
+        # PR #22, second review: connect's steps 2 and 3 and launch's step 1
+        # restated `source: "claude-plugin/<version>"` with no exception, so a
+        # scheduled run working through the steps met the plain marker again.
+        # Each marked file writes it once, in the paragraph that says what a
+        # scheduled run sends instead (adcopilot-daily: what a person's
+        # set-up or reply sends), and every later call refers back to it.
+        marked = self.marked()
+        self.assertEqual(len(marked), 13)
+        for rel in marked:
+            text = read(rel)
+            with self.subTest(file=rel):
+                self.assertEqual(text.count(plugin_marker()), 1)
+                para = [p for p in re.split(r"\n\s*\n", text)
+                        if plugin_marker() in p][0]
+                para = " ".join(para.split())
+                if rel == self.DAILY:
+                    self.assertIn(" ".join((DAILY_WITH_A_PERSON
+                                            % manifest_version()).split()), para)
+                else:
+                    self.assertIn(SCHEDULED_SOURCE_RULE, para)
+        refer = {"skills/adcopilot-connect/SKILL.md": (
+                     "Call `get_org_context` with the `source` the first rule gives.",
+                     "calling `get_org_context` again, with the same `source`."),
+                 "skills/adcopilot-launch/SKILL.md": (
+                     'Call `get_org_context` with the `source` given under '
+                     '"Arriving mid-arc".',)}
+        for rel, lines in refer.items():
+            for line in lines:
+                with self.subTest(file=rel, line=line):
+                    self.assertEqual(flat(rel).count(line), 1)
 
     def test_the_review_skill_says_it_with_its_first_call(self):
         top = read(self.REVIEW).split("## Spend the reads you are given", 1)[0]
