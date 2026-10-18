@@ -26,7 +26,10 @@ What it pins, and why each one is here:
   `claude-plugin`, and its instructions say read-only and ask-nothing — the
   two properties a scheduled run with nobody to answer depends on. From
   0.2.13 the run may keep AdCopilot's own notes with `save_org_context` (the
-  stage and a session note, nothing else), which never change Google Ads.
+  stage and a session note, nothing else), which never change Google Ads, and
+  the Claude app's set-up sets that one tool to Always allow, since Claude
+  lists it with the write tools and a note that waits for approval stops the
+  run.
   With no account named it never falls back to a manager account, which
   Google refuses metrics for.
 - Honesty about what keeps a run to reads (D71's family). Nothing on the
@@ -226,6 +229,14 @@ DAILY_WITH_A_PERSON = ("Only the run sends `source: \"claude-scheduled\"`. "
 RUN_NOTES = ("`save_org_context` is allowed for AdCopilot's own notes only, "
              "the `stage` reached and a `session_note` of what the run found, "
              "and for nothing else: it never changes Google Ads.")
+# The PR #22 review: Claude lists save_org_context with the write tools (the
+# server annotates it readOnlyHint false), so the set-up lets that one tool run
+# unasked, or a run that keeps a note stops at an approval prompt.
+SET_UP_NOTE_ALLOWED = ("Among the write and delete tools, set "
+                       "`save_org_context` alone to **Always allow** too: it "
+                       "writes only AdCopilot's own notes, never Google Ads, "
+                       "and a run that keeps one would otherwise stop there to "
+                       "ask.")
 
 # The rule for a finding whose own text carries a condition (plugin #10). The
 # same words on every surface that relays a lens's findings.
@@ -3825,6 +3836,36 @@ class ScheduledSourceMarker(unittest.TestCase):
                      "the source marker already records the run"):
             with self.subTest(gone=gone):
                 self.assertNotIn(gone, run)
+
+    def test_the_set_up_lets_the_runs_note_through(self):
+        # The PR #22 review: the server annotates save_org_context as a write
+        # (`tools_adcopilot._WRITE`, readOnlyHint false), so Claude lists it
+        # with the write and delete tools. A set-up that keeps all of those on
+        # Needs approval stops a run that keeps a note at an approval prompt,
+        # which the run's own rules forbid ("a question is a run that stops
+        # half-way"). The Claude app's first step lets that one tool through,
+        # and only that one.
+        setup = section(read(self.DAILY), "## The set-up") or ""
+        claude = setup[setup.find("**Claude — claude.ai, Cowork, the desktop app:**"):]
+        step1 = " ".join(claude[claude.find("\n1. "):claude.find("\n2. ")].split())
+        self.assertIn(SET_UP_NOTE_ALLOWED, step1)
+        self.assertIn("Every other write and delete tool stays on "
+                      "**Needs approval**.", step1)
+        self.assertNotIn("The write and delete tools stay on **Needs approval**.",
+                         step1)
+        # The run may keep a note exactly when the set-up lets it through.
+        run = " ".join((section(read(self.DAILY), "## The run") or "").split())
+        self.assertEqual(RUN_NOTES in run, SET_UP_NOTE_ALLOWED in step1)
+
+    def test_the_release_check_expects_the_note_to_run_unasked(self):
+        releasing = " ".join((section(read("README.md"), "## Releasing") or "").split())
+        step6 = releasing[releasing.find("6. The scheduled run"):
+                          releasing.find("7. `claude plugin validate")]
+        self.assertIn("the set-up sets that one tool to **Always allow**", step6)
+        note = section(read("README.md"), "## AdCopilot version") or ""
+        note = " ".join(note[note.find("**%s (" % manifest_version()):]
+                        .split("\n\n", 1)[0].split())
+        self.assertIn("`save_org_context` alone to **Always allow**", note)
 
     def test_the_scheduled_case_lets_notes_through_and_nothing_else(self):
         text = read("evals/%s/case.yaml" % self.CASE)

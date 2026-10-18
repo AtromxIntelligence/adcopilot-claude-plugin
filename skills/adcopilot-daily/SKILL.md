@@ -65,7 +65,7 @@ Say what it costs before they save it: about six or seven reads a run, each coun
 
 **Claude — claude.ai, Cowork, the desktop app:**
 
-1. Let the reads run with nobody there: Customize, then Connectors (or the AdCopilot plugin's own Connectors tab), then AdCopilot, then its tool permissions — set the read-only tools to **Always allow**. The write and delete tools stay on **Needs approval**.
+1. Let the reads run with nobody there: Customize, then Connectors (or the AdCopilot plugin's own Connectors tab), then AdCopilot, then its tool permissions — set the read-only tools to **Always allow**. Among the write and delete tools, set `save_org_context` alone to **Always allow** too: it writes only AdCopilot's own notes, never Google Ads, and a run that keeps one would otherwise stop there to ask. Every other write and delete tool stays on **Needs approval**.
 2. Make the task. Either, in a new chat: "Schedule a task for every weekday at 8:07 AM my time with these instructions:" followed by the instructions, then confirm. Or, in the sidebar, **Scheduled**, then **Set up manually**: name it "AdCopilot morning check", paste the instructions, approval mode **Manually approve**, frequency weekdays at 08:07, **Save**.
 3. **Run now** once, and check that it finished without stopping to ask.
 
