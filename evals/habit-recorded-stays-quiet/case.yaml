@@ -3,8 +3,10 @@ name: habit-recorded-stays-quiet
 description: >
   /adcopilot:daily on claude.ai for a workspace whose scheduled run has
   already checked in (the tenant in this case's mocks is fictional; every
-  value is invented): get_org_context carries routine.scheduled_last_seen_at,
-  and nothing else in its answer asks for a check-in offer. The founder's rule
+  value is invented): get_org_context carries routine.scheduled_first_seen_at
+  and routine.scheduled_last_seen_at on two different days, so AdCopilot
+  v2.41.0 sends no routine.schedule, and nothing else in its answer asks for a
+  check-in offer. The founder's rule
   is to keep offering until a schedule is recorded, then stop — so the reply
   does the check-in and makes no offer to set up a scheduled task, a routine
   or a daily check-in. Mentioning that their scheduled check is working is

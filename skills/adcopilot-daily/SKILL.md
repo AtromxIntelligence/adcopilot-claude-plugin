@@ -43,6 +43,8 @@ The report:
 
 ## The set-up
 
+Cursor first. If this is Cursor (`get_org_context`'s top-level `surface` is `cursor`, or Cursor's own instructions or the person say so), AdCopilot gives no scheduling steps there and `get_org_context` carries no `routine.schedule`: say that AdCopilot's emailed daily check-in, when `routine.daily.status` is `in_app`, is the morning check in Cursor, and record nothing. Never call `save_org_context` with `routine.own_schedule` from Cursor: AdCopilot keeps it for the whole workspace, so it would stop the offer in their Claude too. Everything below is for Claude.
+
 First, the instructions they will save. They are AdCopilot's own recipe, word for word, and their first sentence is what marks each run:
 
 ```text

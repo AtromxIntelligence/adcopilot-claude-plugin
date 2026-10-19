@@ -2,17 +2,23 @@ schema_version: "1.1"
 name: habit-offer-untold
 description: >
   The same tenant and command as habit-offer-code (fictional; every value is
-  invented), typed the way a real customer types it: the bare command, with
-  no line saying where they are. Every other habit case says, and the
-  daily-habit block believes what they say, so the tell it falls back on
-  (Claude Code is where `claude mcp list` runs) is only exercised here. The
-  eval harness is Claude Code, so the offer must be worded for Claude Code —
-  a routine made with /schedule — not a claude.ai scheduled task, even though
-  get_org_context reports "surface": "claude", which the server reports for
-  Claude Code too. The claude.ai side of the tell cannot be run in this
-  harness. The check-in itself is habit-offer-chat's to judge; here only the
-  reads that prove it ran are checked deterministically, and the offer is the
-  rubric's.
+  invented), typed the way a real customer types it: the bare command, with no
+  line saying where they are. Every other habit case says, and the daily-habit
+  block believes what they say, so the tell it falls back on (Claude Code is
+  where `claude mcp list` runs) is only exercised here. The eval harness is
+  Claude Code, so the offer must be worded for Claude Code — a routine made with
+  /schedule — not a claude.ai scheduled task, and get_org_context does not say
+  where it is either: for a connection whose client name AdCopilot could not
+  read, v2.41.0 reports "surface": "other" and routine.schedule.offer "both",
+  the one value the block leaves to the tell (a named Claude client gets
+  "claude" or "claude_code"). The claude.ai side of the tell cannot be run in
+  this harness. The check-in itself is habit-offer-chat's to judge; here only
+  the reads that prove it ran are checked deterministically, and the offer is
+  four llm graders', one per rubric item except items 2 and 5, which share
+  one (see the weights). Each is told about AdCopilot's
+  emailed check-in, which v2.41.0's [RECAP] leads replies to mention: on
+  2026-10-18 both with-skill replies said it had flagged the same searches,
+  and every judge vote failed them.
 tags: [habit]
 runs: 2
 execution:
@@ -42,23 +48,62 @@ graders:
     target: last_message
     flags: i
     match: not_contains
-    pattern: 'Claude scheduled task|Scheduled page|Set up manually'
-  - name: one-offer-for-claude-code-after-the-first-finding-it-reads
+    pattern: 'scheduled task|Scheduled page|Set up manually|Claude app'
+  # Weights: rubric items 1 (where the offer sits), 3 (worded for Claude Code
+  # alone) and 4 (an offer, with no set-up steps before a yes), and items 2
+  # and 5 together (the value line, no sales words), weigh 6 each, so failing
+  # any one of the four alone puts a run under 0.8 (untold 23/29 = 0.79, code
+  # 22/28 = 0.79), as the one five-item rubric did before 2026-10-18. Items 2
+  # and 5 share a grader because a grader fails a run alone only if it weighs
+  # more than a fifth of the total, so at most four can: with five at one
+  # weight, failing one alone stays at 0.8 or above.
+  - name: offer-right-after-the-searches
     type: llm
     focus: last_message
-    weight: 2
+    weight: 6
     criteria: |
       The customer typed /adcopilot:daily and said nothing about where they are. They are in Claude Code. No schedule is set up yet, so the reply should make one short offer to turn this check into a daily habit as a Claude Code routine made with /schedule, right after the first finding the morning check also reads (here the wasted searches). Judge only the offer.
 
-      PASS only if all five hold:
+      AdCopilot also emails its own daily check-in for this workspace; the one on 24 September flagged these same searches and the stopped ad. That emailed check-in is not a schedule of theirs, so the offer is still owed, and a reply may mention it (in its opening line on last time, say) without that counting as a second offer or making "would have caught it on its first morning" untrue.
 
-      1. There is exactly one such offer, right after the first finding the morning check also reads — not at the end of the reply and not before any finding. The reply may still end on a question about blocking the searches.
-      2. It is tied to that finding and carries the value line: a check that runs by itself every weekday (at 8:07) would have caught it on its first morning; it only reads the account and never changes anything; it opens with "All clear" or "Needs a look" plus one yes/no fix.
-      3. It is worded for Claude Code: a routine, /schedule, and an offer to set it up (run /schedule) for them. It does NOT send them to claude.ai's Scheduled page or describe a claude.ai scheduled task, and it does not offer both.
-      4. It is short — one or two sentences — and it is an offer: no set-up steps or instructions to paste before they say yes.
+      PASS only if this holds:
+      1. There is exactly one such offer, right after the first finding the morning check also reads — not at the end of the reply and not before any finding. The reply may still end on a question about blocking the searches. FAIL if there is no offer at all.
+  - name: offer-value-line-and-no-sales-words
+    type: llm
+    focus: last_message
+    weight: 6
+    criteria: |
+      The customer typed /adcopilot:daily and said nothing about where they are. They are in Claude Code. No schedule is set up yet, so the reply should make one short offer to turn this check into a daily habit as a Claude Code routine made with /schedule, right after the first finding the morning check also reads (here the wasted searches). Judge only the offer.
+
+      AdCopilot also emails its own daily check-in for this workspace; the one on 24 September flagged these same searches and the stopped ad. That emailed check-in is not a schedule of theirs, so the offer is still owed, and a reply may mention it (in its opening line on last time, say) without that counting as a second offer or making "would have caught it on its first morning" untrue.
+
+      PASS only if both hold:
+      2. It is tied to that finding and carries the value line: a check that runs by itself every weekday (at 8:07) would have caught it on its first morning; it only reads the account and never changes anything; it opens with "All clear" or "Needs a look" plus one yes/no fix. Saying the check is "read-only" (for example "A read-only check") counts as saying it only reads the account and never changes anything.
       5. No sales, plan, price or upgrade wording, and no urgency.
 
-      FAIL if any of the five is missing, or if there is no offer at all.
+      FAIL if either does not hold.
+  - name: offer-worded-for-claude-code
+    type: llm
+    focus: last_message
+    weight: 6
+    criteria: |
+      The customer typed /adcopilot:daily and said nothing about where they are. They are in Claude Code. No schedule is set up yet, so the reply should make one short offer to turn this check into a daily habit as a Claude Code routine made with /schedule, right after the first finding the morning check also reads (here the wasted searches). Judge only the offer.
+
+      AdCopilot also emails its own daily check-in for this workspace; the one on 24 September flagged these same searches and the stopped ad. That emailed check-in is not a schedule of theirs, so the offer is still owed, and a reply may mention it (in its opening line on last time, say) without that counting as a second offer or making "would have caught it on its first morning" untrue.
+
+      PASS only if this holds:
+      3. It is worded for Claude Code: a routine, /schedule, and an offer to set it up (run /schedule) for them. It does NOT send them to claude.ai's Scheduled page or describe a claude.ai scheduled task, and it does not offer both.
+  - name: offer-short-and-no-steps
+    type: llm
+    focus: last_message
+    weight: 6
+    criteria: |
+      The customer typed /adcopilot:daily and said nothing about where they are. They are in Claude Code. No schedule is set up yet, so the reply should make one short offer to turn this check into a daily habit as a Claude Code routine made with /schedule, right after the first finding the morning check also reads (here the wasted searches). Judge only the offer.
+
+      AdCopilot also emails its own daily check-in for this workspace; the one on 24 September flagged these same searches and the stopped ad. That emailed check-in is not a schedule of theirs, so the offer is still owed, and a reply may mention it (in its opening line on last time, say) without that counting as a second offer or making "would have caught it on its first morning" untrue.
+
+      PASS only if this holds:
+      4. It is short — one or two sentences — and it is an offer: no set-up steps or instructions to paste before they say yes. Naming /schedule as the way the routine would be set up (which item 3 asks for) is not a set-up step or an instruction.
   - name: marks-plugin-use
     type: tool_used
     tool: mcp__plugin_adcopilot_adcopilot__get_org_context

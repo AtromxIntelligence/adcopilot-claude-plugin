@@ -3,20 +3,24 @@ name: review-spends-the-depth
 description: >
   "How are my ads doing?" on a running account (the tenant in this case's mocks
   is fictional; every value is invented). What is measured here is only what the
-  skill's body adds over the connector plus its own frontmatter: the server's
-  playbook for this situation already says to open with `full_audit` and to
-  report the biggest money first, and the lens's own description already says
-  its findings come back by severity rather than impact — so neither of those is
-  this case's question. The body's additions are that `full_audit` must be asked
-  for `deep` explicitly, over the window being reported (a call that names no
-  depth also runs deep today, but falls back to a quick audit, scoring three of
-  seventy-three checks month-to-date, if that run cannot finish); that the
-  number of checks actually scored is said out loud rather than letting the
-  unscored ones pass as passes; that a raw `search` returns millionths and must
-  never be printed as money; and that the recommendation carries the cost of
-  acting AND the cost of doing nothing. `full_audit` is pinned here at its live
-  description (revision `6145d0b5`, read 2026-10-06) because the suite-wide
-  snapshot's copy is older and says the opposite about ordering.
+  skill's body adds over the connector plus its own frontmatter: the lens's own
+  description already says its findings come back by severity rather than
+  impact, and the money order was the server playbook's when the case was
+  written — so neither of those is this case's question. On a plugin turn
+  AdCopilot v2.41.0's playbook leaves this situation's steps to the installed
+  skill, on both arms of the tools-only ablation, and its `question_map` names
+  `full_audit (depth deep)` for a "what to do" question, so the server now hands
+  both arms part of the deep call. The body's additions are that `full_audit`
+  must be asked for `deep` explicitly, over the window being reported (a call
+  that names no depth also runs deep today, but falls back to a quick audit,
+  scoring three of seventy-three checks month-to-date, if that run cannot
+  finish); that the number of checks actually scored is said out loud rather
+  than letting the unscored ones pass as passes; that a raw `search` returns
+  millionths and must never be printed as money; and that the recommendation
+  carries the cost of acting AND the cost of doing nothing. `full_audit` is
+  pinned here at its live description (revision `6145d0b5`, read 2026-10-06)
+  because the suite-wide snapshot's copy is older and says the opposite about
+  ordering.
 tags: [review]
 runs: 3
 execution:

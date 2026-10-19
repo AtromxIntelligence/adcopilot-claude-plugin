@@ -10,11 +10,11 @@ description: >
   because no tool here returns one; that `gsc_request_indexing` calls an API
   Google documents as crawling only JobPosting and BroadcastEvent pages, so it
   is never the fix for an unindexed page; that an average position is averaged
-  across every country and device and is not a rank; and that `cross_reads`
-  saying "make no cross-product read" budgets reads in service of an ADS
-  answer and does not close Search Console when the question IS organic search.
-  The server's own answer in these mocks tells the model to make no
-  cross-product read, which is what the live server says for this situation.
+  across every country and device and is not a rank; and that `cross_reads`,
+  which says there is no unprompted read outside Google Ads to make this turn,
+  budgets reads made unprompted for an ADS answer and does not close Search
+  Console when the question IS organic search. The server's own answer in these
+  mocks is what AdCopilot v2.41.0 renders for this situation.
 tags: [seo]
 runs: 3
 execution:
@@ -26,9 +26,9 @@ graders:
   - name: reads-search-console-despite-the-ads-ceiling
     type: regex
     target: mock_calls
-    # cross_reads in this case's get_org_context says "make no cross-product
-    # read" and offers a search_console allowance of zero. That budget is for
-    # reads in service of an ads answer; the question here is organic search.
+    # cross_reads in this case's get_org_context says there is no unprompted
+    # read outside Google Ads to make this turn. That budget is for reads made
+    # unprompted for an ads answer; the question here is organic search.
     pattern: '"tool"\s*:\s*"[^"]*gsc_search_analytics"'
   - name: asks-for-a-row-limit
     type: regex
@@ -42,10 +42,10 @@ graders:
     target: mock_calls
     match: not_contains
     # gsc_request_indexing is served in this case precisely so that refusing it
-    # is a choice. A tool's NAME can also appear in the log as an argument of
-    # get_org_context (tools: [...] asks for its text); the lookbehind skips
-    # that, as in connect-link-order.
-    pattern: '(?<!\\?"tools\\?"[^\n]{0,200})gsc_request_indexing'
+    # is a choice. Anchored on the call's own "tool": a tool's NAME also appears
+    # in the call log as an argument of get_org_context (tools: [...] asks for
+    # its text), and neither that nor the answer's text is a call.
+    pattern: '"tool"\s*:\s*"[^"]*gsc_request_indexing"'
   - name: indexed-count-comes-from-the-right-source
     type: llm
     focus: trace

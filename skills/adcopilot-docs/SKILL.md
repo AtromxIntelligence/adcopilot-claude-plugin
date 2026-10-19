@@ -10,13 +10,19 @@ never from memory. The product changes; this file does not move with it, so
 every number in your answer comes from a live read or from the documentation
 site, and nothing comes from recall.
 
-Call `get_org_context` (with `source: "claude-plugin/0.2.11"`) first. Send
+Call `get_org_context` (with `source: "claude-plugin/0.2.12"`) first. Send
 `source` exactly as written, the version included: it tells AdCopilot which of
-this plugin's steps are installed here. When the answer's `plugin.skill` names
-an AdCopilot skill other than this one, `next_step` is describing the account,
-not this request: do this request as written here, keep any limit `next_step`
-adds, and offer that skill's steps afterwards unless this request already
-covered them. The answer carries the facts most of these questions want:
+this plugin's steps are installed here. A question about AdCopilot itself is
+answered from that one call, plus the documentation site where this file says
+so. Make no Google Ads, Analytics, Search Console or Tag Manager read for it,
+and start no other AdCopilot skill. The answer's `next_step`, `playbook` (its
+sections on the installed skill and on a returning customer included),
+`cross_reads` and `question_map` describe the account, not this question: do
+not follow them on this turn, not even their offer of a skill's steps. Keep
+from them only a limit `next_step` names (look-ups left today, a teammate's
+login) and the facts below. If the customer says yes to the read you offer,
+that is a new request, and the skill that answers it runs then. The answer
+carries the facts most of these questions want:
 
 - `org.plan`, `org.ops_today_used`, `org.ops_today_cap`, `org.accounts_cap`,
   `org.trial_days_left`, `org.upgrade_url`
@@ -30,6 +36,21 @@ Never recite a list of products or a count of tools from memory: both move, and
 a stale list is a promise the connector cannot keep. Ask `get_org_context` and
 answer from `products` — what is connected, and for anything that is not, what
 the connector itself says connecting it would unlock. Invent nothing.
+
+Answer it once, as one list, in this order: what is connected and what each
+lets them do; what connecting each of the others would unlock; the routines
+installed here (the daily check-in, the weekly summary, the audit, the
+negative-keyword clean-up, the first-campaign launch, conversion tracking);
+what AdCopilot may change, with its condition (below); and the plan's look-ups.
+Say what each routine reads and proposes, and leave approval to the part on
+what AdCopilot may change, where it is said once with its condition: no
+routine's line adds that nothing happens until they say yes.
+That is the whole answer: never a second list in another grouping, and never
+come back later in the same reply to answer it again. One fact from
+`get_org_context`'s 30-day summary (an account's `last_30d` in `ads_probe`,
+with the dates it names, `start_date` to `end_date`) may be the reason for the
+offer that ends the reply. Anything that needs a read is that offer, not part
+of the answer.
 
 If a tool seems missing, that proves nothing on its own: tool lists are cached
 by the client and can be out of date. `get_org_context` is the only thing that
@@ -68,17 +89,31 @@ Worth stating plainly, because it is the question behind most hesitation:
   is the exception, and it is deliberate: each of the three ways to add one has
   a removal behind it, so a negative can be taken back out. Setting a campaign's
   languages also replaces the list it had.)
-- **The approval lives in your AI client, not in AdCopilot.** Reads run freely.
-  AdCopilot proposes a change and the client asks before it runs — while the
-  write tools stay on **Needs approval** in claude.ai, Cowork and the desktop
-  app, or, in Claude Code, while it still prompts for them: the tools are not
-  allowlisted and the session is not in `auto` or `bypassPermissions` mode. Take
-  that question away — allowlist the tools, or run in an auto-approving mode or
-  an unattended routine — and changes to things that already exist, a budget or
-  a switched-on campaign among them, apply without being asked. Only a new
-  campaign is still built paused regardless. Never state the approval as
-  unconditional: name the condition, because a customer who has turned it off
-  deserves to know what they turned off.
+- **The approval lives in your AI client, not in AdCopilot.** Reads run freely,
+  and AdCopilot proposes each change first. Whether the client then asks before
+  the change runs is the client's setting, so the hard stop is the client set to
+  ask before AdCopilot's write tools: **Needs approval** in claude.ai, Cowork and
+  the desktop app; in Claude Code, tools that are not allowlisted, in a session
+  that is not in `auto` or `bypassPermissions` mode; in Cursor, the write tools
+  kept off the allowlist in its **Allowlist** run mode (Settings, then Agents,
+  then Approvals & Execution, at the time of writing). Cursor has no
+  **Needs approval** setting: its **Auto-review** mode, Cursor's recommended
+  default, sends a tool that is not allowlisted to a classifier that can let a
+  change through without asking, **Run Everything** asks nothing, and a
+  Cursor cloud agent never asks. Take that question away and changes to things
+  that already exist, a budget or a switched-on campaign among them, apply
+  without being asked. The one exception is `set_campaign_status`, the tool
+  that pauses a campaign or switches one on: Claude Code (version 2.1.214 or
+  later) asks before every use of it whatever its settings, and a run with
+  nobody there to answer cannot use it; the Claude desktop app may also ask
+  every time for it. This plugin pauses or switches on a campaign only with
+  that tool, never with a status in a change to the campaign's settings
+  (`update_campaign`), which follows the client's settings like any other
+  change. Only a new campaign is still built paused regardless.
+  Never state the approval as unconditional: name the hard stop, because a
+  customer who has turned it off deserves to know what they turned off. That
+  holds wherever approval comes up — a heading, a parenthesis, a list item:
+  never promise a yes before every change without the hard stop beside it.
 - A campaign AdCopilot builds is created paused. Switching it on is the
   customer's click, in Google Ads.
 - It reads only the ad accounts switched on in the workspace, and never sees a
@@ -108,12 +143,13 @@ carries the troubleshooting address for the same reason.
 
 ## What is next
 
-Answer what they asked first, whole. Then, only when the question pointed at
+Answer what they asked first, whole. Then, when the question pointed at
 something a read of their own account would answer — what AdCopilot can do for
-them, whether a product is worth connecting, why a tool seemed missing — offer
-that one read as the next step, in a sentence: what it would show them, about
-their account. When `ops_today_cap` is set and the hints say few look-ups are
-left today, say that the read uses one of them.
+them, whether a product is worth connecting, why a tool seemed missing — end
+the reply with exactly one question, offering one read: what it would show them
+about their account, tied to the 30-day fact that makes it worth doing. Not a
+fix, not a change, and not a second offer. When `ops_today_cap` is set and the
+hints say few look-ups are left today, say that the read uses one of them.
 
 Skip it after a question about look-ups and running out, about the workspace's
 allowance or billing, or about privacy or safety: there the answer is the whole

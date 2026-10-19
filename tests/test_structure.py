@@ -14,9 +14,10 @@ What it pins, and why each one is here:
   that drifts is a flow that offers differently, or stops offering, so the
   copies are compared byte for byte.
 - The stop condition is the server's own (`situations.schedule_offer`):
-  `routine.daily.status` `user_set`, a date in
-  `routine.scheduled_last_seen_at`, or `routine.own_schedule` `saved` or
-  `unavailable` (plan B9), and nothing else. If AdCopilot renames a field the
+  `routine.daily.status` `user_set`, a scheduled run seen on two different
+  days (`routine.scheduled_first_seen_at` and
+  `routine.scheduled_last_seen_at`), or `routine.own_schedule` `saved`,
+  `unavailable` or `declined` (plan B9, D160), and nothing else. If AdCopilot renames a field the
   offer never stops; if the plugin stops on more than the server does, the
   plugin is silent while the server's next_step asks for the offer; if it
   stops on less, a Claude with no scheduled tasks is offered one every
@@ -58,6 +59,17 @@ What it pins, and why each one is here:
   source, keeps one platform to a change, asks before a change through either
   connector, and carries no plan or price word and nothing Meta has not
   published. The manifests do not claim a Meta integration.
+- Cursor (0.2.12's Cursor round): wherever the plugin works out which client
+  it is in, Cursor is checked first, `claude mcp` is never run there, and the
+  connector may be named `server`; the daily-habit offer is made only when
+  get_org_context hands over `routine.schedule` (AdCopilot's own decision for
+  the client) and a no is recorded only from Claude, and in Cursor the plugin
+  makes the check-in offer next_step asks for instead of one of its own;
+  every command says what to do without its skill, and the four that send
+  the versioned marker send the bare one there, so the server never hands
+  the turn to a skill that is not installed; /adcopilot:audit gives Cursor's
+  refresh for a stale tool list first; and one approval sentence serves every
+  client, its Cursor half naming the Allowlist run mode.
 """
 
 import json
@@ -91,23 +103,22 @@ COMMANDS = ["setup", "audit", "daily", "weekly", "negatives", "launch", "measure
 # braces (0.2.11: right after the first finding the morning check also reads,
 # tied to it, with the value line). The eval graders look for their substance,
 # so a reword is a deliberate act, made here too.
-OFFER_CHAT = ("A check that runs by itself every weekday at 8:07 would have "
-              "caught {the finding} on its first morning. It only reads the "
-              "account and never changes anything, and it opens with \"All "
-              "clear\" or \"Needs a look\" plus one yes/no fix; say \"schedule "
-              "it\" and I'll walk you through saving it as a Claude scheduled "
-              "task, about two minutes.")
-OFFER_CODE = ("A check that runs by itself every weekday at 8:07 would have "
-              "caught {the finding} on its first morning. It only reads the "
-              "account and never changes anything, and it opens with \"All "
-              "clear\" or \"Needs a look\" plus one yes/no fix; say \"schedule "
-              "it\" and I'll set it up as a Claude Code routine with "
-              "/schedule.")
+OFFER_CHAT = ("A read-only check that runs by itself every weekday at 8:07 "
+              "would have caught {the finding} on its first morning, opening "
+              "with \"All clear\" or \"Needs a look\" plus one yes/no fix. If "
+              "you say \"schedule it\", I'll walk you through saving it as a "
+              "Claude scheduled task, about two minutes.")
+OFFER_CODE = ("A read-only check that runs by itself every weekday at 8:07 "
+              "would have caught {the finding} on its first morning, opening "
+              "with \"All clear\" or \"Needs a look\" plus one yes/no fix. If "
+              "you say \"schedule it\", I'll set it up as a Claude Code routine "
+              "with /schedule.")
 # The first sentence of an offer made at the close, for a finding the morning
 # check does not read or none: it does not say the check would have caught
 # anything.
-OFFER_CLOSE_FIRST = ("A check that runs by itself every weekday at 8:07 can look "
-                     "over this account for you each morning.")
+OFFER_CLOSE_FIRST = ("A read-only check that runs by itself every weekday at 8:07 "
+                     "can look over this account for you each morning, opening "
+                     "with \"All clear\" or \"Needs a look\" plus one yes/no fix.")
 
 # AdCopilot's own recipe (server: ads_mcp_cloud/schedule_recipe.py,
 # SCHEDULED_CHECKIN, AdCopilot v2.30.2). `{account}` is filled
@@ -153,6 +164,22 @@ def plugin_marker():
 
 
 BARE_MARKER = 'source: "claude-plugin"'
+# The one place the bare marker is written (the Cursor round's review): the
+# four commands that send the versioned marker send the bare one where the
+# AdCopilot skills are not installed. On a versioned marker v2.41.0's
+# situations.plugin_skill names the skill that owns the account's situation,
+# next_step hands it the steps ("follow the AdCopilot review steps installed
+# in this assistant") and the playbook's branch becomes `[PLUGIN]`; on the bare
+# one plugin_version is None, so plugin_skill is None and the full branch
+# comes back.
+NO_SKILLS = ("The one exception is where the AdCopilot skills are not "
+             "installed: Cursor can add this command without them, and then "
+             "`adcopilot-review` is not among your skills. There, send "
+             "`source: \"claude-plugin\"`, with no version, so AdCopilot hands "
+             "no step to a skill that is not here, and `get_org_context`'s "
+             "`next_step` and `playbook` carry those steps themselves.")
+VERSIONED_COMMANDS = ("commands/audit.md", "commands/daily.md",
+                      "commands/negatives.md", "commands/weekly.md")
 
 # The rule for a finding whose own text carries a condition (plugin #10). The
 # same words on every surface that relays a lens's findings.
@@ -174,6 +201,91 @@ LENS_NAMES = ("full_audit", "conversion_setup_audit", "budget_pacing",
               "account_health_score", "quality_score_breakdown",
               "rsa_asset_report", "keyword_opportunities", "bidding_audit",
               "day_of_week", "change_history", "explain_conversion_gap")
+
+# 0.2.12: what `cross_reads.ads_reads_max` is, in the same words on every
+# surface that names the read ceiling. On 2026-10-13 a review on a Pro
+# workspace (no daily cap: `ops_today_cap` null) spent the five reads its
+# situation is sized for and told the customer "I hit today's read limit for
+# this review", a minute after saying the plan had no daily limit. The number
+# is the size of one answer; only `reads_left_today` says the day is short.
+CEILING_RULE = ("`cross_reads.ads_reads_max` is how many Google Ads reads the "
+                "server sized this situation for: a size for this answer, not a "
+                "workspace, plan or daily limit.")
+# `adcopilot-meta` carries no plan word at all (MetaSkill), so its copy drops it.
+CEILING_RULE_NO_PLAN = ("`cross_reads.ads_reads_max` is how many Google Ads "
+                        "reads the server sized this situation for: a size for "
+                        "this answer, not a workspace or daily limit.")
+SHORT_DAY = ("Only when `cross_reads.reads_left_today` is present is the day "
+             "itself short.")
+# How the review offers a related read its answer had no reads left for: a
+# statement, not a question, and never a limit.
+LEFT_OVER_READ = ("If this answer's reads are spent before a related read, "
+                  "offer it as the next read in one statement, never a second "
+                  "question and never as a limit you hit")
+
+# 0.2.12: one set of dates inside one answer. The same review put "the last 7
+# days (7-13 Oct)" from its own search next to a tag finding whose seven days
+# ended on 12 Oct, and gave coverage as "73% of its 73 checks".
+#
+# Fix round 1 ended the reads on the account's own yesterday, because the
+# server ended `full_audit`'s window on yesterday in UTC: the conversation ran
+# at 20:55 UTC on 13 Oct, 02:25 on 14 Oct in India, the audit's window ended on
+# 12 Oct and the account's only result came on 13 Oct.
+#
+# v2.41 alignment: AdCopilot v2.41.0 (D185, ONE CLOCK, #832) ends the
+# audit's window and the other analysis windows on the account's last full
+# day in its own time zone (`gaql.report_today`, `gaql._window(time_zone=...)`
+# in `_context.build_context`; UTC's day only when the customer read gave no
+# zone). So their `date_range.end` IS the account's yesterday, and the reads
+# end on it: one set of dates, read off the result rather than worked out from
+# a clock the model may not hold (an eval's fixtures are dated, its run is
+# not).
+#
+# Fix round of the v2.41 alignment: two lenses are not on that clock.
+# `budget_pacing`'s month runs through the account's today and counts it
+# (`pacing.account_month_bounds`: "days_elapsed counts the current, partial
+# day"), and `change_history` covers "the account-local calendar days ...,
+# today included" (`gaql.change_event_window`); the server's goldens show it
+# (full_audit ends 2026-06-14, budget_pacing and change_history 2026-06-15).
+# An end read off either would put a `search` on an unfinished day.
+DATE_END_RULE = ("End your own `search` reads on the `date_range.end` that "
+                 "`full_audit` and the other lenses carry, and say the dates "
+                 "once.")
+ONE_CLOCK_RULE = ("AdCopilot ends those windows on the account's yesterday, "
+                  "the last full day in the account's own time zone (UTC's, "
+                  "when it could not read the zone), so the audit and your "
+                  "reads cover the same days.")
+TODAY_RULE = ("`budget_pacing` and `change_history` are the exceptions: they "
+              "run through the account's today, so give their dates on their "
+              "own and never end a `search` read on them.")
+# What earlier 0.2.12 text said: first the UTC day, then the account's day
+# against a UTC audit window, which v2.41.0 no longer has, then one clock for
+# every window, which v2.41.0 does not have either.
+STALE_DATE_RULE = re.compile(r"never on a date you work out yourself|"
+                             r"End your own `search` reads on `full_audit`'s|"
+                             r"fourteen days ending on `full_audit`'s|"
+                             r"yesterday in UTC|east of UTC|west of UTC|"
+                             r"the day the audit did not reach|"
+                             r"which AdCopilot works out in UTC|"
+                             r"ends every report window|"
+                             r"the `date_range.end` your lens results carry")
+FINDING_WINDOW_RULE = ("When a finding names a shorter window, say its dates. "
+                       "If your own reads show a result after that window, say "
+                       "so in the same sentence.")
+# v2.41 alignment: the result states the count itself (#822: "from the 53 of
+# 73 checks that gave a result", `envelope.health_counts`), in words chosen so
+# a quick audit's 70 untried checks do not read as stopped ("could run" would).
+COVERAGE_RULE = ('Give coverage as the count the result gives, "N of 73 checks '
+                 'gave a result", never as a percentage next to the count, and '
+                 "give reasons for the rest only in the result's own words.")
+
+# 0.2.12: the docs skill answers a question about AdCopilot from the one
+# get_org_context call. On 2026-10-14 "walk me through what it can do" got a
+# capability list, an unasked performance review (the server's next_step had
+# handed the account to adcopilot-review), a second list in another grouping
+# and three closing questions.
+DOCS_ROUTING = ("Make no Google Ads, Analytics, Search Console or Tag Manager "
+                "read for it, and start no other AdCopilot skill.")
 
 
 def flat(rel):
@@ -288,6 +400,7 @@ class DailyHabitBlock(unittest.TestCase):
         # routine["scheduled_last_seen_at"]).
         block = self.blocks()[HABIT_CARRIERS[0]] or ""
         for field in ("`routine.daily.status` is `user_set`",
+                      "`routine.scheduled_first_seen_at`",
                       "`routine.scheduled_last_seen_at`", "`in_app`",
                       "`routine.own_schedule` is `saved`, `unavailable` or "
                       "`declined`"):
@@ -299,15 +412,116 @@ class DailyHabitBlock(unittest.TestCase):
         # never on a row's surface: a row switched off keeps surface
         # claude_scheduled, and Recipe A writes a weekly-only one. Stopping on
         # surface leaves the plugin silent while next_step asks for the offer.
+        # (The answer's TOP-LEVEL `surface`, `cursor` for a Cursor connection,
+        # is the Cursor tell, not a stop condition.)
         block = self.blocks()[HABIT_CARRIERS[0]] or ""
         self.assertNotIn("claude_scheduled", block)
-        self.assertNotIn("`surface`", block)
+        self.assertNotIn("routine.daily.surface", block)
+        self.assertNotIn("`surface` `", block)
+        self.assertIn("`get_org_context`'s top-level `surface` is `cursor`", block)
+
+    def test_the_offer_follows_the_servers_decision_for_the_client(self):
+        # 0.2.12 Cursor round: the offer is made only when get_org_context
+        # hands over `routine.schedule`, which v2.41.0 sets exactly when
+        # classify's `overlays.schedule_offer` is set
+        # (tools_adcopilot.get_org_context; schedule_recipe.offer_for gives
+        # None for any named client that is not Claude, Cursor included).
+        # The plugin no longer decides from the routine fields alone.
+        block = " ".join((self.blocks()[HABIT_CARRIERS[0]] or "").split())
+        self.assertIn("and only when both hold: Google Ads is connected and "
+                      "readable with a campaign switched on, and "
+                      "`get_org_context` hands you its recipe, "
+                      "`routine.schedule`.", block)
+        self.assertIn("AdCopilot sends `routine.schedule` only when its "
+                      "`overlays.schedule_offer` is set, which is its own "
+                      "decision for this workspace and this AI client: no "
+                      "schedule is reported, the call is not a scheduled run",
+                      block)
+        # situations.schedule_offer believes a scheduled run only once it has
+        # been seen on two separate UTC days (_seen_on_two_days); one sighting
+        # can be a chat that ran the pasted request instead of saving it.
+        self.assertIn("when a scheduled run has checked in on two different "
+                      "days (`routine.scheduled_first_seen_at` and "
+                      "`routine.scheduled_last_seen_at` hold dates on different "
+                      "days)", block)
+        self.assertNotIn("`routine.scheduled_last_seen_at` holds a date", block)
+        self.assertNotIn("sends it exactly when", block)
+        self.assertIn("Never make the offer without it, and never work it out "
+                      "from the other fields.", block)
+        self.assertIn("Word it for where they are, by `routine.schedule.offer`: "
+                      "`claude_code` is Claude Code, and `claude` is the Claude "
+                      "app. `both` means AdCopilot could not tell which Claude "
+                      "this is", block)
+        # The values the block names are the server's own
+        # (schedule_recipe.OFFERS).
+        for value in ("claude", "claude_code", "both"):
+            self.assertIn("`%s`" % value, block)
 
     def test_offered_only_for_a_running_account(self):
         # The server offers only in ADS_ACTIVE_* situations: a campaign that
         # is switched on. /launch ends on a campaign built paused.
         block = self.blocks()[HABIT_CARRIERS[0]] or ""
         self.assertIn("a campaign switched on", block)
+
+    def test_each_offer_is_two_sentences_and_no_steps(self):
+        # habit-offer-code/-untold, 2026-10-18 (plan v4): every judge vote failed
+        # "one or two sentences" on the old wording, which the model wrote as
+        # three ("...fix. Say \"schedule it\" and I'll...") or as two joined by
+        # a semicolon, 57 to 60 words in all. Two plain sentences: the value
+        # line, then the offer; with "read-only" for "only reads the account and
+        # never changes anything" the value line is 32 words and the whole
+        # offer 48 (Claude Code) or 51 (the Claude app). On plan v5's run
+        # (2026-10-18 22:44Z) that offer passed item 4 where it stood as its own
+        # paragraph, by 2 votes of 3 on each run, and failed it where it was
+        # added to the end of the searches' paragraph. Plan v6 changes where it
+        # stands, not its length: these limits hold the length that passed.
+        for offer in (OFFER_CHAT, OFFER_CODE):
+            with self.subTest(offer=offer[-40:]):
+                self.assertNotIn(";", offer)
+                self.assertEqual(len(re.findall(r"[.!?](?=\s|$)", offer.replace("8:07", "8h07"))), 2)
+                self.assertTrue(offer.split(". ")[-1].startswith("If you say \"schedule it\", I'll "))
+                self.assertLessEqual(len(offer.split(". ")[0].split()), 32)
+                self.assertLessEqual(len(offer.split()), 51)
+        self.assertNotIn(";", OFFER_CLOSE_FIRST)
+        self.assertLessEqual(len(OFFER_CLOSE_FIRST.split()), 32)
+        self.assertIn("two sentences, never split into more, and no set-up step before a yes",
+                      " ".join((self.blocks()[HABIT_CARRIERS[0]] or "").split()))
+
+    def test_the_offer_is_its_own_paragraph(self):
+        # habit-offer-untold, 2026-10-18 22:44Z (plan v5): both runs added the
+        # offer to the end of the searches' paragraph ("That's people looking
+        # for work, freebies and how-to guides. A read-only check ...") and
+        # failed "one or two sentences"; habit-offer-code's runs gave the same
+        # offer a paragraph of its own and passed it. The block, the review
+        # skill and the README say it is always its own paragraph.
+        block = " ".join((self.blocks()[HABIT_CARRIERS[0]] or "").split())
+        self.assertIn("The offer is always its own paragraph, with a blank line "
+                      "before and after it: it goes right after the paragraph or "
+                      "list that gives that finding (and any line that sums that "
+                      "finding up), never on the end of one of that finding's "
+                      "sentences and never inside one of its bullets.", block)
+        self.assertIn("nothing else changed: a paragraph of its own, two "
+                      "sentences, never split into more", block)
+        # It sits between where the offer goes and what the close does, so it
+        # covers both.
+        self.assertLess(block.index("would have caught it on its first morning. "
+                                    "The offer is always its own paragraph"),
+                        block.index("For any other finding"))
+        nxt = " ".join((section(read("skills/adcopilot-review/SKILL.md"),
+                                "## What is next") or "").split())
+        self.assertIn("Either way the offer is its own paragraph, with a blank "
+                      "line before and after it, never on the end of a finding's "
+                      "sentences and never inside a bullet.", nxt)
+        readme = " ".join(read("README.md").split())
+        self.assertIn("The offer comes, as a paragraph of its own, right after "
+                      "the first finding the morning check also reads", readme)
+
+    def test_the_finding_in_the_braces_is_kept_short(self):
+        # The value line is 32 words before the finding; a long finding would
+        # make the offer the long paragraph the judges fail.
+        block = " ".join((self.blocks()[HABIT_CARRIERS[0]] or "").split())
+        self.assertIn("with the finding in the braces kept short (a figure and a "
+                      "noun) and nothing else changed", block)
 
     def test_the_offer_is_not_a_second_question(self):
         # Every flow already ends on at most one question; the offer is a
@@ -433,11 +647,11 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
     def test_both_offers_carry_the_value_line(self):
         for offer in (OFFER_CHAT, OFFER_CODE):
             with self.subTest(offer=offer[-50:]):
-                for piece in ("A check that runs by itself every weekday at 8:07 "
-                              "would have caught {the finding} on its first morning.",
-                              "It only reads the account and never changes anything",
-                              "it opens with \"All clear\" or \"Needs a look\" "
-                              "plus one yes/no fix"):
+                for piece in ("A read-only check that runs by itself every weekday "
+                              "at 8:07 would have caught {the finding} on its first "
+                              "morning,",
+                              "opening with \"All clear\" or \"Needs a look\" "
+                              "plus one yes/no fix."):
                     self.assertIn(piece, offer)
         self.assertIn("with the finding in the braces", self.block())
 
@@ -1022,9 +1236,14 @@ class PluginVersionMarker(unittest.TestCase):
         self.assertGreaterEqual(seen, 14, "expected the 14 marker sites, saw %d" % seen)
 
     def test_no_bare_marker_is_left(self):
+        # Outside the four commands' no-skills exception, nowhere.
         for rel in self.model_read():
             with self.subTest(file=rel):
-                self.assertNotIn(BARE_MARKER, read(rel),
+                text = flat(rel)
+                if rel in VERSIONED_COMMANDS:
+                    self.assertEqual(text.count(NO_SKILLS), 1)
+                    text = text.replace(NO_SKILLS, "")
+                self.assertNotIn(BARE_MARKER, text,
                                  "%s still passes the marker without the version" % rel)
 
     def test_every_marked_file_says_to_keep_the_version(self):
@@ -1058,7 +1277,15 @@ class PluginVersionMarker(unittest.TestCase):
                 continue
             marked += 1
             with self.subTest(file=rel):
-                self.assertEqual(" ".join(text.split()).count(guard), 1)
+                flat_text = " ".join(text.split())
+                if rel == DocsAnswersFromTheOneCall.DOCS:
+                    # 0.2.12: the docs skill does not offer that skill's steps
+                    # afterwards; it follows none of them on this turn and
+                    # ends on one offer of its own (DocsAnswersFromTheOneCall).
+                    self.assertEqual(flat_text.count(guard), 0)
+                    self.assertEqual(flat_text.count(DOCS_ROUTING), 1)
+                else:
+                    self.assertEqual(flat_text.count(guard), 1)
         self.assertEqual(marked, 12)
 
     def test_the_marker_graders_need_the_version(self):
@@ -1145,7 +1372,10 @@ class WhatTheServerDefersTo(unittest.TestCase):
         self.assertIn("`adcopilot-daily`", nxt)
 
     def test_review_spends_a_sized_day_on_the_fix(self):
-        self.assertIn("`reads_left_today`", self.review())
+        # 0.2.12 names the field in full, `cross_reads.reads_left_today`.
+        text = " ".join(self.review().split())
+        self.assertIn(SHORT_DAY + " Then `ads_reads_max` has already been sized "
+                      "to leave room for the fix", text)
 
     def test_a_yes_to_a_finished_run_is_re_read_first(self):
         after = section(read("skills/adcopilot-daily/SKILL.md"), "## After the run")
@@ -1723,6 +1953,1837 @@ class AuditorToolList(unittest.TestCase):
         # drop it, never check it. A list, so the write-verb test above still
         # clears it.
         self.assertIn(self.MCP + "ga4_list_conversion_events", self.tools())
+
+
+def model_read_files():
+    """Every skill, command and agent file the model reads, from disk."""
+    found = []
+    for sub in ("skills", "commands", "agents"):
+        for dirpath, _dirs, names in os.walk(os.path.join(ROOT, sub)):
+            for name in sorted(names):
+                if name.endswith(".md"):
+                    found.append(os.path.relpath(os.path.join(dirpath, name), ROOT))
+    return sorted(found)
+
+
+class ReadCeiling(unittest.TestCase):
+    """0.2.12: `cross_reads.ads_reads_max` is the size of one answer.
+
+    The server sizes each situation's Google Ads reads for one answer (3, 5 or
+    6) on every plan, and only on a day that is running short does it shrink
+    that number and add `reads_left_today`. 0.2.11 called it "a ceiling" next
+    to the words for the daily allowance and told the model to say which read
+    the ceiling stopped, so on an uncapped Pro workspace the model filled in
+    the reason itself: "I hit today's read limit". Every surface that names
+    the ceiling now says what it is, when the day really is short, and that a
+    read left over is offered, not announced as a limit. The stop itself is
+    kept. AdCopilot v2.41.0 answered the open question on the server's side:
+    on a day with no daily limit (or one at least Scale's) an untracked
+    account's answer is sized at eight reads instead of five, the five the
+    branch names and up to three related reads (situations.ads_reads_max)."""
+
+    MENTIONS = re.compile(r"ads_reads_max|\bceiling\b|\bread cap\b", re.I)
+    SURFACES = [
+        "agents/adcopilot-auditor.md",
+        "commands/daily.md",
+        "commands/weekly.md",
+        "skills/adcopilot-launch/SKILL.md",
+        "skills/adcopilot-meta/SKILL.md",
+        "skills/adcopilot-review/SKILL.md",
+        "skills/adcopilot-seo/SKILL.md",
+    ]
+    META = "skills/adcopilot-meta/SKILL.md"
+    REVIEW = "skills/adcopilot-review/SKILL.md"
+    # What 0.2.11 said instead: a stop to announce, with a reason to find.
+    STALE = re.compile(r"(?:ceiling|read cap)(?: above)? still holds|"
+                       r"saying which you did not reach|"
+                       r"say which one you did not run|"
+                       r"is a ceiling, not a target", re.I)
+
+    def test_the_surfaces_that_name_it_are_these(self):
+        # A new surface that names the ceiling must say what it is too.
+        found = [rel for rel in model_read_files() if self.MENTIONS.search(flat(rel))]
+        self.assertEqual(found, self.SURFACES)
+
+    def test_each_says_what_it_is_once(self):
+        for rel in self.SURFACES:
+            rule = CEILING_RULE_NO_PLAN if rel == self.META else CEILING_RULE
+            with self.subTest(file=rel):
+                self.assertEqual(flat(rel).count(rule), 1)
+
+    def test_the_meta_copy_carries_no_plan_word(self):
+        self.assertIsNone(MetaSkill.PLAN_OR_PRICE.search(CEILING_RULE_NO_PLAN))
+        self.assertNotIn(CEILING_RULE, flat(self.META))
+
+    def test_each_says_when_the_day_is_short(self):
+        for rel in self.SURFACES:
+            with self.subTest(file=rel):
+                self.assertIn(SHORT_DAY, flat(rel))
+
+    def test_a_read_left_over_is_never_a_limit_you_hit(self):
+        for rel in self.SURFACES:
+            with self.subTest(file=rel):
+                self.assertIn("never as a limit you hit", flat(rel))
+        self.assertIn(LEFT_OVER_READ, flat(self.REVIEW))
+
+    def test_a_read_left_over_is_a_statement_not_a_second_question(self):
+        # Fix round 1: 0.2.12's first example, "I can list those searches
+        # next. Want me to?", offered to list searches a result may already
+        # name, and put a second question into a reply that already ends on
+        # the first fix's yes or no.
+        offer = flat(self.REVIEW)
+        offer = offer[offer.index(LEFT_OVER_READ):]
+        offer = offer[:offer.index("In a scheduled run, skip them.")]
+        self.assertNotIn("?", offer)
+        self.assertIn("Never offer a read for what a result you hold already "
+                      "shows.", offer)
+        for rel in model_read_files() + ["README.md"]:
+            with self.subTest(file=rel):
+                self.assertNotIn("I can list those searches next", flat(rel))
+
+    def test_nothing_announces_the_stop_any_more(self):
+        for rel in model_read_files():
+            with self.subTest(file=rel):
+                found = self.STALE.search(flat(rel))
+                self.assertIsNone(found, found and found.group(0))
+
+    def test_the_review_spends_all_of_it(self):
+        spend = " ".join((section(read(self.REVIEW),
+                                  "## Spend the reads you are given") or "").split())
+        self.assertIn(CEILING_RULE + " Use all of it", spend)
+        self.assertIn(SHORT_DAY, spend)
+
+    def test_the_review_names_no_limit_no_call_returned(self):
+        breaks = " ".join((section(read(self.REVIEW), "## What breaks") or "").split())
+        self.assertIn("Calling anything a limit that no call returned. Say daily "
+                      "limit, quota or \"today's look-ups\" only when "
+                      "`cross_reads.reads_left_today` is present or a call "
+                      "returned the daily-cap refusal. When `org.ops_today_cap` "
+                      "is null the plan has no daily limit", breaks)
+
+
+class ApprovalCondition(unittest.TestCase):
+    """0.2.12, the approval rule's family: no surface promises that a change
+    waits for a yes without the condition that makes it true.
+
+    The approval is the AI client's, and it holds while AdCopilot's write
+    tools stay on Needs approval. The docs skill said so, and its first list
+    did too; then a second list in the same reply said "every change waits for
+    your yes" with nothing after it, and the README promised "made only on
+    your yes" in three places. Every sentence that makes the promise must
+    carry its condition ("as long as" or "while") in the same sentence; a
+    related read's own sentence says a change is still only proposed, which
+    is a promise of nothing.
+
+    Fix round 1: the promise is also made in the third person, where the
+    customer reads it: `/adcopilot:negatives`' description in the command
+    picker ("added only after the customer's yes") and the auditor's report
+    line ("happens only after the customer says yes"). The wider pattern runs
+    over what the customer is shown: the README, the manifests, every
+    frontmatter description, and the auditor's report section. A rule the
+    model is given in a body ("Apply it only on their yes") is the model's
+    own and holds whatever the client's approval setting, so it carries no
+    condition and the wider pattern leaves it alone."""
+
+    PROMISE = re.compile(r"waits? for (?:your|the customer's|their|the) "
+                         r"(?:yes|approval)|"
+                         r"only (?:on|after|with) your (?:yes|approval)|"
+                         r"only after you (?:say yes|approve)", re.I)
+    THIRD_PERSON_PROMISE = re.compile(
+        r"only (?:on|after|with) (?:the customer's|their) (?:yes|approval)|"
+        r"only (?:after|once|when) (?:the customer|they) (?:says?|gives?) "
+        r"(?:yes|their yes|approval)|"
+        r"only after (?:the customer|they) approves?", re.I)
+    CONDITION = re.compile(r"\b(?:as long as|while)\b", re.I)
+    RELATED = "They are reads only: a change is still only proposed"
+    AUDITOR = "agents/adcopilot-auditor.md"
+
+    @staticmethod
+    def sentences(text):
+        out = []
+        for block in re.split(r"\n\s*\n|\n(?=\s*(?:[-*]|\d+\.)\s)", text):
+            joined = " ".join(block.split())
+            out += [s for s in re.split(r"(?<=[.!?])\s+(?=[^a-z])", joined) if s]
+        return out
+
+    def offenders(self, text, promise=None):
+        promise = promise or self.PROMISE
+        return [s for s in self.sentences(text)
+                if promise.search(s) and not self.CONDITION.search(s)]
+
+    def surfaces(self):
+        return (["README.md", ".claude-plugin/plugin.json",
+                 ".claude-plugin/marketplace.json"] + model_read_files())
+
+    def customer_visible(self):
+        """(label, text) for everything a customer is shown in AdCopilot's
+        own words: the README and manifests whole, each skill's, command's
+        and agent's frontmatter description, and the auditor's report
+        section, which is what its report says."""
+        out = [(rel, read(rel)) for rel in
+               ("README.md", ".claude-plugin/plugin.json",
+                ".claude-plugin/marketplace.json")]
+        for rel in model_read_files():
+            m = re.search(r"^description: (.+)$", frontmatter(read(rel)), re.M)
+            if m:
+                out.append((rel + " (description)", m.group(1)))
+        out.append((self.AUDITOR + " (## The report)",
+                    section(read(self.AUDITOR), "## The report") or ""))
+        return out
+
+    def test_the_wider_guard_catches_the_third_person_promise(self):
+        for bad in ("Propose never-show-for words for them — added only after "
+                    "the customer's yes, then read back.",
+                    "Nothing above has been applied, and any of these changes "
+                    "happens only after the customer says yes in their own "
+                    "conversation — the one that asked for this audit — never "
+                    "here."):
+            with self.subTest(bad=bad):
+                self.assertEqual(self.offenders(bad, self.THIRD_PERSON_PROMISE), [bad])
+        for good in ("Propose never-show-for words for them — added only after "
+                     "the customer's yes, while the write tools stay on Needs "
+                     "approval, then read back.",
+                     "Any of these changes happens only after the customer says "
+                     "yes in their own conversation, while AdCopilot's write "
+                     "tools stay on Needs approval there, and never here."):
+            with self.subTest(good=good):
+                self.assertEqual(self.offenders(good, self.THIRD_PERSON_PROMISE), [])
+
+    def test_nothing_the_customer_is_shown_promises_it_in_the_third_person(self):
+        labels = [label for label, _text in self.customer_visible()]
+        self.assertIn("commands/negatives.md (description)", labels)
+        self.assertIn(self.AUDITOR + " (## The report)", labels)
+        for label, text in self.customer_visible():
+            with self.subTest(surface=label):
+                self.assertEqual(self.offenders(text, self.THIRD_PERSON_PROMISE), [])
+
+    def test_the_two_third_person_sentences_carry_it(self):
+        # The Cursor round: the two sentences now promise nothing, so they
+        # need no condition, and they name no Claude-only setting.
+        desc = re.search(r"^description: (.+)$",
+                         frontmatter(read("commands/negatives.md")), re.M).group(1)
+        self.assertIn("and propose never-show-for words (negative keywords) for "
+                      "them; the ones added are read back.", desc)
+        self.assertIn("nothing above has been applied; each change is a "
+                      "proposal, to be put to the customer in their own "
+                      "conversation — the one that asked for this audit — and "
+                      "never made here.", flat(self.AUDITOR))
+        for text in (desc, section(read(self.AUDITOR), "## The report") or ""):
+            self.assertNotIn("Needs approval", text)
+
+    def test_the_guard_catches_the_words_it_is_for(self):
+        for bad in ("They are reads only: a change still waits for the customer's yes.",
+                    "They are reads only: a change still waits for the yes.",
+                    "Fix and improve your campaigns (every change waits for your yes): Block wasted searches.",
+                    "The first fix is proposed; made only on your yes, read back, then the next one proposed.",
+                    "Never-show-for words are added only after your yes, then read back."):
+            with self.subTest(bad=bad):
+                self.assertEqual(self.offenders(bad), [bad])
+        for good in ("Every change waits for your yes, as long as AdCopilot's write tools stay on Needs approval.",
+                     "It is made only on your yes while the write tools stay on **Needs approval**, then read back.",
+                     "They are reads only: a change is still only proposed."):
+            with self.subTest(good=good):
+                self.assertEqual(self.offenders(good), [])
+
+    def test_no_surface_promises_approval_without_its_condition(self):
+        for rel in self.surfaces():
+            with self.subTest(file=rel):
+                self.assertEqual(self.offenders(read(rel)), [])
+
+    def test_a_related_read_leaves_a_change_proposed(self):
+        carriers = [rel for rel in model_read_files()
+                    if "They are reads only" in flat(rel)]
+        self.assertGreaterEqual(len(carriers), 9)
+        for rel in carriers:
+            with self.subTest(file=rel):
+                self.assertIn(self.RELATED, flat(rel))
+        # The review's own wording, which the others follow.
+        self.assertIn(self.RELATED + ".", flat("skills/adcopilot-review/SKILL.md"))
+
+
+class DatesAndCounts(unittest.TestCase):
+    """0.2.12, aligned with AdCopilot v2.41.0: the review and the auditor end
+    their own reads on the `date_range.end` their lens results carry, which
+    v2.41.0 makes the account's own yesterday, and say the dates once; a
+    finding with a shorter window is given its dates; and coverage is the
+    count the result gives of the checks that gave a result, with reasons
+    only in the result's own words. `/adcopilot:weekly` dates its own two
+    weeks and any other window the same way."""
+
+    REVIEW = "skills/adcopilot-review/SKILL.md"
+    AUDITOR = "agents/adcopilot-auditor.md"
+    WEEKLY = "commands/weekly.md"
+
+    def test_the_review_and_the_auditor_end_on_the_accounts_yesterday(self):
+        for rel in (self.REVIEW, self.AUDITOR):
+            with self.subTest(file=rel):
+                text = flat(rel)
+                self.assertEqual(text.count(DATE_END_RULE), 1)
+                self.assertEqual(text.count(ONE_CLOCK_RULE), 1)
+                self.assertEqual(text.count(TODAY_RULE), 1)
+                # The date rule comes before the reason it holds, and the two
+                # lenses that run to today right after it.
+                self.assertLess(text.index(DATE_END_RULE), text.index(ONE_CLOCK_RULE))
+                self.assertLess(text.index(ONE_CLOCK_RULE), text.index(TODAY_RULE))
+
+    def test_nothing_ties_the_reads_to_the_utc_day(self):
+        for rel in model_read_files():
+            with self.subTest(file=rel):
+                found = STALE_DATE_RULE.search(flat(rel))
+                self.assertIsNone(found, found and found.group(0))
+
+    def test_the_review_reads_its_fourteen_days_to_that_day(self):
+        seq = " ".join((section(read(self.REVIEW), "## The sequence") or "").split())
+        step1 = seq[seq.index("1. **The period against the one before it.**"):
+                    seq.index("2. **Where the money went")]
+        self.assertIn("the fourteen days ending on the account's yesterday", step1)
+        self.assertIn(DATE_END_RULE, step1)
+        self.assertIn(ONE_CLOCK_RULE, step1)
+        self.assertIn(TODAY_RULE, step1)
+        self.assertIn(FINDING_WINDOW_RULE, step1)
+        self.assertNotIn("for the last fourteen days", step1)
+        self.assertLess(step1.index(ONE_CLOCK_RULE), step1.index(FINDING_WINDOW_RULE))
+
+    def test_a_shorter_window_is_dated(self):
+        for rel in (self.REVIEW, self.AUDITOR, self.WEEKLY):
+            with self.subTest(file=rel):
+                self.assertEqual(flat(rel).count(FINDING_WINDOW_RULE), 1)
+
+    def test_coverage_is_a_count(self):
+        for rel in (self.REVIEW, self.AUDITOR):
+            with self.subTest(file=rel):
+                self.assertEqual(flat(rel).count(COVERAGE_RULE), 1)
+        self.assertNotIn("say that number rather than", flat(self.REVIEW))
+        for rel in model_read_files():
+            with self.subTest(file=rel):
+                self.assertNotIn("checks could run", flat(rel))
+
+    def test_the_weekly_says_its_dates_once(self):
+        self.assertIn("Say the two weeks' dates once, in the first line.",
+                      flat(self.WEEKLY))
+
+
+class WasteList(unittest.TestCase):
+    """0.2.12: the review counted 27 searches that cost money and brought
+    nothing, named none, and offered "one more look-up" for them.
+
+    Fix round 1. The searches can already be named in a result the review
+    holds: the wasted-spend check (G16) lists each search with its clicks and
+    cost in `full_audit` and `analyze_waste` whenever the account counted a
+    result in the window, and `analyze_search_terms` lists them once server
+    PR #820 ships. In that conversation G16 listed none, because the audit's
+    window (ending 12 Oct, UTC) held no counted result, and the related read
+    the audit named was `analyze_waste`, whose G16 would have listed none
+    either; "unless a `related_reads` names one" let the model promise it
+    anyway. So the names are looked for in every result held, and another
+    read is offered only when a related read's `why` says it shows them."""
+
+    REVIEW = "skills/adcopilot-review/SKILL.md"
+    AUDITOR = "agents/adcopilot-auditor.md"
+
+    def step3(self):
+        seq = " ".join((section(read(self.REVIEW), "## The sequence") or "").split())
+        return seq[seq.index("3. **What was paid for that should not have been.**"):
+                   seq.index("4. **Whether delivery is being held back.**")]
+
+    def test_step_three_looks_for_the_names_in_every_result_held(self):
+        step3 = self.step3()
+        self.assertIn("look for their names in every result you hold", step3)
+        for source in ("`full_audit`", "`analyze_waste`", "G16",
+                       "`analyze_search_terms`"):
+            with self.subTest(source=source):
+                self.assertIn(source, step3)
+        self.assertIn("When one lists them, name the top ones with their cost "
+                      "in this answer.", step3)
+
+    def test_a_count_alone_is_said_as_a_count(self):
+        self.assertIn("When what you hold only counts them", self.step3())
+
+    def test_the_costliest_list_is_named_and_its_caveat_kept(self):
+        # v2.41 alignment (#820): `analyze_search_terms` returns O-NEG-TOP,
+        # "Costliest search terms with no conversion", every zero-conversion
+        # search over the click floor ranked by cost; with nothing recorded
+        # anywhere in the account its sentence says they are "the searches
+        # that cost the most, not proven waste".
+        step3 = self.step3()
+        self.assertIn('"Costliest search terms with no conversion"', step3)
+        self.assertIn("not proven waste", step3)
+        auditor = flat(self.AUDITOR)
+        self.assertIn('"Costliest search terms with no conversion"', auditor)
+        self.assertIn("not proven waste", auditor)
+        for rel in ("commands/daily.md", "commands/negatives.md"):
+            with self.subTest(file=rel):
+                self.assertIn("Costliest search terms with no conversion", flat(rel))
+        self.assertNotIn("into negative-keyword candidates by theme, which is a "
+                         "different job", flat(self.REVIEW))
+
+    def test_another_read_only_when_its_why_says_it_shows_them(self):
+        step3 = self.step3()
+        self.assertIn("Offer a read for searches no result you hold names only "
+                      "when a `related_reads` entry's `why` says that read "
+                      "shows them", step3)
+        self.assertNotIn("unless a `related_reads` names one", flat(self.REVIEW))
+
+    def test_the_auditor_names_them_from_what_it_holds(self):
+        text = flat(self.AUDITOR)
+        self.assertIn("Name the top ones with their cost from any result you "
+                      "hold that lists them", text)
+        self.assertIn("only when a `related_reads` entry's `why` says it does",
+                      text)
+
+
+class DocsAnswersFromTheOneCall(unittest.TestCase):
+    """0.2.12: a question about AdCopilot itself is answered from the one
+    `get_org_context` call. The server hands a running, counted account to
+    `adcopilot-review` on every plugin call, the docs skill's included, so the
+    docs skill follows none of the account's steps on its own turn, keeps only
+    a limit `next_step` names, answers once as one list, and ends on exactly
+    one question offering one read. Approval keeps its condition wherever it
+    comes up."""
+
+    DOCS = "skills/adcopilot-docs/SKILL.md"
+
+    def text(self):
+        return flat(self.DOCS)
+
+    def test_it_reads_nothing_and_starts_no_other_skill(self):
+        text = self.text()
+        self.assertEqual(text.count(DOCS_ROUTING), 1)
+        self.assertIn("A question about AdCopilot itself is answered from that "
+                      "one call, plus the documentation site where this file "
+                      "says so.", text)
+
+    def test_it_follows_none_of_the_accounts_steps_on_this_turn(self):
+        text = self.text()
+        # v2.41 alignment (#829): the playbook's section is "[PLUGIN] The
+        # installed skill" and no longer says the skill owns the turn; it and
+        # next_step answer a question first and offer the steps after.
+        self.assertIn("The answer's `next_step`, `playbook` (its sections on the "
+                      "installed skill and on a returning customer included), "
+                      "`cross_reads` and `question_map` describe the account, "
+                      "not this question: do not follow them on this turn, not "
+                      "even their offer of a skill's steps.", text)
+        self.assertNotIn("owns the turn", text)
+        self.assertIn("Keep from them only a limit `next_step` names", text)
+
+    def test_the_capabilities_answer_is_one_list(self):
+        can = " ".join((section(read(self.DOCS), "## What AdCopilot can do") or "").split())
+        self.assertIn("Answer it once, as one list, in this order:", can)
+        order = ["what is connected and what each lets them do",
+                 "what connecting each of the others would unlock",
+                 "the routines installed here",
+                 "what AdCopilot may change, with its condition",
+                 "the plan's look-ups"]
+        at = [can.find(piece) for piece in order]
+        self.assertNotIn(-1, at, dict(zip(order, at)))
+        self.assertEqual(at, sorted(at))
+        self.assertIn("never a second list in another grouping, and never come "
+                      "back later in the same reply to answer it again", can)
+
+    def test_one_fact_may_be_the_reason_for_the_offer(self):
+        can = " ".join((section(read(self.DOCS), "## What AdCopilot can do") or "").split())
+        self.assertIn("One fact from `get_org_context`'s 30-day summary", can)
+        # v2.41 alignment (#821): `last_30d` names its window whenever it
+        # was read (`context_probe._apply`, `start_date` and `end_date`).
+        self.assertIn("with the dates it names, `start_date` to `end_date`", can)
+        self.assertNotIn("when `last_30d` carries them", can)
+
+    def test_it_ends_on_exactly_one_question(self):
+        nxt = " ".join((section(read(self.DOCS), "## What is next") or "").split())
+        self.assertIn("end the reply with exactly one question", nxt)
+        self.assertIn("Not a fix, not a change, and not a second offer.", nxt)
+
+    def test_approval_keeps_its_condition_wherever_it_comes_up(self):
+        allowed = " ".join((section(read(self.DOCS),
+                                    "## What AdCopilot is allowed to change") or "").split())
+        self.assertIn("That holds wherever approval comes up", allowed)
+        self.assertIn("a heading, a parenthesis, a list item", allowed)
+
+
+class MeasureDescription(unittest.TestCase):
+    """0.2.12: the measure skill's description named only the Analytics route,
+    and a reply said conversion tracking "needs Analytics and Tag Manager
+    connected". Its body has always had two routes.
+
+    Fix round 1: the first 0.2.12 description said the direct route "needs
+    neither Analytics nor Tag Manager", but the body puts that route's
+    Google Ads conversion tag "on the same trigger as step 3", a Tag Manager
+    trigger, and walks no other way onto the site. The description promises
+    only what the body walks: no Analytics, and the tag through Tag
+    Manager."""
+
+    MEASURE = "skills/adcopilot-measure/SKILL.md"
+
+    def desc(self):
+        fm = frontmatter(read(self.MEASURE))
+        return re.search(r"^description: (.+)$", fm, re.M).group(1)
+
+    def test_it_names_both_routes(self):
+        desc = self.desc()
+        self.assertIn("through Analytics", desc)
+        self.assertIn("directly in Google Ads", desc)
+        self.assertLessEqual(len(desc), 1024)
+
+    def test_the_direct_route_is_described_as_the_body_walks_it(self):
+        desc = self.desc()
+        direct = desc[desc.index("directly in Google Ads"):]
+        self.assertIn("needs no Analytics", direct)
+        self.assertIn("through Tag Manager", direct)
+        body = read(self.MEASURE).split("\n---\n", 1)[1]
+        self.assertIn("on the same trigger as step 3", body)
+        # A route without Tag Manager may be promised only once the body
+        # walks putting the tag on the site some other way.
+        if not re.search(r"without Tag Manager", body):
+            self.assertNotRegex(desc, r"(?:nor|no|without) Tag Manager")
+
+
+class ReleaseNoteAndMarker(unittest.TestCase):
+    """The bump's other halves: the README carries a note for the manifest's
+    version that says the release checklist comes before the tag, and no file
+    under skills, commands or agents, whatever its type, names another
+    version on the marker."""
+
+    def test_the_readme_has_a_note_for_this_version(self):
+        notes = section(read("README.md"), "## AdCopilot version") or ""
+        start = notes.find("**%s (" % manifest_version())
+        self.assertGreaterEqual(start, 0, "no README note for %s" % manifest_version())
+        note = " ".join(notes[start:].split("\n\n", 1)[0].split())
+        self.assertIn("must be run before this version is tagged", note)
+
+    def test_every_marker_anywhere_names_the_manifest_version(self):
+        seen = 0
+        for sub in ("skills", "commands", "agents"):
+            for dirpath, _dirs, names in os.walk(os.path.join(ROOT, sub)):
+                for name in names:
+                    rel = os.path.relpath(os.path.join(dirpath, name), ROOT)
+                    for m in re.finditer(r"claude-plugin/(\d+\.\d+\.\d+)", read(rel)):
+                        seen += 1
+                        with self.subTest(file=rel):
+                            self.assertEqual(m.group(1), manifest_version())
+        # 15 at 0.2.12: three in adcopilot-connect, two in adcopilot-launch,
+        # one in each other marked file.
+        self.assertGreaterEqual(seen, 15)
+
+
+# The server's own hand-off text for a running, counted account (AdCopilot
+# situations._PLUGIN_STEP["adcopilot-review"]) and its returning-customer
+# sentence (_RETURNING_SENTENCE), as release/v2.41.0 words them (#829: the
+# steps are followed on a greeting, a request to get started or the request
+# they are for, and anything else is answered first, then the steps offered).
+SERVER_REVIEW_STEP = ("The account is running and results are being counted; "
+                      "on a greeting alone, a request to get started or a "
+                      "question about how the ads are doing, follow the "
+                      "AdCopilot review steps installed in this assistant, "
+                      "answer anything else they asked first and then offer "
+                      "those steps, and suggest no bidding change in the two "
+                      "to three weeks after anything went live.")
+SERVER_RETURNING = ("They have been here before, so open with one line on what "
+                    "happened last time.")
+# The hand-off for an account spending with nothing counted
+# (situations._PLUGIN_STEP["adcopilot-measure"], release/v2.41.0): the real
+# turn's get_org_context carried skill=adcopilot-measure, and v2.41.0 words
+# that hand-off so a question is answered first.
+SERVER_MEASURE_STEP = ("Money is going out and results are not being counted; "
+                       "on a greeting alone, a request to get started or a "
+                       "question about counting results, follow the AdCopilot "
+                       "measurement steps installed in this assistant, answer "
+                       "anything else they asked first and then offer those "
+                       "steps, and suggest no change to how they bid until "
+                       "results are counted.")
+# The playbook section an installed skill gets (onboarding_skill
+# ._PLUGIN_SECTION, release/v2.41.0), with the skill named.
+SERVER_PLUGIN_SECTION = ("## [PLUGIN] The installed skill\n\n"
+                         "The AdCopilot skill {skill}, installed here, carries "
+                         "this situation's steps. On a greeting alone, a request "
+                         "to get started or the request it is for, follow it, "
+                         "inside the rails, with the reads `cross_reads` names. "
+                         "Asked anything else, answer that first with only the "
+                         "reads it needs, then offer it.")
+
+
+def never_grader(case_text, tool, needle=None):
+    """True when the case carries a tool_used grader that allows `tool`
+    (optionally only calls whose grader block contains `needle`) zero times."""
+    for block in re.split(r"\n  - name: ", case_text)[1:]:
+        if (re.search(r"^\s+type: tool_used\s*$", block, re.M)
+                and re.search(r"^\s+tool: %s\s*$" % re.escape(tool), block, re.M)
+                and (needle is None or needle in block)
+                and re.search(r"^\s+max: 0\s*$", block, re.M)
+                and re.search(r"^\s+min: 0\s*$", block, re.M)):
+            return True
+    return False
+
+
+class RealTurnDocsCase(unittest.TestCase):
+    """Fix round 1: docs-capabilities-routed hands a counted account to the
+    review, but the real turn (audit rows, 2026-10-13 20:55 UTC) was
+    ADS_ACTIVE_UNTRACKED handed to adcopilot-measure, with situational
+    cross_reads that made no read and offered Analytics. This case is that
+    state, graded on the same docs rule, and also on starting neither the
+    review nor the measurement steps and on no budget read, which the real
+    turn made."""
+
+    CASE = "docs-capabilities-untracked"
+    MCP = "mcp__plugin_adcopilot_adcopilot__"
+
+    def test_the_fixture_is_the_real_turns_server_state(self):
+        ctx = mock(self.CASE, "get_org_context")
+        self.assertEqual(ctx["situation"], "ADS_ACTIVE_UNTRACKED")
+        self.assertEqual(ctx["plugin"]["skill"], "adcopilot-measure")
+        self.assertEqual(ctx["next_step"], SERVER_MEASURE_STEP + " " + SERVER_RETURNING)
+        for part in ("[RAILS]", "[RECAP]", "[PLUGIN]", "adcopilot-measure"):
+            with self.subTest(part=part):
+                self.assertIn(part, ctx["playbook"])
+        cross = ctx["cross_reads"]
+        self.assertEqual(cross["mode"], "situational")
+        self.assertEqual(cross["reads"], [])
+        self.assertEqual([c["product"] for c in cross["connect"]], ["ga4"])
+        # v2.41.0: an untracked account on a day with no daily limit is sized
+        # at eight (situations.ads_reads_max, roomy_day).
+        self.assertEqual(cross["ads_reads_max"], 8)
+        self.assertNotIn("reads_left_today", cross)
+        self.assertIn(SERVER_PLUGIN_SECTION.format(skill="adcopilot-measure"),
+                      ctx["playbook"])
+        self.assertEqual(ctx["org"]["plan"], "pro")
+        self.assertIsNone(ctx["org"]["ops_today_cap"])
+        products = ctx["products"]
+        self.assertTrue(products["google_ads"]["connected"])
+        self.assertTrue(products["search_console"]["connected"])
+        self.assertFalse(products["ga4"]["connected"])
+        self.assertFalse(products["gtm"]["connected"])
+        probe = next(v for k, v in ctx["ads_probe"].items() if k.isdigit())
+        self.assertGreater(probe["last_30d"]["cost_micros"], 0)
+        self.assertEqual(probe["last_30d"]["conversions"], 0)
+        # Untracked, not the routed case's tracked sub-case: 50 clicks or more.
+        self.assertGreaterEqual(probe["last_30d"]["clicks"], 50)
+        self.assertGreaterEqual(probe["conversion_actions"]["primary"], 1)
+
+    def test_it_reads_nothing_and_starts_neither_skill(self):
+        text = read("evals/%s/case.yaml" % self.CASE)
+        for tool in ("full_audit", "analyze_waste", "analyze_search_terms",
+                     "search", "conversion_setup_audit", "budget_pacing",
+                     "gsc_search_analytics"):
+            with self.subTest(tool=tool):
+                self.assertTrue(never_grader(text, self.MCP + tool), tool)
+        for skill in ("adcopilot-review", "adcopilot-measure"):
+            with self.subTest(skill=skill):
+                self.assertTrue(never_grader(text, "Skill", skill), skill)
+        self.assertIn("adcopilot-docs", grader_block(text, "skill-fired"))
+        self.assertIn('  prompt: "I have the AdCopilot plugin. Please walk me '
+                      'through what it can do."\n', text)
+        self.assertIn("tags: [docs]\n", text)
+
+    def test_its_rubric_and_approval_grader(self):
+        text = read("evals/%s/case.yaml" % self.CASE)
+        for name in DocsJudgeReplay.ITEMS[self.CASE]:
+            with self.subTest(grader=name):
+                llm = grader_block(text, name)
+                self.assertIn("type: llm", llm)
+                self.assertIn("$1,865 on 607 clicks", llm)
+        self.assertIn("Exactly one question",
+                      grader_block(text, "one-closing-question"))
+        self.assertIn("Tracking without Analytics",
+                      grader_block(text, "tracking-without-analytics"))
+        self.assertEqual(grader(self.CASE, "no-approval-promise-without-its-condition"),
+                         grader("docs-capabilities-routed",
+                                "no-approval-promise-without-its-condition"))
+        self.assertIn("marks-plugin-use", text)
+
+    def test_the_routed_case_no_longer_claims_the_real_turns_hand_off(self):
+        routed = read("evals/docs-capabilities-routed/case.yaml")
+        description = routed[:routed.index("tags:")]
+        self.assertIn("docs-capabilities-untracked reproduces it", description)
+        self.assertNotIn("because the server's next_step said", description)
+
+    def test_every_mock_it_needs_is_there(self):
+        for tool in ("get_org_context", "full_audit", "search",
+                     "analyze_search_terms", "analyze_waste",
+                     "conversion_setup_audit", "budget_pacing",
+                     "gsc_search_analytics"):
+            with self.subTest(tool=tool):
+                self.assertIsInstance(mock(self.CASE, tool), dict)
+
+
+class DocsJudgeReplay(unittest.TestCase):
+    """Fix round 2 (2026-10-17), committed locally as 9d60b3c, d90ca35 and
+    467c2a8 and never pushed: the v2.41 alignment was built on the branch as
+    pushed, so it left them out, and the Cursor round's review found them
+    missing. They come back here on the current text, with the approval
+    item in its client-neutral form.
+
+    From the first run of the two docs cases (claudeVersion 2.1.302, judge
+    sonnet, plugin d478dba): every deterministic grader passed on all six
+    runs, and the one rubric grader failed five of them. Each saved reply
+    was put back in front of the suite's own judge, one rubric item at a
+    time. Item 2 failed every reply on 3 of 3 votes, because it allowed
+    nothing about the account "beyond facts from that 30-day summary" while
+    item 1 asks for what is connected, the routines and the look-ups, which
+    the same workspace answer carries. With item 2 allowing what that answer
+    says, all six replies pass it on 3 of 3 votes, and four replies that
+    each review the account (one of them the real 2026-10-14 turn) still
+    fail it on 3 of 3.
+
+    One routed reply failed the approval item on its own text: a routine's
+    line said "Nothing is added until you say yes." with no condition. The
+    docs skill now keeps approval out of the routine lines and says it once,
+    with its condition.
+
+    A strict one-word judge given four or five conditions at once failed a
+    reply it passed on each, so each item is its own llm grader with the
+    same words, and a run's report says which item failed. Written as
+    "PASS only if this holds:" and then the numbered item on its own line,
+    the approval item passed 7 of 8 saved replies it had failed in the
+    unnumbered form, and still failed a reply whose approval line had no
+    condition. The run on 467c2a8 (2026-10-17T15:21Z) passed both docs
+    cases."""
+
+    CASES = ("docs-capabilities-untracked", "docs-capabilities-routed")
+    ITEMS = {
+        "docs-capabilities-untracked": [
+            "one-list", "no-review-no-set-up", "one-closing-question",
+            "approval-with-its-condition", "tracking-without-analytics"],
+        "docs-capabilities-routed": [
+            "one-list", "no-review", "one-closing-question",
+            "approval-with-its-condition"],
+    }
+    REVIEW = {"docs-capabilities-untracked": "no-review-no-set-up",
+              "docs-capabilities-routed": "no-review"}
+    OLD = ("The reply reports nothing about the account beyond facts from "
+           "that 30-day summary")
+    ALLOWED = ("Apart from what the workspace answer itself says (what is "
+               "connected and to which account or site, how many campaigns "
+               "there are and how many are on, which routines are already "
+               "scheduled, the plan and the look-ups used today) and the "
+               "facts in that 30-day summary, with at most a sentence on what "
+               "the 30-day fact could mean as the reason for the closing "
+               "offer, the reply reports nothing about the account: no health "
+               "score, no audit findings, no search terms, no "
+               "week-against-week comparison, no budget pacing figures, no "
+               "setting to change")
+
+    def test_item_two_allows_what_the_workspace_answer_says(self):
+        for case in self.CASES:
+            llm = grader_block(read("evals/%s/case.yaml" % case),
+                               self.REVIEW[case])
+            with self.subTest(case=case):
+                self.assertNotIn(self.OLD, llm)
+                self.assertEqual(llm.count(self.ALLOWED), 1)
+                self.assertIn("Saying what a routine does is not reporting on "
+                              "the account.", llm)
+                self.assertIn("FAIL if it delivers a performance review", llm)
+
+    def test_the_untracked_case_still_fails_a_started_set_up(self):
+        llm = grader_block(read("evals/docs-capabilities-untracked/case.yaml"),
+                           "no-review-no-set-up")
+        self.assertIn("and it does not start setting up conversion tracking.",
+                      llm)
+        self.assertIn("or begins the tracking set-up.", llm)
+
+    def test_each_item_is_its_own_llm_grader(self):
+        for case in self.CASES:
+            text = read("evals/%s/case.yaml" % case)
+            with self.subTest(case=case):
+                self.assertNotIn("one-list-one-question", text)
+                self.assertNotIn("PASS only if all", text)
+                llm = [b for b in re.split(r"\n  - name: ", text)[1:]
+                       if re.search(r"^    type: llm$", b, re.M)]
+                self.assertEqual([b.split("\n", 1)[0] for b in llm],
+                                 self.ITEMS[case])
+                for n, block in enumerate(llm, 1):
+                    # The item keeps its number after a colon and a new line:
+                    # as "PASS only if this holds. Approval with its
+                    # condition. ..." the suite's judge failed the approval
+                    # item on 7 of 8 saved replies; in this form it passes 7
+                    # of the same 8 (fix round 2's replay).
+                    self.assertEqual(block.count(
+                        "      PASS only if this holds:\n      %d. " % n), 1)
+                    self.assertIn("The customer asked only what the AdCopilot "
+                                  "plugin can do.", block)
+                    self.assertIn("focus: last_message", block)
+                    self.assertNotRegex(block, r"^    weight:")
+
+    def test_the_approval_item_keeps_the_client_neutral_condition(self):
+        for case in self.CASES:
+            llm = " ".join(grader_block(read("evals/%s/case.yaml" % case),
+                                        "approval-with-its-condition").split())
+            with self.subTest(case=case):
+                self.assertIn("4. Approval with its condition.", llm)
+                self.assertIn("in Cursor, the Allowlist run mode with the "
+                              "write tools kept off the allowlist", llm)
+                self.assertNotIn("while the write tools stay on Needs "
+                                 "approval", llm)
+
+    def test_a_routine_line_carries_no_approval(self):
+        can = " ".join((section(read("skills/adcopilot-docs/SKILL.md"),
+                                "## What AdCopilot can do") or "").split())
+        self.assertIn("Say what each routine reads and proposes, and leave "
+                      "approval to the part on what AdCopilot may change, "
+                      "where it is said once with its condition: no routine's "
+                      "line adds that nothing happens until they say yes.",
+                      can)
+
+
+class NewEvalCases(unittest.TestCase):
+    """0.2.12's two cases, held to what the transcript did and to the
+    fixtures the server would really send."""
+
+    UNCAPPED = "review-uncapped-no-limit-words"
+    ROUTED = "docs-capabilities-routed"
+    MCP = "mcp__plugin_adcopilot_adcopilot__"
+    TRANSCRIPT_LIMIT = ("I hit today's read limit for this review before listing "
+                        "those searches, so that's one more look-up.")
+
+    def test_the_uncapped_fixture_is_pro_with_no_day_to_spend(self):
+        ctx = mock(self.UNCAPPED, "get_org_context")
+        self.assertEqual(ctx["org"]["plan"], "pro")
+        self.assertIsNone(ctx["org"]["ops_today_cap"])
+        self.assertEqual(ctx["situation"], "ADS_ACTIVE_UNTRACKED")
+        # v2.41.0 sizes this answer at eight on a day with no daily limit.
+        self.assertEqual(ctx["cross_reads"]["ads_reads_max"], 8)
+        self.assertNotIn("reads_left_today", ctx["cross_reads"])
+        self.assertEqual(ctx["next_step"], SERVER_MEASURE_STEP + " " + SERVER_RETURNING)
+        audit = mock(self.UNCAPPED, "full_audit")
+        self.assertIn("analyze_waste", [r["tool"] for r in audit["related_reads"]])
+
+    def test_the_uncapped_grader_catches_the_transcript(self):
+        pattern, flags = grader(self.UNCAPPED, "no-limit-words")
+        rx = re.compile(pattern, flags)
+        for said in self.CLAIMS_A_LIMIT:
+            with self.subTest(said=said):
+                self.assertRegex(said, rx)
+        for said in self.TRUE_ON_AN_UNCAPPED_PLAN:
+            with self.subTest(said=said):
+                self.assertNotRegex(said, rx)
+
+    # Fix round 1: 0.2.12's first pattern failed the three true sentences
+    # below that begin "Your Pro plan has no look-up limit", "There is no read
+    # limit" and "Today's look-ups are unlimited", and missed "used up
+    # today's quota" and "reached the cap", although the review's What breaks
+    # rule names quota.
+    CLAIMS_A_LIMIT = (
+        "I hit today's read limit for this review before listing those "
+        "searches, so that's one more look-up.",
+        "I hit today’s read limit for this review before listing those "
+        "searches, so that’s one more look-up.",
+        "That used up today's look-ups.",
+        "I've hit the review's limit, so I stopped there.",
+        "That used up today's quota.",
+        "I've reached the cap for this review.",
+        "There's no daily limit, but I hit the review's cap.",
+        "Today's read limit stopped this review before the searches.",
+        # The re-run plan (2026-10-18): a negation earlier in the clause that
+        # governs another verb leaves the claim a claim. The first pattern let
+        # a "didn't" or "can't" anywhere before the verb pass the clause.
+        "I wasn't able to read the rest because I hit today's read limit.",
+        "I wasn't able to list them all before hitting the read limit.",
+        "The list isn't complete because I hit the read limit.",
+        "I haven't listed the rest because I hit today's read limit.",
+        "I hadn't finished the searches when I hit the read limit.",
+        "That wasn't everything because I ran out of today's look-ups.",
+        "It isn't possible to read more today since I've reached the look-up limit.",
+        "I didn't finish because I hit the read limit.",
+        "I can't read more because I hit today's read limit.",
+        "Nothing more is listed because I hit the read limit.",
+        # The re-run plan's adversarial check: a clause that opens on a
+        # negated subject still claims a limit after a joining word, and "ran
+        # out of reads" and the passive claim one without a limit verb.
+        "None of the remaining searches could be read after I hit the limit.",
+        "Nothing else could be checked once I reached my daily cap.",
+        "No more reads were possible once I hit the daily limit.",
+        "I've run out of reads for today.",
+        "I'm out of reads for today, so the searches will have to wait.",
+        "I didn't get to the searches because the daily limit was reached.",
+        "Today's quota has been used up, so I stopped there.",
+        "That wasn't everything — I ran out of today's look-ups.",
+        # Plan v3: the passive with "the", ran out of look-ups with no limit
+        # word, and a negation ended by "because" or "as".
+        "The limit was reached before I got to the searches.",
+        "I ran out of look-ups before the searches.",
+        "It hasn't got to the searches yet because the review reached its cap.",
+        "We aren't done, as I used up today's look-ups.",
+    )
+    TRUE_ON_AN_UNCAPPED_PLAN = (
+        "Your Pro plan has no look-up limit, so ask for as many reads as you like.",
+        "There is no read limit on your plan.",
+        "Today's look-ups are unlimited on Pro.",
+        "Your workspace is on the Pro plan, which has no daily limit on look-ups.",
+        "On your Pro plan you won't hit a daily limit.",
+        "The next read would show how each campaign bids; say the word and I "
+        "will run it.",
+        # A campaign's budget or per-click cap is a finding, not a read limit.
+        "Your campaign hit its daily budget cap on 9 of the 14 days.",
+        "The campaign hit the limit of its budget by 3pm most days.",
+        "Switch to Maximize Clicks with a per-click cap of ₹40.",
+        # A negation that governs the verb, and a campaign as its subject
+        # (review-question-first-roomy run 2 and review-account-day-named-
+        # searches, 2026-10-18).
+        "As of 6 October the campaign was on pace for about $1,586 this "
+        "month and hadn't hit its daily limit on any day.",
+        "Both campaigns are on pace and neither has hit its daily cap.",
+        "Both campaigns are on pace and haven't hit their daily cap.",
+        "The campaign hasn’t yet hit its cap.",
+        "No campaign hit its daily limit.",
+        "The campaign hit its daily limit on 3 days.",
+        "It hit its $130 daily cap on 12 of the 14 days.",
+        "There isn't a read limit on Pro.",
+        # The re-run plan's adversarial check: a negation that governs the
+        # whole clause, not only the word right before the verb.
+        "Your plan has no read or look-up limit.",
+        "You won't run into a read limit on Pro.",
+        "You don't need to worry about a look-up limit on your plan.",
+        "You never hit a read limit on Pro.",
+        "You haven't hit a read limit, because Pro has none.",
+        "The campaign didn't come close to hitting its cap.",
+        "It never came near reaching its daily limit.",
+        "It wasn't close to reaching its cap on any day.",
+        # Plan v3: reassurances the v2 pattern failed (its negation had to sit
+        # right before the verb or noun) and negated subjects the old one failed.
+        "Nothing here was cut short by a read limit.",
+        "There's no need to worry about a read limit on Pro.",
+        "You won't be stopped by a read limit on Pro.",
+        "Spend didn't get anywhere near hitting the daily cap.",
+        "It's not at risk of hitting its daily limit this month.",
+        "None of your campaigns hit their caps this month.",
+        "Neither campaign reached its cap.",
+    )
+
+    def test_the_uncapped_case_keeps_the_shared_graders(self):
+        text = read("evals/%s/case.yaml" % self.UNCAPPED)
+        for name in ("no-change-without-a-yes", "marks-plugin-use", "skill-fired"):
+            with self.subTest(grader=name):
+                self.assertIn("  - name: %s\n" % name, text)
+        self.assertIn("adcopilot-review", grader_block(text, "skill-fired"))
+        self.assertIn("match: not_contains", grader_block(text, "no-limit-words"))
+        self.assertIn("target: last_message", grader_block(text, "no-limit-words"))
+
+    def test_the_routed_fixture_is_what_the_server_sends(self):
+        ctx = mock(self.ROUTED, "get_org_context")
+        self.assertEqual(ctx["plugin"]["skill"], "adcopilot-review")
+        self.assertEqual(ctx["situation"], "ADS_ACTIVE_TRACKED")
+        self.assertEqual(ctx["next_step"], SERVER_REVIEW_STEP + " " + SERVER_RETURNING)
+        for part in ("[RAILS]", "[RECAP]", "[PLUGIN]", "adcopilot-review"):
+            with self.subTest(part=part):
+                self.assertIn(part, ctx["playbook"])
+        say = ctx["cross_reads"]["say"]
+        self.assertIn("make every read below", say)
+        # v2.41.0 (#829): the demonstration is for a greeting or a request to
+        # get started; anything else is answered first.
+        self.assertTrue(say.startswith("On a greeting alone or a request to get "
+                                       "started, "), say[:80])
+        self.assertIn("Asked anything else, answer that first with only the "
+                      "reads it needs, then offer the rest.", say)
+        self.assertIn(SERVER_PLUGIN_SECTION.format(skill="adcopilot-review"),
+                      ctx["playbook"])
+        probe = next(v for k, v in ctx["ads_probe"].items() if k.isdigit())
+        self.assertGreater(probe["last_30d"]["cost_micros"], 0)
+        self.assertEqual(probe["last_30d"]["conversions"], 0)
+        # Under the server's 50-click line an account with no result stays
+        # ADS_ACTIVE_TRACKED (situations._untracked_subcase).
+        self.assertLess(probe["last_30d"]["clicks"], 50)
+
+    def test_the_routed_prompt(self):
+        text = read("evals/%s/case.yaml" % self.ROUTED)
+        self.assertIn('  prompt: "I have the AdCopilot plugin. Please walk me '
+                      'through what it can do."\n', text)
+
+    def test_the_routed_case_reads_nothing_and_starts_nothing(self):
+        text = read("evals/%s/case.yaml" % self.ROUTED)
+        blocks = re.split(r"\n  - name: ", text)[1:]
+
+        def never(tool, needle=None):
+            for block in blocks:
+                if (re.search(r"^\s+type: tool_used\s*$", block, re.M)
+                        and re.search(r"^\s+tool: %s\s*$" % re.escape(tool), block, re.M)
+                        and (needle is None or needle in block)
+                        and re.search(r"^\s+max: 0\s*$", block, re.M)
+                        and re.search(r"^\s+min: 0\s*$", block, re.M)):
+                    return True
+            return False
+
+        for tool in ("full_audit", "analyze_waste", "analyze_search_terms",
+                     "search", "conversion_setup_audit"):
+            with self.subTest(tool=tool):
+                self.assertTrue(never(self.MCP + tool), tool)
+        self.assertTrue(never("Skill", "adcopilot-review"))
+        fired = grader_block(text, "skill-fired")
+        self.assertIn("adcopilot-docs", fired)
+        for name in DocsJudgeReplay.ITEMS[self.ROUTED]:
+            with self.subTest(grader=name):
+                self.assertIn("type: llm", grader_block(text, name))
+        self.assertIn("Exactly one question",
+                      grader_block(text, "one-closing-question"))
+
+    def test_the_routed_approval_grader(self):
+        pattern, flags = grader(self.ROUTED, "no-approval-promise-without-its-condition")
+        rx = re.compile(pattern, flags)
+        for said in ("Fix and improve your campaigns (every change waits for "
+                     "your yes): block wasted searches.",
+                     "Through it I can read your accounts freely, and I can make "
+                     "changes only after you approve each one.",
+                     "Nothing changes without your approval: every change waits "
+                     "for your yes. It is on claude.ai, too."):
+            with self.subTest(said=said):
+                self.assertRegex(said, rx)
+        for said in ("Every change waits for your yes, as long as AdCopilot's "
+                     "write tools stay on 'Needs approval' in your Claude settings.",
+                     "Your AI client asks before each change while the write tools "
+                     "stay on Needs approval in claude.ai, and every change waits "
+                     "for your yes.",
+                     "Nothing can be deleted except a negative keyword."):
+            with self.subTest(said=said):
+                self.assertNotRegex(said, rx)
+
+
+
+class V241Alignment(unittest.TestCase):
+    """0.2.12 aligned with AdCopilot v2.41.0 (release/v2.41.0, PR #843): the
+    plugin's text and its newest eval fixtures say what that release does.
+
+    - #831: `set_campaign_status` is served with
+      `_meta["anthropic/requiresUserInteraction"]`, so Claude Code (2.1.214 or
+      later) asks before every use of that tool whatever its settings, and a
+      run with nobody to answer cannot use it. PRODUCT-FACTS: say it of
+      Claude Code with its version and of that tool alone; of the desktop app
+      no more than that it "may also ask every time for this tool". It is
+      that tool alone (`toolsurface.NEEDS_A_PERSON`): `update_campaign` takes
+      a status too (ENABLED or PAUSED) and is not flagged, so no surface says
+      every pause or switch-on is asked about, and none says a cloud routine
+      refuses one (Claude on the web is not verified).
+    - #827: a first call that skipped get_org_context can carry a note (once
+      its switch is on), so every surface opens with get_org_context.
+    - #821: the assistant reports no limit no call returned: no surface calls
+      the answer's size a read cap.
+    - #829, #832, #820: the cases that grade a question answered first on a
+      roomy day with eight reads, one set of dates on the account's own
+      yesterday (this month's pacing and the change log run to its today),
+      and the costliest searches named.
+    - #839: nothing here offers a developer token of the customer's own."""
+
+    DOCS = "skills/adcopilot-docs/SKILL.md"
+    QUESTION = "review-question-first-roomy"
+    DATES = "review-account-day-named-searches"
+    UNCAPPED = "review-uncapped-no-limit-words"
+    # The audit and the analysis lenses end on the account's yesterday; this
+    # month's pacing and the change log run through its today (v2.41.0's
+    # `account_month_bounds` and `change_event_window`).
+    LENSES = ("full_audit", "analyze_search_terms", "analyze_waste",
+              "conversion_setup_audit")
+    TODAY_LENSES = ("budget_pacing", "change_history")
+    FIVE = ("review-uncapped-no-limit-words", "review-question-first-roomy",
+            "docs-capabilities-untracked", "docs-capabilities-routed",
+            "review-account-day-named-searches")
+    # What the alignment first said, of every pause or switch-on (only
+    # set_campaign_status is flagged) and of a cloud routine (not verified).
+    OVERCLAIM = re.compile(r"pausing or switching on a campaign: Claude Code|"
+                           r"every pause or switch-on|"
+                           r"marks pausing or switching on a campaign|"
+                           r"will not do it with nobody there|"
+                           r"Only pausing or switching on a campaign is refused|"
+                           r"runs its other tools without asking")
+
+    def test_the_one_tool_claude_code_always_asks_about(self):
+        # The Cursor round: the exception is named by the tool, and the
+        # plugin routes every pause and switch-on through it, so what it says
+        # stays true on v2.41.0 (where `update_campaign` also takes a status,
+        # unflagged) and after the server refuses a status there.
+        exception = ("`set_campaign_status`, the tool that pauses a campaign or "
+                     "switches one on")
+        routed = {"README.md": "The plugin's skills pause or switch on a "
+                               "campaign only with that tool, never with a "
+                               "status in a change to the campaign's settings "
+                               "(`update_campaign`)",
+                  self.DOCS: "This plugin pauses or switches on a campaign only "
+                             "with that tool, never with a status in a change to "
+                             "the campaign's settings (`update_campaign`)"}
+        for rel in ("README.md", self.DOCS):
+            with self.subTest(file=rel):
+                text = flat(rel)
+                self.assertIn(exception, text)
+                self.assertIn("Claude Code (version 2.1.214 or later) asks before "
+                              "every use of it", text)
+                self.assertIn("a run with nobody there to answer cannot use it", text)
+                self.assertIn("the Claude desktop app may also ask every time", text)
+                self.assertIn(routed[rel], text)
+                # How far it goes, in words that stay true on v2.41.0 (where
+                # `update_campaign` also takes a status, unflagged) and once
+                # the server refuses a status there (adcopilot#852): the
+                # plugin never sends one, and a settings change follows the
+                # client's settings. No evergreen sentence pins v2.41.0's
+                # update_campaign behaviour.
+                self.assertNotIn("v2.41.0 also lets", text)
+        morning = " ".join((section(read("README.md"),
+                                    "### Every morning, without asking") or "").split())
+        self.assertIn("AdCopilot marks `set_campaign_status`, the tool that pauses "
+                      "a campaign or switches one on, as needing a person, so "
+                      "Claude Code (version 2.1.214 or later) will not use it in a "
+                      "run on your computer with nobody there to answer", morning)
+        self.assertIn("the mark does not hold that change", morning)
+        self.assertIn("A Claude Code routine runs its tools without asking", morning)
+        for rel in ["README.md", ".claude-plugin/plugin.json"] + model_read_files():
+            with self.subTest(overclaim=rel):
+                found = self.OVERCLAIM.search(flat(rel))
+                self.assertIsNone(found, found and found.group(0))
+        # The daily skill's routine step says nothing of the flag: whether a
+        # cloud routine honours it is not verified.
+        self.assertNotIn("2.1.214", flat("skills/adcopilot-daily/SKILL.md"))
+        rubric = grader_block(read("evals/docs-safe-to-let-loose/case.yaml"),
+                              "the-approval-answer-names-its-condition")
+        self.assertIn("except `set_campaign_status`, the tool that pauses a "
+                      "campaign or switches one on", " ".join(rubric.split()))
+
+    def test_every_pause_or_switch_on_goes_through_set_campaign_status(self):
+        # (5) of the Cursor round: the surfaces that pause a campaign or
+        # switch one on name `set_campaign_status`, and no surface sends a
+        # status through `update_campaign` (v2.41.0 takes one there, without
+        # the flag; a server change is making it refuse one).
+        for rel, words in (("skills/adcopilot-review/SKILL.md",
+                            "Pause a campaign, or switch one on, only with "
+                            "`set_campaign_status`, never with a status in "
+                            "`update_campaign`"),
+                           ("commands/audit.md",
+                            "a pause or a switch-on with `set_campaign_status`, "
+                            "never a status in `update_campaign`"),
+                           ("skills/adcopilot-launch/SKILL.md",
+                            "Pausing a campaign or switching one on is "
+                            "`set_campaign_status`'s alone, never a status in "
+                            "`update_campaign`.")):
+            with self.subTest(file=rel):
+                self.assertIn(words, flat(rel))
+        status = re.compile(r"\bstatus\b", re.I)
+        for rel in model_read_files():
+            for sentence in ApprovalCondition.sentences(read(rel)):
+                if "`update_campaign`" in sentence and status.search(sentence):
+                    with self.subTest(file=rel, sentence=sentence[:80]):
+                        self.assertRegex(sentence, r"\bnever\b")
+
+    def test_a_request_to_get_started_follows_the_installed_skill(self):
+        # v2.41.0's next_step and [PLUGIN]: "on a greeting alone, a request to
+        # get started or ..., follow" the installed steps. adcopilot-connect
+        # fires on "asks to get started", so it alone carries the exception
+        # to the hand-off sentence every marked surface shares.
+        exception = ("A greeting alone or a request to get started is the one "
+                     "exception: then `next_step` is describing this request "
+                     "too, so follow that skill's steps, as `next_step` says.")
+        for rel in model_read_files():
+            with self.subTest(file=rel):
+                self.assertEqual(flat(rel).count(exception),
+                                 1 if rel == "skills/adcopilot-connect/SKILL.md" else 0)
+        self.assertIn("asks to get started",
+                      frontmatter(read("skills/adcopilot-connect/SKILL.md")))
+
+    def test_the_readme_dates_and_cases(self):
+        notes = section(read("README.md"), "## AdCopilot version") or ""
+        note = " ".join(notes[notes.find("**0.2.12 ("):].split("\n\n", 1)[0].split())
+        self.assertIn("This month's pacing (`budget_pacing`) and the change log "
+                      "(`change_history`) run through the account's today", note)
+        self.assertNotIn("ends every report window", note)
+        evals = " ".join((section(read("README.md"),
+                                  "## Evals, and how a skill earns its place") or "").split())
+        self.assertIn("The four cases added in 0.2.5 (`docs-safe-to-let-loose`", evals)
+        self.assertNotIn("The four newest cases", evals)
+        # What the six newest cases have and have not run on (the Cursor
+        # round's review): four ran on 2026-10-17 against an earlier text.
+        self.assertNotIn("written but not yet run", evals)
+        self.assertIn("ran on 2026-10-17 against an earlier 0.2.12 text, where "
+                      "`meta-connector-absent` scored 0.778, under the 0.8 line "
+                      "on all three of its runs, and the other two have never "
+                      "run", evals)
+        self.assertNotIn("Five new cases are written and have not been run.", note)
+        self.assertIn("three of them ran once, on 2026-10-17, against an earlier "
+                      "0.2.12 text, and two never have", note)
+        # The 0.2.5 cases' baseline arm, after the re-render.
+        self.assertIn("the baseline arm is the plugin present with its skill "
+                      "bodies empty", evals)
+
+    def test_the_readme_says_which_campaign_it_will_not_switch_on(self):
+        # The server refuses a switch-on only for the campaign AdCopilot built
+        # (toolfilter.FIRST_CAMPAIGN_REFUSAL), and the plugin pauses or
+        # switches on others with set_campaign_status on a yes.
+        will_not = section(read("README.md"), "## What it will not do") or ""
+        self.assertIn("- **Switch on a campaign it built.**", will_not)
+        self.assertNotIn("**Switch a campaign on.**", will_not)
+
+    def test_the_v241_fixtures_hold_what_classify_derives(self):
+        # release/v2.41.0's situations.classify, run on each fixture's own
+        # data, gives exactly its overlays (no `focus`, #423), and
+        # tools_adcopilot._hints gives no hint for these states.
+        for case in self.FIVE:
+            with self.subTest(case=case):
+                ctx = mock(case, "get_org_context")
+                self.assertNotIn("focus", ctx["overlays"])
+                self.assertEqual(ctx["hints"], [])
+                self.assertFalse(ctx["overlays"]["draft_waiting"])
+                self.assertFalse(ctx["overlays"]["routine_pending"])
+                self.assertIsNone(ctx["overlays"]["plugin_offer"])
+                first = ctx["profile"].get("first_campaign") or {}
+                if first.get("campaign_id"):
+                    self.assertTrue(first.get("enabled_seen_at"))
+                self.assertNotEqual(ctx["routine"]["weekly"]["status"], "off")
+
+    def test_every_surface_opens_with_get_org_context(self):
+        self.assertIn("`get_org_context` first, then `full_audit` at `depth: "
+                      "deep`, then `budget_pacing`.", flat("commands/audit.md"))
+
+    def test_no_surface_calls_the_answers_size_a_cap(self):
+        for rel in model_read_files():
+            with self.subTest(file=rel):
+                self.assertNotIn("read cap", flat(rel))
+        desc = re.search(r"^description: (.+)$",
+                         frontmatter(read("commands/daily.md")), re.M).group(1)
+        self.assertIn("as far as the reads AdCopilot sizes for one answer allow",
+                      desc)
+
+    def test_no_developer_token_of_their_own_is_offered(self):
+        own = re.compile(r"developer token|bring[- ]your[- ]own|own (?:API )?token|"
+                         r"\bBYO\b", re.I)
+        for rel in (["README.md", ".claude-plugin/plugin.json",
+                     ".claude-plugin/marketplace.json"] + model_read_files()):
+            with self.subTest(file=rel):
+                found = own.search(read(rel))
+                self.assertIsNone(found, found and found.group(0))
+
+    def test_the_release_note_puts_the_server_first(self):
+        notes = section(read("README.md"), "## AdCopilot version") or ""
+        note = " ".join(notes[notes.find("**0.2.12 ("):].split("\n\n", 1)[0].split())
+        self.assertIn("true against AdCopilot v2.41.0, which must be live before "
+                      "this version is published", note)
+        self.assertIn("so that release goes out first", note)
+        self.assertNotIn("no server release has to come first", note)
+        self.assertIn("twenty-eight cases across the suite", flat("README.md"))
+
+    def test_the_question_first_case(self):
+        ctx = mock(self.QUESTION, "get_org_context")
+        self.assertEqual(ctx, mock(self.UNCAPPED, "get_org_context"))
+        self.assertEqual(ctx["situation"], "ADS_ACTIVE_UNTRACKED")
+        self.assertEqual(ctx["plugin"]["skill"], "adcopilot-measure")
+        self.assertIsNone(ctx["org"]["ops_today_cap"])
+        self.assertEqual(ctx["cross_reads"]["ads_reads_max"], 8)
+        self.assertEqual(ctx["next_step"], SERVER_MEASURE_STEP + " " + SERVER_RETURNING)
+        text = read("evals/%s/case.yaml" % self.QUESTION)
+        self.assertIn("tags: [review]\n", text)
+        self.assertTrue(never_grader(text, "Skill", "adcopilot-measure"))
+        self.assertIn("adcopilot-review", grader_block(text, "skill-fired"))
+        pattern, flags = grader(self.QUESTION, "makes-more-than-five-google-ads-reads")
+        rx = re.compile(pattern, flags)
+        mcp = "mcp__plugin_adcopilot_adcopilot__"
+
+        def log(tools):
+            return json.dumps([{"tool": mcp + name, "input": {}} for name in tools])
+
+        five = ["get_org_context", "full_audit", "search", "analyze_search_terms",
+                "budget_pacing", "conversion_setup_audit", "gsc_search_analytics"]
+        self.assertIsNone(rx.search(log(five)))
+        self.assertIsNotNone(rx.search(log(five + ["analyze_waste"])))
+        self.assertEqual(grader(self.QUESTION, "no-limit-words"),
+                         grader(self.UNCAPPED, "no-limit-words"))
+        top = mock(self.QUESTION, "analyze_search_terms")["findings"][0]
+        self.assertEqual(top["title"], "Costliest search terms with no conversion")
+        self.assertIn("not proven waste", top["detail"])
+        self.assertEqual(top["recommended_actions"], [])
+
+    def test_the_account_day_case(self):
+        ctx = mock(self.DATES, "get_org_context")
+        self.assertEqual(ctx["situation"], "ADS_ACTIVE_TRACKED")
+        self.assertEqual(ctx["plugin"]["skill"], "adcopilot-review")
+        self.assertEqual(ctx["next_step"], SERVER_REVIEW_STEP + " " + SERVER_RETURNING)
+        probe = next(v for k, v in ctx["ads_probe"].items() if k.isdigit())
+        self.assertEqual(probe["time_zone"], "Asia/Kolkata")
+        self.assertEqual(probe["last_30d"]["end_date"], "2026-10-13")
+        # Asked at 20:55 UTC on 13 Oct: UTC's yesterday is 12 Oct, the
+        # account's is 13 Oct, and v2.41.0 ends every window on the latter.
+        self.assertTrue(ctx["ads_probe"]["computed_at"].startswith("2026-10-13 20:55"))
+        for tool in self.LENSES:
+            with self.subTest(tool=tool):
+                result = mock(self.DATES, tool)
+                self.assertEqual(result["date_range"]["end"], "2026-10-13")
+                self.assertEqual(result["time_zone"], "Asia/Kolkata")
+        # v2.41.0 at 20:55 UTC on 13 Oct, Asia/Kolkata: change_event_window(14)
+        # is 1 Oct..14 Oct, account_month_bounds 1 Oct..14 Oct, 14 days elapsed.
+        for tool in self.TODAY_LENSES:
+            with self.subTest(today=tool):
+                result = mock(self.DATES, tool)
+                self.assertEqual(result["date_range"],
+                                 {"start": "2026-10-01", "end": "2026-10-14", "days": 14})
+                self.assertEqual(result["time_zone"], "Asia/Kolkata")
+        self.assertEqual(mock(self.DATES, "budget_pacing")["month_to_date"]["days_elapsed"], 14)
+        # At 08:40 UTC on 6 Oct, America/New_York: 7 Sep..6 Oct over 30 days,
+        # and the month so far 1 Oct..6 Oct, 6 days elapsed.
+        for case in (self.QUESTION, self.UNCAPPED):
+            with self.subTest(case=case):
+                self.assertEqual(mock(case, "change_history")["date_range"],
+                                 {"start": "2026-09-07", "end": "2026-10-06", "days": 30})
+                pacing = mock(case, "budget_pacing")
+                self.assertEqual(pacing["date_range"],
+                                 {"start": "2026-10-01", "end": "2026-10-06", "days": 6})
+                self.assertEqual(pacing["month_to_date"]["days_elapsed"], 6)
+        days = sorted({row["segments.date"] for row in mock(self.DATES, "search")["result"]
+                       if "segments.date" in row})
+        self.assertEqual(days[-1], "2026-10-13")
+        audit = mock(self.DATES, "full_audit")
+        self.assertIn("from the 58 of 73 checks that gave a result", audit["narrative"])
+        self.assertIn("in the 7 days from 7 Oct to 13 Oct",
+                      next(f["detail"] for f in audit["findings"] if f["check_id"] == "G-CT3"))
+        self.assertTrue(any(c.get("reason_code") == "NO_MARKET_BENCHMARK"
+                            for c in audit["coverage"]))
+        # G16 as v2.41.0's evaluator words it: 40% of spend is a fail, and its
+        # window is a length, which review step 1 dates from date_range.end.
+        g16 = next(f for f in audit["findings"] if f["check_id"] == "G16")
+        self.assertEqual((g16["status"], g16["title"]),
+                         ("fail", "Wasted spend on irrelevant terms"))
+        self.assertIn("in the last 14 days", g16["detail"])
+        self.assertNotIn("Oct", g16["detail"])
+        self.assertEqual(g16, next(f for f in mock(self.DATES, "analyze_waste")["findings"]
+                                   if f["check_id"] == "G16"))
+        self.assertEqual(audit["counts"]["fail"],
+                         sum(1 for f in audit["findings"] if f["status"] == "fail"))
+        # No related read promises the searches' names (v2.41.0's
+        # related_reads.from_envelope names the two failing areas).
+        self.assertEqual([r["tool"] for r in audit["related_reads"]],
+                         ["analyze_waste", "conversion_setup_audit"])
+        terms = mock(self.DATES, "analyze_search_terms")["findings"]
+        self.assertEqual([f["check_id"] for f in terms],
+                         ["O-NEG-TOP", "O-NEG-FREE", "O-NEG-INFO", "O-NEG-JOB"])
+        self.assertEqual(terms[-1]["title"], "Job-seeker search terms")
+        names = [r[0] for r in mock(self.DATES, "analyze_search_terms")["findings"][0]
+                 ["evidence"]["rows"]]
+        self.assertEqual(names[:2], ["dentist jobs bangalore", "free dental camp"])
+        text = read("evals/%s/case.yaml" % self.DATES)
+        for name in ("search-ends-on-the-accounts-yesterday",
+                     "no-search-ends-on-another-day",
+                     "names-the-two-costliest-searches",
+                     "coverage-is-a-count-not-a-percentage",
+                     "one-set-of-dates-and-named-searches", "marks-plugin-use",
+                     "skill-fired", "no-change-without-a-yes"):
+            with self.subTest(grader=name):
+                self.assertIn("  - name: %s\n" % name, text)
+        ends, flags = grader(self.DATES, "search-ends-on-the-accounts-yesterday")
+        other, _ = grader(self.DATES, "no-search-ends-on-another-day")
+        call = json.dumps([{"tool": "mcp__plugin_adcopilot_adcopilot__search",
+                            "input": {"start_date": "2026-09-30",
+                                      "end_date": "%s"}}])
+        self.assertRegex(call % "2026-10-13", re.compile(ends, flags))
+        self.assertNotRegex(call % "2026-10-13", re.compile(other))
+        for day in ("2026-10-12", "2026-10-14", "2026-10-25", "2026-11-02",
+                    "2027-01-04"):
+            with self.subTest(day=day):
+                self.assertRegex(call % day, re.compile(other))
+        # An earlier comparison window is not a wrong day.
+        for day in ("2026-09-29", "2026-10-06"):
+            with self.subTest(earlier=day):
+                self.assertNotRegex(call % day, re.compile(other))
+        # The same day written into the conditions, as an object or as an
+        # escaped JSON string: a BETWEEN range, or a <= bound.
+        mcp = "mcp__plugin_adcopilot_adcopilot__search"
+        for cond in ("segments.date BETWEEN '2026-09-30' AND '%s'",
+                     "segments.date between '2026-09-30' and '%s'",
+                     "segments.date >= '2026-09-30' AND segments.date <= '%s'"):
+            for as_string in (False, True):
+                def log(day):
+                    inp = {"resource": "campaign", "conditions": [cond % day]}
+                    return json.dumps([{"tool": mcp, "input": json.dumps(inp)
+                                        if as_string else inp}])
+                with self.subTest(cond=cond, as_string=as_string):
+                    self.assertRegex(log("2026-10-13"), re.compile(ends, flags))
+                    self.assertNotRegex(log("2026-10-13"), re.compile(other))
+                    self.assertNotRegex(log("2026-10-14"), re.compile(ends, flags))
+                    self.assertRegex(log("2026-10-14"), re.compile(other))
+                    self.assertRegex(log("2026-10-12"), re.compile(other))
+                    self.assertNotRegex(log("2026-09-29"), re.compile(other))
+        # The Cursor round closes the graders' blind spot: the same days in
+        # double quotes, a `<` bound on the day after, a single day, and a
+        # DURING range that takes in the account's unfinished today.
+        def logged(cond, as_string):
+            inp = {"resource": "campaign", "conditions": [cond]}
+            return json.dumps([{"tool": mcp, "input": json.dumps(inp)
+                                if as_string else inp}])
+        for as_string in (False, True):
+            for cond, right in (
+                    ('segments.date BETWEEN "2026-09-30" AND "2026-10-13"', True),
+                    ('segments.date <= "2026-10-13"', True),
+                    ("segments.date < '2026-10-14'", True),
+                    ('segments.date < "2026-10-14"', True),
+                    ("segments.date = '2026-10-13'", True),
+                    ('segments.date BETWEEN "2026-09-30" AND "2026-10-14"', False),
+                    ('segments.date <= "2026-10-12"', False),
+                    ("segments.date < '2026-10-15'", False),
+                    ("segments.date < '2026-10-13'", False),
+                    ("segments.date = '2026-10-14'", False),
+                    ("segments.date DURING TODAY", False),
+                    ("segments.date DURING THIS_MONTH", False),
+                    ("segments.date during this_week_mon_today", False)):
+                with self.subTest(cond=cond, as_string=as_string):
+                    if right:
+                        self.assertRegex(logged(cond, as_string), re.compile(ends, flags))
+                        self.assertNotRegex(logged(cond, as_string), re.compile(other))
+                    else:
+                        self.assertNotRegex(logged(cond, as_string), re.compile(ends, flags))
+                        self.assertRegex(logged(cond, as_string), re.compile(other))
+            for cond in ("segments.date < '2026-09-30'",
+                         'segments.date BETWEEN "2026-09-16" AND "2026-09-29"',
+                         "segments.date DURING LAST_14_DAYS",
+                         "segments.date IN ('2026-10-06', '2026-10-13')"):
+                with self.subTest(earlier=cond, as_string=as_string):
+                    self.assertNotRegex(logged(cond, as_string), re.compile(other))
+            # The review's closing of the remaining gaps: an open range (a `>`
+            # or `>=` bound with no upper bound runs to the account's today,
+            # whatever its first day) and an IN list holding a wrong day.
+            for cond in ("segments.date >= '2026-10-14'",
+                         'segments.date > "2026-10-13"',
+                         "segments.date >= '2026-10-13'",
+                         "segments.date >= '2026-09-30'",
+                         "segments.date>='2026-09-30'",
+                         "segments.date IN ('2026-10-14')",
+                         'segments.date in ("2026-10-13", "2026-10-14")',
+                         "segments.date IN ('2026-10-12')"):
+                with self.subTest(wrong=cond, as_string=as_string):
+                    self.assertRegex(logged(cond, as_string), re.compile(other))
+                    self.assertNotRegex(logged(cond, as_string), re.compile(ends, flags))
+            # A lower bound with an upper one, in either order or in two
+            # conditions, is a finite range and is judged by its end.
+            def two(conds):
+                inp = {"resource": "campaign", "conditions": conds}
+                return json.dumps([{"tool": mcp, "input": json.dumps(inp)
+                                    if as_string else inp}])
+            for conds, right in (
+                    (["segments.date <= '2026-10-13' AND segments.date >= '2026-09-30'"], True),
+                    (["segments.date >= '2026-09-30'", "segments.date <= '2026-10-13'"], True),
+                    (["segments.date > '2026-09-29'", 'segments.date < "2026-10-14"'], True),
+                    (["segments.date >= '2026-09-30'", "segments.date <= '2026-10-14'"], False)):
+                with self.subTest(conds=conds, as_string=as_string):
+                    if right:
+                        self.assertRegex(two(conds), re.compile(ends, flags))
+                        self.assertNotRegex(two(conds), re.compile(other))
+                    else:
+                        self.assertRegex(two(conds), re.compile(other))
+            # A lower bound beside end_date is bounded by end_date.
+            for end, wrong in (("2026-10-13", False), ("2026-10-14", True)):
+                inp = {"resource": "campaign", "start_date": "2026-09-30",
+                       "end_date": end, "conditions": ["segments.date >= '2026-09-30'"]}
+                log = json.dumps([{"tool": mcp, "input": json.dumps(inp)
+                                   if as_string else inp}])
+                with self.subTest(end_date=end, as_string=as_string):
+                    if wrong:
+                        self.assertRegex(log, re.compile(other))
+                    else:
+                        self.assertNotRegex(log, re.compile(other))
+                        self.assertRegex(log, re.compile(ends, flags))
+            # Neither grader is decided by a `tools` refresh or a lens call.
+            refresh = json.dumps([{"tool": "mcp__plugin_adcopilot_adcopilot__get_org_context",
+                                   "input": {"tools": ["search"], "source": "x"}},
+                                  {"tool": "mcp__plugin_adcopilot_adcopilot__budget_pacing",
+                                   "input": {"customer_id": "1"},
+                                   "output": "segments.date >= '2026-10-01'"}])
+            self.assertNotRegex(refresh, re.compile(other))
+        cov, cflags = grader(self.DATES, "coverage-is-a-count-not-a-percentage")
+        self.assertRegex("Coverage was 73% of its 73 checks.", re.compile(cov, cflags))
+        self.assertNotRegex("The audit's score comes from the 58 of 73 checks "
+                            "that gave a result.", re.compile(cov, cflags))
+
+
+# The Cursor round of 0.2.12. AdCopilot is listed on cursor.directory, whose
+# "Add to Cursor" installs the connector under the name `server`, and Cursor
+# reads skills from .cursor/skills or .claude/skills. Cursor has no "Needs
+# approval" setting: its run modes decide (Auto-review, the recommended
+# default, can let an MCP call through; Allowlist; Run Everything), and a
+# cloud agent never asks. v2.41.0 reports a Cursor connection as `surface`
+# `cursor` (tools_adcopilot._SURFACE_MAP) and offers it no schedule
+# (schedule_recipe.offer_for gives None for a named client that is not Claude).
+APPROVAL_SENTENCE = ("AdCopilot proposes each change first. For a hard stop, "
+                     "set your AI client to ask before AdCopilot's write tools: "
+                     "Needs approval in Claude; in Cursor, use the Allowlist "
+                     "run mode and keep them off the allowlist (Cursor's cloud "
+                     "agents never ask).")
+CURSOR_CONFIG = ("eyJ0eXBlIjoiaHR0cCIsInVybCI6Imh0dHBzOi8vbWNwLmFkY29waWxvdC5jbG91"
+                 "ZC9tY3AifQ%3D%3D")
+CURSOR_TELL = ("`get_org_context`'s top-level `surface` is `cursor`, or Cursor's "
+               "own instructions or the person say so")
+GOOGLE_ACCESS_DISCLOSURE = (
+    "AdCopilot connects to Google Ads through its own Google Cloud project, "
+    "with your Google sign-in. If you want programmatic access to Google Ads "
+    "for your own software, get your own Google Cloud account and apply for "
+    "Google Ads API access there.")
+
+
+class ClientNeutralApproval(unittest.TestCase):
+    """One approval sentence for every AI client. The earlier 0.2.12 text
+    made "while the write tools stay on Needs approval" the condition of every
+    promise: a Claude setting, which the plugin directory, the README and
+    cursor.directory's copy of the description all showed to Cursor users."""
+
+    CLAUDE_ONLY = re.compile(r"while (?:the|AdCopilot's) write tools (?:stay|need)|"
+                             r"Your AI client asks before each change", re.I)
+
+    def surfaces(self):
+        return (["README.md", ".claude-plugin/plugin.json",
+                 ".claude-plugin/marketplace.json"] + model_read_files())
+
+    def test_the_manifest_and_the_readme_carry_the_sentence(self):
+        desc = json.loads(read(".claude-plugin/plugin.json"))["description"]
+        self.assertIn(APPROVAL_SENTENCE, desc)
+        self.assertIn("AdCopilot never deletes anything but a negative keyword.", desc)
+        self.assertLessEqual(len(desc), 1024)
+        intro = " ".join(read("README.md").split("\n## ", 1)[0].split())
+        self.assertIn(APPROVAL_SENTENCE, intro)
+
+    def test_no_surface_keeps_the_claude_only_condition(self):
+        for rel in self.surfaces():
+            with self.subTest(file=rel):
+                found = self.CLAUDE_ONLY.search(flat(rel))
+                self.assertIsNone(found, found and found.group(0))
+
+    def test_needs_approval_is_named_beside_cursor(self):
+        # Wherever the customer reads "Needs approval", Cursor's way is in the
+        # same sentence. The one exception is adcopilot-daily's set-up step
+        # for the Claude app, which is Claude's own screen.
+        visible = [(rel, read(rel)) for rel in
+                   ("README.md", ".claude-plugin/plugin.json",
+                    ".claude-plugin/marketplace.json")]
+        visible.append(("skills/adcopilot-docs/SKILL.md",
+                        read("skills/adcopilot-docs/SKILL.md")))
+        for rel, text in visible:
+            for sentence in ApprovalCondition.sentences(text):
+                if "Needs approval" in sentence:
+                    with self.subTest(file=rel, sentence=sentence[:80]):
+                        self.assertIn("Cursor", sentence)
+
+    def test_cursors_hard_stop_names_the_allowlist_run_mode(self):
+        # Keeping the write tools off the allowlist is a hard stop only in
+        # Cursor's Allowlist run mode: in Auto-review, its recommended default,
+        # a classifier can let a tool that is not allowlisted through.
+        for rel in (["README.md", ".claude-plugin/plugin.json"]
+                    + model_read_files()):
+            text = flat(rel)
+            for sentence in ApprovalCondition.sentences(text):
+                if "Cursor" in sentence and "off the allowlist" in sentence:
+                    with self.subTest(file=rel, sentence=sentence[:90]):
+                        self.assertIn("Allowlist", sentence.replace(
+                            "off the allowlist", ""))
+
+    def test_the_docs_skill_names_each_clients_hard_stop(self):
+        docs = flat("skills/adcopilot-docs/SKILL.md")
+        for words in ("AdCopilot proposes each change first.",
+                      "**Needs approval** in claude.ai, Cowork and the desktop app",
+                      "in Cursor, the write tools kept off the allowlist",
+                      "Cursor has no **Needs approval** setting",
+                      "a Cursor cloud agent never asks",
+                      "never promise a yes before every change without the hard "
+                      "stop beside it."):
+            with self.subTest(words=words):
+                self.assertIn(words, docs)
+
+
+class CursorPath(unittest.TestCase):
+    """Wherever the plugin works out which client it is in, Cursor is checked
+    first: there it never runs `claude mcp` (Cursor's agent can reach a shell
+    where Claude Code is installed, and that command lists Claude Code's
+    connectors), the connector may be named `server`, and it gives Cursor's
+    sign-in step instead of the plugin's Connectors tab."""
+
+    def test_setup_checks_for_cursor_before_claude_code(self):
+        text = flat("commands/setup.md")
+        cursor = text.index("If this is Cursor (" + CURSOR_TELL + ")")
+        self.assertLess(cursor, text.index("`claude mcp list`"))
+        for words in ("never run `claude mcp`, not even to check",
+                      "may be named `server` rather than `adcopilot`; it is the "
+                      "same connector",
+                      "**Let Cursor use your AdCopilot?**",
+                      "config=" + CURSOR_CONFIG,
+                      "Nothing in the next three paragraphs applies in Cursor."):
+            with self.subTest(words=words):
+                self.assertIn(words, text)
+
+    def test_connect_signs_in_cursor_first(self):
+        step = " ".join((section(read("skills/adcopilot-connect/SKILL.md"),
+                                 "### 1. Signed in") or "").split())
+        self.assertLess(step.index("**Cursor** (" + CURSOR_TELL + ")"),
+                        step.index("**Claude Code**"))
+        for words in ("never run `claude mcp` here",
+                      "may be named `server` rather than `adcopilot`",
+                      "**Let Cursor use your AdCopilot?**",
+                      "config=" + CURSOR_CONFIG):
+            with self.subTest(words=words):
+                self.assertIn(words, step)
+        # The plugin's Connectors tab is the web branch's, not Cursor's.
+        cursor = step.split("**Claude Code**")[0]
+        self.assertNotIn("Connectors", cursor)
+
+    def test_the_habit_block_checks_for_cursor_first(self):
+        block = " ".join((section(read(HABIT_CARRIERS[0]), HABIT_HEADING) or "").split())
+        first = block.index("First, Cursor. If this is Cursor (" + CURSOR_TELL + ")")
+        self.assertLess(first, block.index("make one offer"))
+        self.assertLess(first, block.index("`claude mcp list`"))
+        self.assertIn("make no schedule offer of your own, never run `claude mcp` "
+                      "to work out where you are, and never call "
+                      "`save_org_context` with `routine.own_schedule`", block)
+        self.assertNotIn("make no offer,", block)
+        self.assertNotIn("record nothing about a schedule", block)
+        self.assertIn("never Cursor, ChatGPT or another client", block)
+
+    def test_in_cursor_the_servers_check_in_offer_is_made(self):
+        # v2.41.0 gives a Cursor connection no schedule_offer, but while the
+        # routine is pending its next_step still ends "Before you finish,
+        # offer to set up a daily check-in and a Monday summary." and the
+        # playbook carries THE CLOSE (plugin_drops_schedule applies only when
+        # schedule_offer is set). "Make no offer" would have cut the one
+        # daily loop Cursor has.
+        offer = ("If `next_step` asks you to offer a check-in or a summary, "
+                 "make that offer as it says, with the playbook's close (THE "
+                 "CLOSE) for the steps on a yes.")
+        for rel in HABIT_CARRIERS:
+            block = " ".join((section(read(rel), HABIT_HEADING) or "").split())
+            cursor = block.split("Everywhere else,")[0]
+            with self.subTest(file=rel):
+                self.assertEqual(cursor.count(offer), 1)
+        review = flat("skills/adcopilot-review/SKILL.md")
+        self.assertIn("In Cursor (" + CURSOR_TELL + ") there is none of the "
+                      "plugin's own: make no schedule offer, never run "
+                      "`claude mcp` to work out where you are, and never call "
+                      "`save_org_context` with `routine.own_schedule`; if "
+                      "`next_step` asks you to offer a check-in or a summary, "
+                      "make that offer as it says, with the playbook's close "
+                      "(THE CLOSE) for the steps on a yes.", review)
+        readme = flat("README.md")
+        self.assertIn("there the plugin makes no schedule offer of its own; in "
+                      "Cursor, when AdCopilot's answer asks for an offer of a "
+                      "check-in or a summary, the plugin makes that one as "
+                      "AdCopilot words it.", readme)
+        self.assertNotIn("and there the plugin makes no offer.", readme)
+
+    def test_audit_refreshes_a_stale_tool_list_cursor_first(self):
+        text = flat("commands/audit.md")
+        cursor = text.index("If the tool is still missing, Cursor first: in "
+                            "Cursor (" + CURSOR_TELL + ") there is no `/mcp`")
+        self.assertLess(cursor, text.index("`/mcp`, choose `adcopilot`"))
+        for words in ("you never run `claude mcp` there",
+                      "turning AdCopilot off and on again in Cursor's MCP "
+                      "settings, where it may be named `server`, refetches the "
+                      "tool list",
+                      "removing it and adding it again is the last resort.",
+                      "Everywhere else, `/mcp`, choose `adcopilot`, then "
+                      "Reconnect refetches the tool list",
+                      "The first fix is then that refresh, with its last resort"):
+            with self.subTest(words=words):
+                self.assertIn(words, text)
+        self.assertNotIn("that reconnect", text)
+
+    def test_own_schedule_is_recorded_only_from_claude(self):
+        block = " ".join((section(read(HABIT_CARRIERS[0]), HABIT_HEADING) or "").split())
+        self.assertIn("Record it only from Claude: AdCopilot keeps "
+                      "`routine.own_schedule` for the whole workspace", block)
+        review = flat("skills/adcopilot-review/SKILL.md")
+        self.assertIn("else `declined` — only from Claude", review)
+        self.assertIn("In Cursor (" + CURSOR_TELL + ") there is none", review)
+        self.assertIn("and `get_org_context` hands you its recipe, "
+                      "`routine.schedule`, which AdCopilot sends only when its "
+                      "`overlays.schedule_offer` is set", review)
+        self.assertIn("when a scheduled run has checked in on two different "
+                      "days (`routine.scheduled_first_seen_at` and "
+                      "`routine.scheduled_last_seen_at`)", review)
+        daily = flat("skills/adcopilot-daily/SKILL.md")
+        self.assertIn("Never call `save_org_context` with `routine.own_schedule` "
+                      "from Cursor", daily)
+        self.assertLess(daily.index("Cursor first."),
+                        daily.index("First, the instructions they will save."))
+
+    def test_every_command_says_what_to_do_without_its_skill(self):
+        for name in COMMANDS:
+            rel = "commands/%s.md" % name
+            text = flat(rel)
+            with self.subTest(file=rel):
+                if rel in DELEGATING_COMMANDS:
+                    self.assertIn("If that skill is not installed here (Cursor can "
+                                  "add this command without it), follow "
+                                  "`get_org_context`'s `next_step` and `playbook` "
+                                  "instead.", text)
+                else:
+                    # The versioned marker hands the turn to a skill, so a
+                    # fallback to next_step and the playbook would point back
+                    # at the skill that is missing: these send the bare one.
+                    self.assertIn(NO_SKILLS, text)
+                    self.assertNotIn("If that skill is not installed here", text)
+                    keep = text.index("Send `source` exactly as written, the "
+                                      "version included")
+                    self.assertLess(keep, text.index(NO_SKILLS))
+                    self.assertLess(text.index(NO_SKILLS),
+                                    text.index("When the answer's `plugin.skill`"))
+
+    def test_the_auditor_is_readonly_where_cursor_reads_it(self):
+        text = read("agents/adcopilot-auditor.md")
+        self.assertRegex(frontmatter(text), r"(?m)^readonly: true$")
+        comment = " ".join(text.split("<!--", 1)[1].split("-->", 1)[0].split())
+        self.assertIn("The list is enforced only in Claude Code.", comment)
+        self.assertIn("its subagents have no tool list", comment)
+        self.assertIn("does not say it holds back an MCP write", comment)
+
+    def test_the_readme_has_a_cursor_section(self):
+        install = " ".join((section(read("README.md"), "## Install") or "").split())
+        cursor = " ".join((section(read("README.md"), "### Cursor") or "").split())
+        self.assertTrue(cursor)
+        self.assertIn(cursor[:200], install)
+        self.assertIn("(https://cursor.com/en/install-mcp?name=adcopilot&config="
+                      + CURSOR_CONFIG + ")", cursor)
+        self.assertIn("`cursor://anysphere.cursor-deeplink/mcp/install?name="
+                      "adcopilot&config=" + CURSOR_CONFIG + "`", cursor)
+        self.assertNotIn("name=server", cursor)
+        for words in ("**Let Cursor use your AdCopilot?**",
+                      "can name the connector `server` instead of `adcopilot`",
+                      "Cursor has no **Needs approval** setting",
+                      "Settings, then Agents, then Approvals & Execution",
+                      "keep AdCopilot's write tools off the allowlist",
+                      "**Auto-review**, Cursor's recommended default",
+                      "**Run Everything** asks before nothing",
+                      "a Cursor cloud agent never asks you to approve an action"):
+            with self.subTest(words=words):
+                self.assertIn(words, cursor)
+
+    def test_the_config_is_the_connectors_own(self):
+        import base64
+        from urllib.parse import unquote
+        self.assertEqual(json.loads(base64.b64decode(unquote(CURSOR_CONFIG))),
+                         json.loads(read(".mcp.json"))["mcpServers"]["adcopilot"])
+
+    def test_googles_disclosure_is_under_install_word_for_word(self):
+        install = section(read("README.md"), "## Install") or ""
+        before_surfaces = install.split("\n### ", 1)[0]
+        self.assertIn("\n" + GOOGLE_ACCESS_DISCLOSURE + "\n", before_surfaces)
+        self.assertEqual(flat("README.md").count(GOOGLE_ACCESS_DISCLOSURE), 1)
+
+
+
+class OlderFixturesOnV241(unittest.TestCase):
+    """The Cursor round re-renders the older cases' get_org_context answers
+    with release/v2.41.0's own code (967d743b), as the five 0.2.12 fixtures
+    were: situations.classify on each fixture's own data, plugin_skill,
+    next_step, render_playbook, cross_reads, question_map,
+    schedule_recipe.as_data and tools_adcopilot._hints. setup-signed-out's
+    answer is the client's sign-in error, not a server answer, and the
+    suite-wide evals/mocks fixture is left as it is."""
+
+    CASES = ("audit-stale-tools", "daily-scheduled-run", "habit-offer-chat",
+             "habit-offer-code", "habit-offer-untold",
+             "habit-recorded-stays-quiet", "launch-manual-settings",
+             "launch-unserved-campaign", "measure-import-trap",
+             "measure-teaches", "review-follows-related-reads",
+             "review-spends-the-depth", "seo-discovered-is-not-a-verdict",
+             "seo-two-numbers-that-lie")
+    OFFER = {"habit-offer-chat": "claude", "habit-offer-code": "claude_code",
+             "habit-offer-untold": "both", "audit-stale-tools": "claude_code",
+             "measure-import-trap": "claude_code"}
+
+    def ctx(self, case):
+        text = read("evals/%s/mocks/adcopilot/get_org_context.md" % case)
+        if case == "audit-stale-tools":
+            return json.loads(re.search(r"\n\n(\{\"org\".*?\})\n\n", text, re.S).group(1))
+        return mock(case, "get_org_context")
+
+    def test_each_is_v241s_rendering(self):
+        for case in self.CASES:
+            with self.subTest(case=case):
+                text = read("evals/%s/mocks/adcopilot/get_org_context.md" % case)
+                head = re.match(r"^---\n(.*?)\n---\n", text, re.S).group(1)
+                self.assertIn("Re-rendered with AdCopilot release/v2.41.0's own "
+                              "code (967d743b", " ".join(head.replace("#", " ").split()))
+                ctx = self.ctx(case)
+                self.assertNotIn("focus", ctx["overlays"])
+                for key in ("schedule_offer", "quota_sized", "plugin_offer",
+                            "checkin_later", "site_health"):
+                    self.assertIn(key, ctx["overlays"])
+                if case == "daily-scheduled-run":
+                    self.assertNotIn("plugin", ctx)
+                else:
+                    self.assertEqual(ctx["plugin"]["version"], manifest_version())
+                for acct in (k for k in ctx["ads_probe"] if k.isdigit()):
+                    last = ctx["ads_probe"][acct]["last_30d"]
+                    self.assertRegex(last["start_date"], r"^\d{4}-\d\d-\d\d$")
+                    self.assertRegex(last["end_date"], r"^\d{4}-\d\d-\d\d$")
+                    self.assertIn("cost_micros", last)
+                routine = ctx["routine"]
+                for key in ("scheduled_first_seen_at", "scheduled_last_seen_at",
+                            "own_schedule", "own_schedule_at"):
+                    self.assertIn(key, routine)
+
+    def test_each_header_names_the_values_changed(self):
+        # The re-render set routine.weekly.status from off to skipped in five
+        # fixtures and added a first scheduled sighting to one; each header
+        # says so, and the others change nothing in their data.
+        weekly = ("habit-recorded-stays-quiet", "review-follows-related-reads",
+                  "review-spends-the-depth", "seo-discovered-is-not-a-verdict",
+                  "seo-two-numbers-that-lie")
+        for case in self.CASES:
+            text = read("evals/%s/mocks/adcopilot/get_org_context.md" % case)
+            head = re.match(r"^---\n(.*?)\n---\n", text, re.S).group(1)
+            head = " ".join(head.replace("#", " ").split())
+            with self.subTest(case=case):
+                said = ("routine.weekly.status is skipped (it was off), so that "
+                        "next_step asks for no routine offer")
+                self.assertEqual(said in head, case in weekly)
+                if case in weekly:
+                    self.assertEqual(self.ctx(case)["routine"]["weekly"]["status"],
+                                     "skipped")
+                first = ("routine.scheduled_first_seen_at is 2026-09-22 12:07:40 "
+                         "(it was absent), a day before scheduled_last_seen_at")
+                self.assertEqual(first in head,
+                                 case == "habit-recorded-stays-quiet")
+                self.assertEqual("changed rather than carried over" in head,
+                                 case in weekly)
+
+    def test_routine_schedule_is_there_exactly_when_the_offer_is(self):
+        for case in self.CASES:
+            with self.subTest(case=case):
+                ctx = self.ctx(case)
+                offer = ctx["overlays"]["schedule_offer"]
+                self.assertEqual(offer, self.OFFER.get(case))
+                if offer:
+                    self.assertEqual(ctx["routine"]["schedule"]["offer"], offer)
+                    self.assertEqual(ctx["routine"]["schedule"]["instructions"],
+                                     SCHEDULED_CHECKIN.format(
+                                         account="Google Ads account 123-456-7890"))
+                else:
+                    self.assertNotIn("schedule", ctx["routine"])
+
+    def test_the_habit_cases_say_where_they_are_as_v241_does(self):
+        self.assertEqual(self.ctx("habit-offer-untold")["surface"], "other")
+        for case in ("habit-offer-chat", "habit-offer-code"):
+            self.assertEqual(self.ctx(case)["surface"], "claude")
+        quiet = self.ctx("habit-recorded-stays-quiet")["routine"]
+        self.assertNotEqual(quiet["scheduled_first_seen_at"][:10],
+                            quiet["scheduled_last_seen_at"][:10])
+        # On a turn a skill owns, v2.41.0 leaves the offer to the skill.
+        for case in ("habit-offer-chat", "habit-offer-code", "habit-offer-untold"):
+            self.assertNotIn("Before you finish, offer", self.ctx(case)["next_step"])
+
+    def test_no_call_log_grader_is_decided_by_the_fixture_alone(self):
+        # mock_calls carries every mocked call's output too, so a grader that
+        # matches a tool's NAME would be decided by the playbook's or
+        # question_map's text. The call-log graders are anchored on the
+        # call's own "tool".
+        for case in self.CASES + ("review-uncapped-no-limit-words",
+                                  "review-question-first-roomy",
+                                  "docs-capabilities-untracked",
+                                  "docs-capabilities-routed",
+                                  "review-account-day-named-searches"):
+            text = read("evals/%s/mocks/adcopilot/get_org_context.md" % case)
+            output = re.match(r"^---\n.*?\n---\n(.*)$", text, re.S).group(1)
+            record = json.dumps({"tool": "mcp__plugin_adcopilot_adcopilot__get_org_context",
+                                 "input": {"source": "claude-plugin/%s" % manifest_version()},
+                                 "output": output}, separators=(",", ":"),
+                                ensure_ascii=False)
+            case_text = read("evals/%s/case.yaml" % case)
+            for block in re.split(r"\n  - name: ", case_text)[1:]:
+                name = block.split("\n", 1)[0]
+                if not (re.search(r"^\s+type: regex\s*$", block, re.M)
+                        and re.search(r"^\s+target: mock_calls\s*$", block, re.M)):
+                    continue
+                if name == "read-the-server-first":
+                    continue
+                plain = re.search(r"^\s+pattern: ([^'\s][^\n]*?)\s*$", block, re.M)
+                if plain:
+                    pattern = plain.group(1)
+                    flags = re.I if re.search(r"^\s+flags: i\s*$", block, re.M) else 0
+                else:
+                    pattern, flags = grader(case, name)
+                with self.subTest(case=case, grader=name):
+                    self.assertIsNone(re.search(pattern, record, flags))
 
 
 if __name__ == "__main__":

@@ -16,7 +16,22 @@ description: >
   next_step asks for a check-in offer it must not make. Deterministic graders
   test the marker, the absence of every served write, the reads by their
   inputs, the first line, the question count and the absence of the plugin's
-  daily-habit offer; meaning is one rubric at weight 3.
+  daily-habit offer; meaning is one rubric at weight 3. The marker weighs 5:
+  it is the one thing the run needs that this prompt does not give it.
+  AdCopilot's server instructions name it on production, but nothing in this
+  suite does except the skill: the harness's stand-in for the connector
+  answers with its tool list and no server instructions, and the shared
+  get_org_context schema in evals/mocks names only "claude-plugin". The
+  tools-only arm sent it on none of its three runs on 2026-10-18. A run
+  without it is under the 0.8 line, 16/21 = 0.76. The skill's delta here is
+  then the marker's weight, which the
+  ablation script's comment warns against for the plugin marker; for this
+  marker it is the point, because claude-scheduled changes what the server
+  does: AdCopilot counts the run as the customer's own schedule and stops
+  offering one, and its instructions skip related reads in a scheduled run.
+  So the delta measures the older recipe's run with nothing else naming the
+  marker; on production, where the server's instructions are served, a run
+  without the skill may send it anyway.
 tags: [daily]
 runs: 3
 execution:
@@ -45,6 +60,7 @@ graders:
     input_match: '^(?![\s\S]*"source"\s*:\s*"claude-scheduled")'
     min: 0
     max: 0
+    weight: 5
     arm: with-only
   - name: read-the-server-first
     type: regex

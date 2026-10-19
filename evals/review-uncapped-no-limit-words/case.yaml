@@ -1,0 +1,69 @@
+schema_version: "1.1"
+name: review-uncapped-no-limit-words
+description: >
+  "How are my ads doing?" on a workspace whose plan has no daily limit (the
+  tenant in this case's mocks is fictional; every value is invented). It comes
+  from a real conversation on 2026-10-14: the review spent the five Google Ads
+  reads the server sizes an untracked account's answer at, counted 27 searches
+  it could not name, and told the customer "I hit today's read limit for this
+  review before listing those searches, so that's one more look-up", a minute
+  after saying the plan had no daily limit. Here `ops_today_cap` is null and
+  there is no `reads_left_today`. From AdCopilot v2.41.0 such a day sizes this
+  answer at eight Google Ads reads, not five (`situations.ads_reads_max`,
+  `roomy_day`): the five the branch names, then up to three related reads.
+  The number is the size of one answer, not a limit on the day, the plan or
+  the workspace. `full_audit`'s `related_reads` names `analyze_waste`; a read
+  can still be left over once the eight are spent. What is graded is how
+  limits are spoken of: a read not made is offered as the next read, never as
+  a limit that was hit. `review-question-first-roomy` grades that the eight
+  are used. `get_org_context`'s next_step, playbook and cross_reads are what
+  AdCopilot release/v2.41.0 renders for this state, and `analyze_search_terms`
+  carries v2.41.0's list of the costliest searches. Tool schemas are
+  review-spends-the-depth's.
+tags: [review]
+runs: 3
+execution:
+  prompt: "How are my ads doing?"
+  max_turns: 14
+  timeout_seconds: 360
+  allowed_tools: [Skill]
+graders:
+  - name: no-limit-words
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    # On a plan with no daily limit nothing was hit. Fails a claim of one: hit,
+    # reached, ran out of, used up or exhausted, then a limit, cap, quota or
+    # allowance, or then today's look-ups or reads; ran out of reads or
+    # look-ups; the limit, cap or quota "was reached" or "has been used up";
+    # or a read or look-up limit, cap or quota named outright. A negation
+    # earlier in the same clause leaves it alone ("your plan has no look-up
+    # limit", "you won't run into a read limit", "it hadn't hit its daily
+    # limit"). A clause ends at punctuation, a dash, "but" or a joining word
+    # (because, since, as, when, whenever, before, after, once, until, till,
+    # so, while, though, although, and, then), so "I wasn't able to finish
+    # because I hit the read limit" fails: its negation is in the other
+    # clause. A campaign's budget, spend or per-click cap is not a read limit
+    # and passes: a campaign as the verb's subject, a money amount after its
+    # or their, or budget, spend, bid or CPC by the noun. The apostrophe is
+    # allowed typed or curly; `flags: i` as in every other case here.
+    pattern: '(?:^|(?<=[.!?]\s)|(?<=\n)|(?<=[,;:—–(]\s)|(?<=[—–(])|(?<=\s-\s)|(?<=\bbut\s)|(?<=\bbecause\s)|(?<=\bsince\s)|(?<=\bas\s)|(?<=\bwhen\s)|(?<=\bwhenever\s)|(?<=\bbefore\s)|(?<=\bafter\s)|(?<=\bonce\s)|(?<=\buntil\s)|(?<=\btill\s)|(?<=\bso\s)|(?<=\bwhile\s)|(?<=\bthough\s)|(?<=\balthough\s)|(?<=\band\s)|(?<=\bthen\s))(?:(?!\b(?:no|not|never|none|nothing|nobody|neither|nor|without|unlimited|cannot|won[’'']?t|wouldn[’'']?t|don[’'']?t|doesn[’'']?t|didn[’'']?t|can[’'']?t|\w+n[’'']t)\b)(?![.!?](?:\s|$))[^\n])*?(?:(?<!campaign\s)(?<!campaigns\s)(?<!campaign\shas\s)(?<!campaign\shad\s)(?<!campaigns\shave\s)(?<!campaigns\shad\s)\b(?:hit|hitting|reached|reaching|ran out of|run out of|runs out of|running out of|used up|using up|exhausted|maxed out)\b(?!\s+(?:its|their)\s+(?:[$€£₹]|\d))(?:(?!budget|spend|per[- ]click|\bbids?\b|\bcpc\b)[^.!?\n]){0,40}?\b(?:limits?|caps?|quotas?|allowances?)\b(?!\s+(?:of|on|for)\s+(?:(?:its|the|their|your|this|that)\s+)?(?:daily\s+)?(?:budget|spend|bids?|cpc)\b)|\b(?:hit|hitting|reached|reaching|ran out of|run out of|runs out of|running out of|used up|using up|exhausted|maxed out)\b[^.!?\n]{0,40}?\btoday[’'']?s\s+(?:look-?ups|reads)\b|\b(?:read|look-?up)s?\s+(?:limits?|caps?|quotas?)\b|\b(?:ran|run|runs|running)\s+out\s+of\s+(?:(?:my|the|your|today[’'']?s)\s+)?(?:reads|look-?ups)\b|\bout\s+of\s+(?:reads|look-?ups)\s+(?:for\s+)?today\b|\b(?:the|my|today[’'']?s|this\s+review[’'']?s|the\s+review[’'']?s)\s+(?:daily\s+)?(?:limits?|caps?|quotas?|allowances?)\s+(?:was|were|has\s+been|had\s+been|is\s+now)\s+(?:hit|reached|used\s+up|exhausted|maxed\s+out)\b)'
+  - name: no-change-without-a-yes
+    type: regex
+    target: mock_calls
+    match: not_contains
+    pattern: '"tool"\s*:\s*"[^"]*(?:add_negative_keywords|add_account_negatives|update_campaign|set_campaign_status|update_keyword|save_org_context)"'
+  - name: marks-plugin-use
+    type: tool_used
+    # The same grader as every case that reads the server: a get_org_context
+    # call without source "claude-plugin/<version>" fails it.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin/\d+\.\d+\.\d+")'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-review"'

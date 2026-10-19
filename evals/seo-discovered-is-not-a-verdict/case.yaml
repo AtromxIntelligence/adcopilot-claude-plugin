@@ -55,10 +55,10 @@ graders:
     target: mock_calls
     match: not_contains
     # Both write tools are served in this case precisely so that declining them
-    # is a choice. A tool's NAME can also appear in the log as an argument of
-    # get_org_context (tools: [...] asks for its text); the lookbehind skips
-    # that, as in connect-link-order.
-    pattern: '(?<!\\?"tools\\?"[^\n]{0,200})gsc_(request_indexing|submit_sitemap)'
+    # is a choice. Anchored on the call's own "tool": a tool's NAME also appears
+    # in the call log as an argument of get_org_context (tools: [...] asks for
+    # its text), and neither that nor the answer's text is a call.
+    pattern: '"tool"\s*:\s*"[^"]*gsc_(?:request_indexing|submit_sitemap)"'
   - name: inspects-the-url-it-was-given
     type: regex
     target: mock_calls

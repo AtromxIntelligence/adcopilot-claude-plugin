@@ -1,0 +1,148 @@
+schema_version: "1.1"
+name: docs-capabilities-routed
+description: >
+  "Walk me through what it can do" on a running account whose server answer
+  hands the account to another skill (the tenant in this case's mocks is
+  fictional; every value is invented). It comes from a real conversation on
+  2026-10-14: the docs skill listed what AdCopilot can do, then ran a full
+  performance review nobody asked for, listed the capabilities again in
+  another grouping, under a heading that promised every change would wait
+  for the customer's yes with no condition, and ended on three questions.
+  That turn's server answer handed an untracked account to the measurement
+  steps; docs-capabilities-untracked reproduces it. This case is the other
+  hand-off, the one with the most pulls toward a review: a counted account
+  handed to adcopilot-review. Since AdCopilot v2.41.0 the server itself has a
+  question answered first: next_step follows the review steps on a greeting,
+  a request to get started or a question about how the ads are doing and
+  offers them after anything else, the playbook's [PLUGIN] section says the
+  same, and cross_reads, on Search Console's first showing, says "make every
+  read below" only on a greeting or a request to get started. Its [RECAP]
+  still says "then go into the branch below". Every server text in this
+  case's get_org_context is what AdCopilot release/v2.41.0 renders for that
+  state, on a call carrying the plugin marker. What is graded is the docs skill's own rule: a question about
+  AdCopilot is answered from the one get_org_context call, with no account
+  read and no other skill, as one list, ending on exactly one question that
+  offers one read tied to one fact from the 30-day summary ($341 spent, 46
+  clicks, nothing counted), with approval always stated with its condition.
+  Mocks for the reads the server's texts ask for are present, so a run that
+  makes one is graded on it rather than failing on a missing mock.
+tags: [docs]
+runs: 3
+execution:
+  prompt: "I have the AdCopilot plugin. Please walk me through what it can do."
+  max_turns: 10
+  timeout_seconds: 300
+  allowed_tools: [Skill]
+graders:
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-docs"'
+  - name: review-skill-not-started
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-review"'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-full-audit
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__full_audit
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-waste-read
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__analyze_waste
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-search-terms-read
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__analyze_search_terms
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-search
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__search
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-conversion-setup-read
+    type: tool_used
+    tool: mcp__plugin_adcopilot_adcopilot__conversion_setup_audit
+    min: 0
+    max: 0
+    arm: with-only
+  - name: no-search-console-read
+    type: tool_used
+    # cross_reads tells the assistant to make this read; the docs skill makes
+    # no Search Console read for a question about AdCopilot either.
+    tool: mcp__plugin_adcopilot_adcopilot__gsc_search_analytics
+    min: 0
+    max: 0
+    arm: with-only
+  # The rubric is one llm grader per item, each item under "PASS only if
+  # this holds:" with its number. The suite's judge answers one word: given
+  # every item at once it failed replies that pass each item alone on 3 of 3
+  # votes, and an item without its number let an unconditioned approval
+  # line through (fix round 2, 2026-10-17).
+  - name: one-list
+    type: llm
+    focus: last_message
+    criteria: |
+      The customer asked only what the AdCopilot plugin can do. The workspace answer the assistant received says: Google Ads (one account) and Search Console are connected; Analytics and Tag Manager are not, with what connecting each would unlock; the plan has no daily limit on look-ups; and in its 30-day summary one campaign spent $341 on 46 clicks with nothing counted. The same answer also handed the account to the review steps and asked for a Search Console read, which is not what the customer asked for. The reply should give the capabilities once and end on exactly one question.
+
+      PASS only if this holds:
+      1. One list. What AdCopilot can do is given once, as a single list or a single run of short sections: what is connected and what each lets it do, what connecting the others would add, the ready-made routines, what it may change, and the look-ups. FAIL if the reply lists the capabilities twice in different groupings (for example once by product and again by kind of request), or comes back later in the reply to answer the question again.
+
+      Ignore wording, length and the order of the list's parts.
+  - name: no-review
+    type: llm
+    focus: last_message
+    criteria: |
+      The customer asked only what the AdCopilot plugin can do. The workspace answer the assistant received says: Google Ads (one account) and Search Console are connected; Analytics and Tag Manager are not, with what connecting each would unlock; the plan has no daily limit on look-ups; and in its 30-day summary one campaign spent $341 on 46 clicks with nothing counted. The same answer also handed the account to the review steps and asked for a Search Console read, which is not what the customer asked for. The reply should give the capabilities once and end on exactly one question.
+
+      PASS only if this holds:
+      2. No review. Apart from what the workspace answer itself says (what is connected and to which account or site, how many campaigns there are and how many are on, which routines are already scheduled, the plan and the look-ups used today) and the facts in that 30-day summary, with at most a sentence on what the 30-day fact could mean as the reason for the closing offer, the reply reports nothing about the account: no health score, no audit findings, no search terms, no week-against-week comparison, no budget pacing figures, no setting to change. Saying what a routine does is not reporting on the account. FAIL if it delivers a performance review or proposes a fix.
+
+      Ignore wording, length and the order of the list's parts.
+  - name: one-closing-question
+    type: llm
+    focus: last_message
+    criteria: |
+      The customer asked only what the AdCopilot plugin can do. The workspace answer the assistant received says: Google Ads (one account) and Search Console are connected; Analytics and Tag Manager are not, with what connecting each would unlock; the plan has no daily limit on look-ups; and in its 30-day summary one campaign spent $341 on 46 clicks with nothing counted. The same answer also handed the account to the review steps and asked for a Search Console read, which is not what the customer asked for. The reply should give the capabilities once and end on exactly one question.
+
+      PASS only if this holds:
+      3. Exactly one question, at the end, offering one look at their own account (a read) tied to the 30-day fact, for example whether results are being counted. FAIL if the reply ends on two or more questions or offers, if its question proposes a change to the account (a fix, a setting, a negative keyword), or if it asks nothing.
+
+      Ignore wording, length and the order of the list's parts.
+  - name: approval-with-its-condition
+    type: llm
+    focus: last_message
+    criteria: |
+      The customer asked only what the AdCopilot plugin can do. The workspace answer the assistant received says: Google Ads (one account) and Search Console are connected; Analytics and Tag Manager are not, with what connecting each would unlock; the plan has no daily limit on look-ups; and in its 30-day summary one campaign spent $341 on 46 clicks with nothing counted. The same answer also handed the account to the review steps and asked for a Search Console read, which is not what the customer asked for. The reply should give the capabilities once and end on exactly one question.
+
+      PASS only if this holds:
+      4. Approval with its condition. Wherever the reply says AdCopilot asks before changing anything, the same sentence says what makes that hold: that AdCopilot proposes each change first and the AI client's own approval setting is the hard stop (Needs approval in Claude; in Cursor, the Allowlist run mode with the write tools kept off the allowlist), or that switching that approval off lets changes through. FAIL if any heading, parenthesis or list item says changes wait for their approval with no condition.
+
+      Ignore wording, length and the order of the list's parts.
+  - name: no-approval-promise-without-its-condition
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    # A sentence (or a heading or list line) that promises approval with no
+    # "as long as" or "while" anywhere in it. A full stop only ends a sentence
+    # when a space or the end follows it, so "claude.ai" does not split one.
+    pattern: '(?:^|(?<=[.!?]\s)|(?<=\n))(?!(?:(?![.!?](?:\s|$))[^\n])*\b(?:as long as|while)\b)(?:(?![.!?](?:\s|$))[^\n])*\b(?:waits? for your (?:yes|approval|ok(?:ay)?)|only (?:on|after|with) your (?:yes|approval|ok(?:ay)?)|only after you (?:approve|say yes|okay))'
+  - name: marks-plugin-use
+    type: tool_used
+    # The same grader as every case that reads the server: a get_org_context
+    # call without source "claude-plugin/<version>" fails it.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin/\d+\.\d+\.\d+")'
+    min: 0
+    max: 0
+    arm: with-only
