@@ -33,7 +33,7 @@ Five reads, in this order — when the instructions list their own, theirs win:
 4. **Ads Google stopped** — `search` on `ad_group_ad` with `ad_group_ad.policy_summary.approval_status`: any ad disapproved or limited, with Google's stated reason.
 5. **What changed** — `search` on `change_event` with `start_date`, `end_date` and a `limit`: changes in the last 24 hours, and who made them.
 
-A run is about six or seven reads, each counted toward the workspace's daily operations, which `get_org_context` reports. If they run out, say which reads were not reached.
+A run is about six or seven reads, each counted toward the workspace's daily operations, which `get_org_context` reports. On Free, an analysis counts 2 operations (`budget_pacing` and `analyze_search_terms` here) and a `search` 1, so the five reads count 7 and a run comes to about 8 to 10 of Free's 10, some days all of them; otherwise every read counts 1. If they run out, say which reads were not reached.
 
 The report:
 
@@ -59,7 +59,7 @@ Start with one line: "All clear" or "Needs a look". End with the single most val
 
 Fill in `{account}` from `get_org_context`: "Google Ads account " and the ID of the account they want checked, written 123-456-7890 — the one AdCopilot's check-in reads unless they say otherwise, and never a manager account (`manager` true), which has no figures of its own; or, when you cannot tell which, "the Google Ads account I have switched on in AdCopilot". The ID goes in the instructions only, because a run with nobody to ask has to know which account; say the account by its name everywhere else.
 
-Say what it costs before they save it: about six or seven reads a run, each counted toward the workspace's daily operations, and a Monday that also runs the weekly summary can use the whole day's. It runs at 8:07, not 8:00, because runs set exactly on the hour can start late. Then the steps for where they are, one at a time, waiting for each to be done. The screens' labels are as of October 2026; if one reads differently, go by what it says.
+Say what it costs before they save it: about six or seven reads a run, each counted toward the workspace's daily operations, and a Monday that also runs the weekly summary can use the whole day's. On Free (`plan` is `free` in `get_org_context`), say it in operations instead: an analysis counts 2 there, so a run uses about 8 to 10 of Free's 10 operations, and some days all of them. It runs at 8:07, not 8:00, because runs set exactly on the hour can start late. Then the steps for where they are, one at a time, waiting for each to be done. The screens' labels are as of October 2026; if one reads differently, go by what it says.
 
 **Claude — claude.ai, Cowork, the desktop app:**
 

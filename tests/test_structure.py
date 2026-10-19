@@ -750,6 +750,40 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
                       "counts toward your workspace's daily operations; on a "
                       "Monday, the daily check and the weekly summary together "
                       "can use all of a Free workspace's 10.", readme)
+
+    def test_free_counts_in_weighted_operations(self):
+        # AdCopilot v2.43.1 (D164, "Back for Free"): on Free a full audit or
+        # an account health score counts 4 operations, an analysis 2 and a
+        # single read 1; a paid plan and a running trial count every call 1.
+        daily = " ".join(read("skills/adcopilot-daily/SKILL.md").split())
+        # The run's own section names no plan to buy (`SALES`), so it says
+        # "otherwise" where the set-up and the README name who counts 1.
+        self.assertIn("so the five reads count 7 and a run comes to about 8 to "
+                      "10 of Free's 10, some days all of them; otherwise every "
+                      "read counts 1.", daily)
+        self.assertIn("On Free (`plan` is `free` in `get_org_context`), say it "
+                      "in operations instead: an analysis counts 2 there, so a "
+                      "run uses about 8 to 10 of Free's 10 operations, and "
+                      "some days all of them.", daily)
+        readme = " ".join(read("README.md").split())
+        self.assertIn("so a run alone comes to about 8 to 10 of Free's 10, "
+                      "some days all of them; on a paid plan or a running "
+                      "trial every read counts 1.", readme)
+        audit = " ".join(read("commands/audit.md").split())
+        self.assertIn("on Free a full audit counts 4 operations and budget "
+                      "pacing 2, so this command uses 6 of Free's 10 a day; on "
+                      "a paid plan or a running trial each call counts 1.",
+                      audit)
+        weekly = " ".join(read("commands/weekly.md").split())
+        self.assertIn("On Free, `budget_pacing` counts 2 and each other read "
+                      "1, so the summary uses about 5 or 6 of Free's 10 a day; "
+                      "on a paid plan or a running trial every read counts 1.",
+                      weekly)
+        for rel, text in (("skills/adcopilot-daily/SKILL.md", daily),
+                          ("README.md", readme), ("commands/audit.md", audit),
+                          ("commands/weekly.md", weekly)):
+            # Never the everyone switch's words: paid plans count 1 per call.
+            self.assertNotIn("on every plan a full audit counts", text, rel)
         for rel in ("skills/adcopilot-daily/SKILL.md", "README.md"):
             text = " ".join(read(rel).split())
             self.assertNotIn("about five reads", text, rel)
