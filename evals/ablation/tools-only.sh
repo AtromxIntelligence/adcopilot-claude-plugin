@@ -52,7 +52,12 @@ command -v rsync >/dev/null || { echo "rsync is not on PATH" >&2; exit 1; }
 #    stub keeps that one sentence: without it the baseline arm would fail the
 #    marker on every case and each skill's delta would be the marker's weight,
 #    not what its body teaches. adcopilot-daily's stub stays bare: its run is
-#    marked claude-scheduled, which the server's own instructions already give.
+#    marked claude-scheduled, which AdCopilot's server instructions name on
+#    production but nothing in this suite names except the skill (the harness's
+#    stand-in serves no server instructions, and the get_org_context schema in
+#    evals/mocks names only "claude-plugin"); the bare stub sent it on none of
+#    three runs on 2026-10-18, so here that marker is what the skill's body
+#    adds over the recipe's prompt (daily-scheduled-run weighs it 5).
 rsync -a --exclude .git --exclude 'evals/results' "$ROOT/" "$COPY/"
 VERSION="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$ROOT/.claude-plugin/plugin.json")"
 for skill in "$COPY"/skills/*/SKILL.md; do

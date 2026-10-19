@@ -59,7 +59,9 @@ answer's reads. If this answer's reads are spent before a related read, offer
 it as the next read in one statement, never a second question and never as a
 limit you hit ("The next read would show how each campaign bids; say the word
 and I will run it."). Never offer a read for what a result you hold already
-shows. In a scheduled run, skip them.
+shows. A read you skipped because it does not bear on the question is neither
+offered nor mentioned, and the figure in its `why` stays out of the answer. In
+a scheduled run, skip them.
 
 ## The sequence
 
@@ -262,12 +264,14 @@ block words it (it would have caught this on its first morning; it only reads;
 "All clear" or "Needs a look" plus one yes/no fix); for any other finding, even
 one that costs money (a tracking fault, a Quality Score problem, a targeting
 problem), or none, the close, before any question the reply ends on, without
-saying the check would have caught it. If the server's `next_step` also asks
-for a check-in offer, this one answers it — never two. A no ends it for this
-conversation: ask once whether their Claude can create scheduled tasks, and
-record `routine.own_schedule` `unavailable` if it cannot, else `declined` —
-only from Claude, because AdCopilot keeps it for the whole workspace and a
-record made from Cursor or another client would stop the offer in their Claude
-too. On a yes, follow the `adcopilot-daily` skill's set-up rather than
-inventing steps here. Leave it for another day when the reply ends on something
-they must fix first.
+saying the check would have caught it. Either way the offer is its own
+paragraph, with a blank line before and after it, never on the end of a
+finding's sentences and never inside a bullet. If the server's `next_step`
+also asks for a check-in offer, this one answers it — never two. A no ends it
+for this conversation: ask once whether their Claude can create scheduled
+tasks, and record `routine.own_schedule` `unavailable` if it cannot, else
+`declined` — only from Claude, because AdCopilot keeps it for the whole
+workspace and a record made from Cursor or another client would stop the offer
+in their Claude too. On a yes, follow the `adcopilot-daily` skill's set-up
+rather than inventing steps here. Leave it for another day when the reply ends
+on something they must fix first.

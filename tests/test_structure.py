@@ -103,23 +103,22 @@ COMMANDS = ["setup", "audit", "daily", "weekly", "negatives", "launch", "measure
 # braces (0.2.11: right after the first finding the morning check also reads,
 # tied to it, with the value line). The eval graders look for their substance,
 # so a reword is a deliberate act, made here too.
-OFFER_CHAT = ("A check that runs by itself every weekday at 8:07 would have "
-              "caught {the finding} on its first morning. It only reads the "
-              "account and never changes anything, and it opens with \"All "
-              "clear\" or \"Needs a look\" plus one yes/no fix; say \"schedule "
-              "it\" and I'll walk you through saving it as a Claude scheduled "
-              "task, about two minutes.")
-OFFER_CODE = ("A check that runs by itself every weekday at 8:07 would have "
-              "caught {the finding} on its first morning. It only reads the "
-              "account and never changes anything, and it opens with \"All "
-              "clear\" or \"Needs a look\" plus one yes/no fix; say \"schedule "
-              "it\" and I'll set it up as a Claude Code routine with "
-              "/schedule.")
+OFFER_CHAT = ("A read-only check that runs by itself every weekday at 8:07 "
+              "would have caught {the finding} on its first morning, opening "
+              "with \"All clear\" or \"Needs a look\" plus one yes/no fix. If "
+              "you say \"schedule it\", I'll walk you through saving it as a "
+              "Claude scheduled task, about two minutes.")
+OFFER_CODE = ("A read-only check that runs by itself every weekday at 8:07 "
+              "would have caught {the finding} on its first morning, opening "
+              "with \"All clear\" or \"Needs a look\" plus one yes/no fix. If "
+              "you say \"schedule it\", I'll set it up as a Claude Code routine "
+              "with /schedule.")
 # The first sentence of an offer made at the close, for a finding the morning
 # check does not read or none: it does not say the check would have caught
 # anything.
-OFFER_CLOSE_FIRST = ("A check that runs by itself every weekday at 8:07 can look "
-                     "over this account for you each morning.")
+OFFER_CLOSE_FIRST = ("A read-only check that runs by itself every weekday at 8:07 "
+                     "can look over this account for you each morning, opening "
+                     "with \"All clear\" or \"Needs a look\" plus one yes/no fix.")
 
 # AdCopilot's own recipe (server: ads_mcp_cloud/schedule_recipe.py,
 # SCHEDULED_CHECKIN, AdCopilot v2.30.2). `{account}` is filled
@@ -464,6 +463,66 @@ class DailyHabitBlock(unittest.TestCase):
         block = self.blocks()[HABIT_CARRIERS[0]] or ""
         self.assertIn("a campaign switched on", block)
 
+    def test_each_offer_is_two_sentences_and_no_steps(self):
+        # habit-offer-code/-untold, 2026-10-18 (plan v4): every judge vote failed
+        # "one or two sentences" on the old wording, which the model wrote as
+        # three ("...fix. Say \"schedule it\" and I'll...") or as two joined by
+        # a semicolon, 57 to 60 words in all. Two plain sentences: the value
+        # line, then the offer; with "read-only" for "only reads the account and
+        # never changes anything" the value line is 32 words and the whole
+        # offer 48 (Claude Code) or 51 (the Claude app). On plan v5's run
+        # (2026-10-18 22:44Z) that offer passed item 4 where it stood as its own
+        # paragraph, by 2 votes of 3 on each run, and failed it where it was
+        # added to the end of the searches' paragraph. Plan v6 changes where it
+        # stands, not its length: these limits hold the length that passed.
+        for offer in (OFFER_CHAT, OFFER_CODE):
+            with self.subTest(offer=offer[-40:]):
+                self.assertNotIn(";", offer)
+                self.assertEqual(len(re.findall(r"[.!?](?=\s|$)", offer.replace("8:07", "8h07"))), 2)
+                self.assertTrue(offer.split(". ")[-1].startswith("If you say \"schedule it\", I'll "))
+                self.assertLessEqual(len(offer.split(". ")[0].split()), 32)
+                self.assertLessEqual(len(offer.split()), 51)
+        self.assertNotIn(";", OFFER_CLOSE_FIRST)
+        self.assertLessEqual(len(OFFER_CLOSE_FIRST.split()), 32)
+        self.assertIn("two sentences, never split into more, and no set-up step before a yes",
+                      " ".join((self.blocks()[HABIT_CARRIERS[0]] or "").split()))
+
+    def test_the_offer_is_its_own_paragraph(self):
+        # habit-offer-untold, 2026-10-18 22:44Z (plan v5): both runs added the
+        # offer to the end of the searches' paragraph ("That's people looking
+        # for work, freebies and how-to guides. A read-only check ...") and
+        # failed "one or two sentences"; habit-offer-code's runs gave the same
+        # offer a paragraph of its own and passed it. The block, the review
+        # skill and the README say it is always its own paragraph.
+        block = " ".join((self.blocks()[HABIT_CARRIERS[0]] or "").split())
+        self.assertIn("The offer is always its own paragraph, with a blank line "
+                      "before and after it: it goes right after the paragraph or "
+                      "list that gives that finding (and any line that sums that "
+                      "finding up), never on the end of one of that finding's "
+                      "sentences and never inside one of its bullets.", block)
+        self.assertIn("nothing else changed: a paragraph of its own, two "
+                      "sentences, never split into more", block)
+        # It sits between where the offer goes and what the close does, so it
+        # covers both.
+        self.assertLess(block.index("would have caught it on its first morning. "
+                                    "The offer is always its own paragraph"),
+                        block.index("For any other finding"))
+        nxt = " ".join((section(read("skills/adcopilot-review/SKILL.md"),
+                                "## What is next") or "").split())
+        self.assertIn("Either way the offer is its own paragraph, with a blank "
+                      "line before and after it, never on the end of a finding's "
+                      "sentences and never inside a bullet.", nxt)
+        readme = " ".join(read("README.md").split())
+        self.assertIn("The offer comes, as a paragraph of its own, right after "
+                      "the first finding the morning check also reads", readme)
+
+    def test_the_finding_in_the_braces_is_kept_short(self):
+        # The value line is 32 words before the finding; a long finding would
+        # make the offer the long paragraph the judges fail.
+        block = " ".join((self.blocks()[HABIT_CARRIERS[0]] or "").split())
+        self.assertIn("with the finding in the braces kept short (a figure and a "
+                      "noun) and nothing else changed", block)
+
     def test_the_offer_is_not_a_second_question(self):
         # Every flow already ends on at most one question; the offer is a
         # statement, so a reply never ends on two.
@@ -588,11 +647,11 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
     def test_both_offers_carry_the_value_line(self):
         for offer in (OFFER_CHAT, OFFER_CODE):
             with self.subTest(offer=offer[-50:]):
-                for piece in ("A check that runs by itself every weekday at 8:07 "
-                              "would have caught {the finding} on its first morning.",
-                              "It only reads the account and never changes anything",
-                              "it opens with \"All clear\" or \"Needs a look\" "
-                              "plus one yes/no fix"):
+                for piece in ("A read-only check that runs by itself every weekday "
+                              "at 8:07 would have caught {the finding} on its first "
+                              "morning,",
+                              "opening with \"All clear\" or \"Needs a look\" "
+                              "plus one yes/no fix."):
                     self.assertIn(piece, offer)
         self.assertIn("with the finding in the braces", self.block())
 
@@ -2712,6 +2771,36 @@ class NewEvalCases(unittest.TestCase):
         "I've reached the cap for this review.",
         "There's no daily limit, but I hit the review's cap.",
         "Today's read limit stopped this review before the searches.",
+        # The re-run plan (2026-10-18): a negation earlier in the clause that
+        # governs another verb leaves the claim a claim. The first pattern let
+        # a "didn't" or "can't" anywhere before the verb pass the clause.
+        "I wasn't able to read the rest because I hit today's read limit.",
+        "I wasn't able to list them all before hitting the read limit.",
+        "The list isn't complete because I hit the read limit.",
+        "I haven't listed the rest because I hit today's read limit.",
+        "I hadn't finished the searches when I hit the read limit.",
+        "That wasn't everything because I ran out of today's look-ups.",
+        "It isn't possible to read more today since I've reached the look-up limit.",
+        "I didn't finish because I hit the read limit.",
+        "I can't read more because I hit today's read limit.",
+        "Nothing more is listed because I hit the read limit.",
+        # The re-run plan's adversarial check: a clause that opens on a
+        # negated subject still claims a limit after a joining word, and "ran
+        # out of reads" and the passive claim one without a limit verb.
+        "None of the remaining searches could be read after I hit the limit.",
+        "Nothing else could be checked once I reached my daily cap.",
+        "No more reads were possible once I hit the daily limit.",
+        "I've run out of reads for today.",
+        "I'm out of reads for today, so the searches will have to wait.",
+        "I didn't get to the searches because the daily limit was reached.",
+        "Today's quota has been used up, so I stopped there.",
+        "That wasn't everything — I ran out of today's look-ups.",
+        # Plan v3: the passive with "the", ran out of look-ups with no limit
+        # word, and a negation ended by "because" or "as".
+        "The limit was reached before I got to the searches.",
+        "I ran out of look-ups before the searches.",
+        "It hasn't got to the searches yet because the review reached its cap.",
+        "We aren't done, as I used up today's look-ups.",
     )
     TRUE_ON_AN_UNCAPPED_PLAN = (
         "Your Pro plan has no look-up limit, so ask for as many reads as you like.",
@@ -2725,6 +2814,37 @@ class NewEvalCases(unittest.TestCase):
         "Your campaign hit its daily budget cap on 9 of the 14 days.",
         "The campaign hit the limit of its budget by 3pm most days.",
         "Switch to Maximize Clicks with a per-click cap of ₹40.",
+        # A negation that governs the verb, and a campaign as its subject
+        # (review-question-first-roomy run 2 and review-account-day-named-
+        # searches, 2026-10-18).
+        "As of 6 October the campaign was on pace for about $1,586 this "
+        "month and hadn't hit its daily limit on any day.",
+        "Both campaigns are on pace and neither has hit its daily cap.",
+        "Both campaigns are on pace and haven't hit their daily cap.",
+        "The campaign hasn’t yet hit its cap.",
+        "No campaign hit its daily limit.",
+        "The campaign hit its daily limit on 3 days.",
+        "It hit its $130 daily cap on 12 of the 14 days.",
+        "There isn't a read limit on Pro.",
+        # The re-run plan's adversarial check: a negation that governs the
+        # whole clause, not only the word right before the verb.
+        "Your plan has no read or look-up limit.",
+        "You won't run into a read limit on Pro.",
+        "You don't need to worry about a look-up limit on your plan.",
+        "You never hit a read limit on Pro.",
+        "You haven't hit a read limit, because Pro has none.",
+        "The campaign didn't come close to hitting its cap.",
+        "It never came near reaching its daily limit.",
+        "It wasn't close to reaching its cap on any day.",
+        # Plan v3: reassurances the v2 pattern failed (its negation had to sit
+        # right before the verb or noun) and negated subjects the old one failed.
+        "Nothing here was cut short by a read limit.",
+        "There's no need to worry about a read limit on Pro.",
+        "You won't be stopped by a read limit on Pro.",
+        "Spend didn't get anywhere near hitting the daily cap.",
+        "It's not at risk of hitting its daily limit this month.",
+        "None of your campaigns hit their caps this month.",
+        "Neither campaign reached its cap.",
     )
 
     def test_the_uncapped_case_keeps_the_shared_graders(self):

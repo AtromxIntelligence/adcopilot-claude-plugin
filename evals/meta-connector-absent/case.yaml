@@ -9,10 +9,12 @@ description: >
   stop: no figure from memory, no offer to read Meta through AdCopilot, no claim
   that AdCopilot supports Meta, and none of Meta's countries, roles, cost or
   verification stated as fact, because Meta's pages state none for the route the
-  guide covers. A question that is only about Meta needs no AdCopilot read. This
-  case has NOT been run: it was written with the skill in 0.2.10 and needs an
-  authenticated Claude Code to measure (release checklist step 7). Most graders
-  are deterministic and free; the meaning is the rubric's.
+  guide covers. A question that is only about Meta needs no AdCopilot read. It
+  was written with the skill in 0.2.10. On 2026-10-17 and 2026-10-18 it scored
+  0.778 on all six runs: every deterministic grader passed and the one
+  five-item rubric failed on every judge vote, which named no item. The rubric
+  is now one llm grader per item, items 1 and 2 sharing one, so a run says
+  which item fails. Most graders are deterministic and free.
 tags: [meta]
 runs: 3
 execution:
@@ -21,6 +23,25 @@ execution:
   timeout_seconds: 180
   allowed_tools: [Skill]
 graders:
+  # Weights, 39 in all, so that each thing the description says the reply must
+  # do or must not do puts a run under the 0.8 line on its own (31/39 = 0.79):
+  # rubric items 1 and 2 together, sending them to Meta's own connector with
+  # both links (8); item 3, no number, trend or verdict on their Instagram ads
+  # (8); item 4, none of Meta's terms stated as fact (8); item 5, no claim or
+  # offer that AdCopilot reads Meta (8). Items 1 and 2 share a grader because
+  # a grader fails a run alone only if it weighs more than a fifth of the
+  # total, so at most four can. A reply that leaves out a link fails item 2
+  # and the links regex (2) together, 29/39; the links regex alone stays
+  # above the line (37/39), as do the address (1) and the figures regex (1),
+  # which also matches a Google figure such as the tools-only arm's "$0" on
+  # 2026-10-18. A figure from memory fails item 3 and the figures regex
+  # together, 30/39; the terms and offer regexes (0.5 each) add to items 4
+  # and 5 the same way.
+  # Item 4 is the item the unnamed failing votes of 2026-10-17 and 2026-10-18
+  # may have been about (all six replies said "open beta" and "Facebook or
+  # Meta Managed Account"); its criteria say neither is a requirement. Read
+  # its votes run by run: a failure on a reply that states no requirement is
+  # the judge's, not the reply's.
   - name: skill-fired
     type: tool_used
     tool: Skill
@@ -61,19 +82,42 @@ graders:
     match: not_contains
     weight: 0.5
     pattern: '\bavailable (only )?in (the )?(US|U\.S\.|United States|Europe|EU|UK|India|Canada)\b|\b(requires?|need)\s+(an? )?(admin|administrator|owner|business verification|verified business)\b'
-  - name: sends-the-customer-to-meta-and-the-guide
+  - name: sends-them-to-metas-connector
     type: llm
     focus: last_message
-    weight: 2
+    weight: 8
     criteria: |
       The customer asked how their Instagram ads did last week. AdCopilot reaches the customer's Google products and has no connection to Meta. Meta publishes a connector of its own for Meta ads, and it is not installed in this conversation. Judge the reply's meaning only.
 
-      PASS if all five hold:
-
+      PASS only if both hold:
       1. It says Meta has its own connector for Meta ads, and that this is what answers a question about Instagram or Facebook ads. It says, or plainly implies, that AdCopilot does not read Meta.
       2. It says how to get it in a sentence or two (add it in the AI client by Meta's address and sign in) and gives Meta's help page and AdCopilot's guide. It is not a tutorial, and it does not walk through screens of any one assistant from memory.
-      3. It gives no number, trend or verdict about the customer's Instagram ads. A reply that guesses how the ads did FAILS.
-      4. It states no country, role on the ad account, cost or business-verification requirement as Meta's. Pointing the customer to Meta's help page for such things is fine; saying "check Meta's page for where it is available" is fine.
-      5. It does not say AdCopilot supports, connects to or manages Meta, does not promise an AdCopilot Meta integration, and gives no date for one. Saying AdCopilot has no Meta integration is fine.
 
-      FAIL if any of the five does not hold, or if the reply offers to pull the customer's Meta results through AdCopilot.
+      FAIL if either does not hold.
+  - name: no-verdict-on-their-ads
+    type: llm
+    focus: last_message
+    weight: 8
+    criteria: |
+      The customer asked how their Instagram ads did last week. AdCopilot reaches the customer's Google products and has no connection to Meta. Meta publishes a connector of its own for Meta ads, and it is not installed in this conversation. Judge the reply's meaning only.
+
+      PASS only if this holds:
+      3. It gives no number, trend or verdict about the customer's Instagram ads. A reply that guesses how the ads did FAILS.
+  - name: no-meta-terms-as-fact
+    type: llm
+    focus: last_message
+    weight: 8
+    criteria: |
+      The customer asked how their Instagram ads did last week. AdCopilot reaches the customer's Google products and has no connection to Meta. Meta publishes a connector of its own for Meta ads, and it is not installed in this conversation. Judge the reply's meaning only.
+
+      PASS only if this holds:
+      4. It states no country, role on the ad account, cost or business-verification requirement as Meta's. Pointing the customer to Meta's help page for such things is fine; saying "check Meta's page for where it is available" is fine. Saying they sign in with a Facebook account or a Meta Managed Account says how to sign in, and calling the connector an open beta repeats what Meta calls it; neither is a requirement.
+  - name: no-adcopilot-meta-claim
+    type: llm
+    focus: last_message
+    weight: 8
+    criteria: |
+      The customer asked how their Instagram ads did last week. AdCopilot reaches the customer's Google products and has no connection to Meta. Meta publishes a connector of its own for Meta ads, and it is not installed in this conversation. Judge the reply's meaning only.
+
+      PASS only if this holds:
+      5. It does not say AdCopilot supports, connects to or manages Meta, does not promise an AdCopilot Meta integration, gives no date for one, and does not offer to pull the customer's Meta results through AdCopilot. Saying AdCopilot has no Meta integration is fine. Offering to read their results from Meta's connector once they have added it is not an offer through AdCopilot.

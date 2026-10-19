@@ -22,7 +22,17 @@ description: >
   `day_of_week` is the live description and signature read from the server code
   at v2.34.19 (63edc697) and carries no `Tools revision` line, because that
   value is a hash of the whole served tool list and could not be read without a
-  signed-in connection.
+  signed-in connection. The reply is judged on its own (a judge shown the
+  whole run sees a trace with messages elided, which on 2026-10-18 hid the
+  second read in two runs); which tools ran is the call-log graders' job. The
+  order of the two reads is not graded: neither the skill nor the server asks
+  for one, and reading both at once is a right answer. A day-of-week aside
+  (Sundays' $612, offered as a read for later) is its own grader, because on
+  2026-10-17 and 2026-10-18 it was the commonest failure with the skill. The
+  review skill names `analyze_search_terms` for wasted searches too, so
+  running it shows the skill followed as much as the list; what tests the
+  judgement the server's sentence asks for is leaving `day_of_week` unrun and
+  its figure out of the reply.
 tags: [review]
 runs: 3
 execution:
@@ -31,6 +41,26 @@ execution:
   timeout_seconds: 360
   allowed_tools: [Skill]
 graders:
+  # Weights, 39 in all. Four failures weigh 8 each, so any one of them alone
+  # puts a run at 31/39 = 0.79, under the 0.8 line: a reply that says a
+  # change was made (proposes-only); anything of the day-of-week read in the
+  # reply (Sundays' $612, or the read offered for later); a reply built
+  # without analyze_search_terms' themes; and the judgement the server's
+  # sentence asks for, measured on the calls: the waste lens read and
+  # day_of_week left unrun (reads-the-waste-lens-and-leaves-day-of-week).
+  # So a day_of_week call the reply never mentions fails the run (30/39,
+  # with skips-the-read-that-does-not-bear), as the whole-run rubric failed
+  # it before 2026-10-18, and so does never reading the waste lens (29/39
+  # with the review skill unfired, the /adcopilot:negatives route on
+  # 2026-10-17 and 2026-10-18; 30/39 with it fired). A grader fails a run
+  # alone only if it weighs more than a fifth of the total, so at most four
+  # can: the call and the lens share one, and skips-the-read-that-does-not-
+  # bear and reads-the-waste-lens (1 each) only say which half failed. This
+  # case's mocks serve eight reads and no write tool, so a change can only
+  # be claimed, never made: proposes-only carries the 8, and
+  # no-change-without-a-yes (1) guards against a write tool added to the
+  # mocks later. A run that calls day_of_week and reports what it read
+  # fails the aside grader too, 22/39. The rest weigh 1.
   - name: reads-the-waste-lens
     type: regex
     target: mock_calls
@@ -45,24 +75,49 @@ graders:
     min: 0
     max: 0
     arm: with-only
+  - name: reads-the-waste-lens-and-leaves-day-of-week
+    type: regex
+    target: mock_calls
+    weight: 8
+    # Passes only when analyze_waste was called and day_of_week never was,
+    # in either order. Anchored at the start, so the look-aheads read the
+    # whole call log.
+    pattern: '^(?=[\s\S]*"tool"\s*:\s*"[^"]*analyze_waste")(?![\s\S]*"tool"\s*:\s*"[^"]*day_of_week")'
   - name: no-change-without-a-yes
     type: regex
     target: mock_calls
     match: not_contains
     pattern: '"tool"\s*:\s*"[^"]*(?:add_negative_keywords|add_account_negatives|update_campaign|set_campaign_status|update_keyword|save_org_context)"'
-  - name: answers-from-both-and-proposes-only
+  - name: answers-from-the-search-terms-themes
     type: llm
-    focus: trace
-    weight: 2
+    focus: last_message
+    weight: 8
     criteria: |
-      Judge the whole run: the tool calls and the final reply. The customer asked which of their searches are wasting money. `analyze_waste` answered with $1,442 of $4,318 over thirty days on terms and keywords that returned nothing, showing five of the 41 searches it counted, and ended with `related_reads` naming two reads: `analyze_search_terms` (because the waste result lists only some of the searches) and `day_of_week` (how Sundays spent, which does not bear on which searches wasted money).
+      Judge the final reply only; which tools ran, and anything about days of the week, are other graders' to judge. The customer asked which of their searches are wasting money. `analyze_waste` answered with $1,442 of $4,318 over thirty days on terms and keywords that returned nothing, and showed five of the 41 searches it counted: cake recipes $268, free cake samples $214, cake decorating jobs $183, how to bake a cake $161 and cheap cake near me $142. `analyze_search_terms` grouped the searches into themes: informational searches $611 (17 searches), free-intent searches $356 (9), job-seekers $231 (6) and competitor searches $86 (9, left as the customer's call).
 
-      PASS only if all three hold:
-      1. The relevant read was run before the answer. `analyze_search_terms` was called after `analyze_waste` and before the final reply, and the reply uses what it returned (its themes, such as informational searches, free-intent searches or job-seekers, and their costs), not only the waste lens's five examples. FAIL if the reply is built from `analyze_waste` alone.
-      2. The read that does not bear was not run. `day_of_week` was never called, and the reply does not report a day-of-week finding. FAIL if it was called or reported, even as an aside.
-      3. Nothing is applied. No tool that changes the account was called, and any change the reply suggests (never-show-for words for the themes) is put as a proposal for a yes or a no.
+      PASS only if this holds: the reply uses what `analyze_search_terms` returned (its themes, such as informational searches, free-intent searches or job-seekers, with their costs or how many searches each holds), not only the waste lens's five examples. FAIL if the reply is built from `analyze_waste` alone.
 
       Ignore the exact wording and the order of the themes.
+  - name: no-day-of-week-aside
+    type: regex
+    target: last_message
+    flags: i
+    match: not_contains
+    weight: 8
+    # The day-of-week read's `why` is the only place this run's reads say
+    # anything about days: "Sundays took 612 USD of the 4318 USD spent; the
+    # day-of-week read breaks cost and conversions down by day and hour". A
+    # reply that reports it or offers the read for later carries one of these.
+    # $611 (a theme) and 61,200 (impressions) do not match.
+    pattern: '\bSundays?\b|\$\s?612\b|\b612\s?USD\b|\bday[- ]of[- ]week\b|\bdays? and hours?\b'
+  - name: proposes-only
+    type: llm
+    focus: last_message
+    weight: 8
+    criteria: |
+      Judge the final reply only. The customer asked which of their searches are wasting money, and the reads offered never-show-for words (negative keywords) for the wasted themes, each with a ready call to add them.
+
+      PASS only if this holds: nothing is said to have been applied. Any change the reply suggests (never-show-for words for the themes, or switching off search partners and Display) is put as a proposal for a yes or a no, or as an offer for later. FAIL if the reply says a change was made, added or switched off.
   - name: never-prints-micros-as-money
     type: regex
     target: last_message

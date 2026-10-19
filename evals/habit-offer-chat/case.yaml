@@ -104,7 +104,7 @@ graders:
       PASS only if all six hold:
 
       1. There is exactly one such offer, and it comes right after the first finding the morning check also reads — here the wasted searches — not at the end of the reply and not before any finding. The reply may still end on a question about blocking the searches. Two offers (for example, one for a daily check-in and another for a weekly summary, or the same offer twice) FAIL.
-      2. It is tied to that finding and carries the value line: a check that runs by itself every weekday (at 8:07) would have caught it on its first morning; it only reads the account and never changes anything; it opens with "All clear" or "Needs a look" plus one yes/no fix. It names the figure the reply just gave, not an invented one.
+      2. It is tied to that finding and carries the value line: a check that runs by itself every weekday (at 8:07) would have caught it on its first morning; it only reads the account and never changes anything; it opens with "All clear" or "Needs a look" plus one yes/no fix. Saying the check is "read-only" (for example "A read-only check") counts as saying it only reads the account and never changes anything. It names the figure the reply just gave, not an invented one.
       3. It is worded for Claude chat: a Claude scheduled task (or Claude's Scheduled feature). It does NOT tell them to use /schedule, a terminal, a cron job or a Claude Code routine.
       4. It is short — one or two sentences — and it is an offer: it does not give the set-up steps, the instructions to paste or any screen-by-screen path before the customer has said yes.
       5. No sales, plan, price or upgrade wording, no urgency ("today only", "don't miss"), and no claim that every change waits for their approval.
