@@ -14,7 +14,7 @@ description: >
   its own `search` reads on 2026-10-13 and says one set of dates; the tag
   finding names its seven days (7 Oct to 13 Oct), the wasted-spend finding
   (G16) gives its window only as a length, and the health line counts the
-  checks that apply (56 of the 62), as v2.44 words them (D223), and an
+  checks that apply (56 of the 62), as v2.44 words them (D221), and an
   account set up outside the US is not graded against the US click-through
   average.
   Second, the costliest searches are named (#820): `analyze_search_terms`

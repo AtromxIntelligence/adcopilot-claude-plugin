@@ -6,7 +6,7 @@ type: fixed
 # As AdCopilot v2.41.0 words it (#822), the tag check names its seven days
 # (29 Sep to 5 Oct, ending on date_range.end) and the health line counts the
 # checks that gave a result (health.checks_evaluated of checks_total); as v2.44
-# words it (D223), the score is from 53 of the 59 checks that apply. related_reads names
+# words it (D221), the score is from 53 of the 59 checks that apply. related_reads names
 # analyze_waste (and conversion_setup_audit), as the live result did in the
 # conversation this case comes from. The case does not grade whether
 # analyze_waste is run: on a five-read answer it may be the read left over, and

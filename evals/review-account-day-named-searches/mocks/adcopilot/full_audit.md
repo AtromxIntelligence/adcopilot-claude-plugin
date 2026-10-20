@@ -3,7 +3,7 @@ type: fixed
 # The deep audit over the 14 days 2026-09-30..2026-10-13, the account's own
 # yesterday (AdCopilot v2.41.0, D185), in v2.41.0's wording: the tag check
 # names its seven days (7 Oct to 13 Oct), the health line counts the checks
-# that apply (v2.44, D223: 56 of the 62 that apply; 58 of 70 gave a result),
+# that apply (v2.44, D221: 56 of the 62 that apply; 58 of 70 gave a result),
 # and G-AD2 is not graded against the US
 # click-through average for an account set up outside the US (#822). G16 is
 # v2.41.0's own finding for these searches (rendered by its evaluator): it

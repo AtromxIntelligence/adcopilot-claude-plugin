@@ -275,7 +275,7 @@ FINDING_WINDOW_RULE = ("When a finding names a shorter window, say its dates. "
 # v2.41 alignment: the result states the count itself (#822: "from the 53 of
 # 73 checks that gave a result", `envelope.health_counts`), in words chosen so
 # a quick audit's 70 untried checks do not read as stopped ("could run" would).
-# AdCopilot v2.44 (D223): 70 checks, each listed, and the score is graded over
+# AdCopilot v2.44 (D221): 70 checks, each listed, and the score is graded over
 # the ones that apply, so the result counts those ("from 53 of the 59 checks
 # that apply to this account", `envelope.applicable_counts`).
 COVERAGE_RULE = ('Give coverage as the count the result gives, "from N of the M '
