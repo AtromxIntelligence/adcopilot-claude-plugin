@@ -799,6 +799,10 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
                       "a paid plan or a running trial every read counts 1.",
                       weekly)
         self.assertNotIn("so the summary uses about 5 or 6", weekly)
+        self.assertIn("`/adcopilot:audit`'s (6 of Free's 10 for its two "
+                      "calls) and `/adcopilot:weekly`'s (about 5 or 6 for its "
+                      "four reads), each with 1 or 2 more for every related "
+                      "read run, now say so", readme)
         for text in (audit, weekly):
             # the related reads are below the cost, and named there
             self.assertLess(text.index("adds 1 or 2 more"),
