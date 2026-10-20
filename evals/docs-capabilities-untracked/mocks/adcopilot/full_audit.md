@@ -4,10 +4,11 @@ type: fixed
 # review-uncapped-no-limit-words: here only so that a run which
 # makes this read is graded on it rather than failing on a missing mock.
 # The deep audit of the same fictional account (every value invented): $1,865
-# over 2026-09-06..2026-10-05, nothing counted. It scored 55 of the 73 checks.
+# over 2026-09-06..2026-10-05, nothing counted. 55 of the 70 checks gave a result.
 # As AdCopilot v2.41.0 words it (#822), the tag check names its seven days
 # (29 Sep to 5 Oct, ending on date_range.end) and the health line counts the
-# checks that gave a result (health.checks_evaluated of checks_total). related_reads names
+# checks that gave a result (health.checks_evaluated of checks_total); as v2.44
+# words it (D223), the score is from 53 of the 59 checks that apply. related_reads names
 # analyze_waste (and conversion_setup_audit), as the live result did in the
 # conversation this case comes from. The case does not grade whether
 # analyze_waste is run: on a five-read answer it may be the read left over, and
@@ -28,13 +29,15 @@ type: fixed
     "score": 41,
     "grade": "F",
     "checks_evaluated": 55,
-    "checks_total": 73
+    "checks_total": 70,
+    "checks_scored": 53,
+    "checks_applicable": 59
   },
   "coverage": {
-    "checks_in_registry": 73,
+    "checks_in_registry": 70,
     "checks_scored": 55,
-    "checks_not_scored": 18,
-    "not_scored_reason": "9 need a Performance Max campaign, 3 need the business profile, 1 needs Tag Manager, 5 need more data in the window"
+    "checks_not_scored": 15,
+    "not_scored_reason": "9 need a Performance Max campaign, 3 need the business profile, 1 needs Tag Manager, 2 need more data in the window"
   },
   "totals": {
     "cost_micros": 1865000000,
@@ -109,5 +112,5 @@ type: fixed
       "why": "2 of 2 primary conversion actions recorded nothing in 7 days while the account took 141 clicks; the setup read says what is counted."
     }
   ],
-  "narrative": "**full_audit** \u2014 account 1234567890, 2026-09-06 to 2026-10-05 (30 days), amounts in USD. Health score 41/100 (grade F), from the 55 of 73 checks that gave a result. 1 failing, 2 warning, 52 passing (top 3 listed); 18 checks not evaluated."
+  "narrative": "**full_audit** \u2014 account 1234567890, 2026-09-06 to 2026-10-05 (30 days), amounts in USD. Health score 41/100 (grade F), from 53 of the 59 checks that apply to this account. 1 failing, 2 warning, 47 passing (the 6 Quality Score rules as one finding; top 3 listed); 15 checks not evaluated."
 }

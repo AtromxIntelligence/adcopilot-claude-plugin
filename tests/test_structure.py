@@ -275,8 +275,11 @@ FINDING_WINDOW_RULE = ("When a finding names a shorter window, say its dates. "
 # v2.41 alignment: the result states the count itself (#822: "from the 53 of
 # 73 checks that gave a result", `envelope.health_counts`), in words chosen so
 # a quick audit's 70 untried checks do not read as stopped ("could run" would).
-COVERAGE_RULE = ('Give coverage as the count the result gives, "N of 73 checks '
-                 'gave a result", never as a percentage next to the count, and '
+# AdCopilot v2.44 (D223): 70 checks, each listed, and the score is graded over
+# the ones that apply, so the result counts those ("from 53 of the 59 checks
+# that apply to this account", `envelope.applicable_counts`).
+COVERAGE_RULE = ('Give coverage as the count the result gives, "from N of the M '
+                 'checks that apply", never as a percentage next to the count, and '
                  "give reasons for the rest only in the result's own words.")
 
 # 0.2.12: the docs skill answers a question about AdCopilot from the one
@@ -3220,7 +3223,7 @@ class V241Alignment(unittest.TestCase):
                        if "segments.date" in row})
         self.assertEqual(days[-1], "2026-10-13")
         audit = mock(self.DATES, "full_audit")
-        self.assertIn("from the 58 of 73 checks that gave a result", audit["narrative"])
+        self.assertIn("from 56 of the 62 checks that apply to this account", audit["narrative"])
         self.assertIn("in the 7 days from 7 Oct to 13 Oct",
                       next(f["detail"] for f in audit["findings"] if f["check_id"] == "G-CT3"))
         self.assertTrue(any(c.get("reason_code") == "NO_MARKET_BENCHMARK"
@@ -3376,8 +3379,11 @@ class V241Alignment(unittest.TestCase):
             self.assertNotRegex(refresh, re.compile(other))
         cov, cflags = grader(self.DATES, "coverage-is-a-count-not-a-percentage")
         self.assertRegex("Coverage was 73% of its 73 checks.", re.compile(cov, cflags))
+        self.assertRegex("Coverage was 90% of its 70 checks.", re.compile(cov, cflags))
         self.assertNotRegex("The audit's score comes from the 58 of 73 checks "
                             "that gave a result.", re.compile(cov, cflags))
+        self.assertNotRegex("The audit's score comes from 56 of the 62 checks "
+                            "that apply to this account.", re.compile(cov, cflags))
 
 
 # The Cursor round of 0.2.12. AdCopilot is listed on cursor.directory, whose

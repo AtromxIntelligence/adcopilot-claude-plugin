@@ -1087,7 +1087,7 @@
     },
     {
       "name": "full_audit",
-      "description": "Run the account audit across conversion tracking, wasted spend, structure, keywords, ads and settings. Quick scores three of the 74 checks in six steps; deep attempts all 74 and scores every one the account has data for, with a health score. Returns findings ranked by impact, most with the exact call that fixes them. Read-only.\n\nTools revision: 0066a60e.",
+      "description": "Run the account audit across conversion tracking, wasted spend, structure, keywords, ads and settings. Quick scores three of the 70 checks in six steps; deep attempts all 70 and scores every one the account has data for, with a health score. Returns findings ranked by impact, most with the exact call that fixes them. Read-only.\n\nTools revision: 0066a60e.",
       "inputSchema": {
         "properties": {
           "customer_id": {

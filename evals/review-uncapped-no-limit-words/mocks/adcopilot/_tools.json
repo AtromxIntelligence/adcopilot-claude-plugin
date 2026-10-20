@@ -2,7 +2,7 @@
  "tools": [
   {
    "name": "full_audit",
-   "description": "Audit conversion tracking, wasted spend, structure, keywords, ads and settings. Quick scores three of the 73 checks, month to date; deep attempts all 73 over the `days` window, with a health score. Findings: failures first, then by severity, not impact; some carry a fixing call. Account ids and the business profile come from get_org_context. Read-only.\n\nTools revision: 6145d0b5.",
+   "description": "Audit conversion tracking, wasted spend, structure, keywords, ads and settings. Quick scores three of the 70 checks, month to date; deep attempts all 70 over the `days` window, with a health score. Findings: failures first, then by severity, not impact; some carry a fixing call. Account ids and the business profile come from get_org_context. Read-only.\n\nTools revision: 6145d0b5.",
    "inputSchema": {
     "properties": {
      "customer_id": {
