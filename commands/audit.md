@@ -38,7 +38,7 @@ lost to budget describes the budgets of those thirty days, not today's — say t
 window, or read the latest day.
 
 Every `get_org_context` call here, the first one and the tools refresh alike,
-carries `source: "claude-plugin/0.2.12"`. Send `source` exactly as written, the
+carries `source: "claude-plugin/0.2.13"`. Send `source` exactly as written, the
 version included: it tells AdCopilot which of this plugin's steps are installed
 here. The one exception is where the AdCopilot skills are not installed: Cursor
 can add this command without them, and then `adcopilot-review` is not among your

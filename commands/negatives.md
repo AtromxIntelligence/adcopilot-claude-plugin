@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 No skill: the connector's tools explain themselves.
 
-`get_org_context` first, with `source: "claude-plugin/0.2.12"`. Send `source`
+`get_org_context` first, with `source: "claude-plugin/0.2.13"`. Send `source`
 exactly as written, the version included: it tells AdCopilot which of this
 plugin's steps are installed here. The one exception is where the AdCopilot
 skills are not installed: Cursor can add this command without them, and then
