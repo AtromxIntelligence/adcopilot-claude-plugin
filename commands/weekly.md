@@ -42,9 +42,9 @@ limit you hit:
 4. **This month** — `budget_pacing`: whether the month is on track.
 
 What it costs: each read counts toward the workspace's daily operations. On
-Free, `budget_pacing` counts 2 and each other read 1, so the summary uses about
-5 or 6 of Free's 10 a day; on a paid plan or a running trial every read counts
-1.
+Free, and on a trial held to Free's 10 a day, `budget_pacing` counts 2 and each
+other read 1, so the summary uses about 5 or 6 of Free's 10 a day; on a paid
+plan or a running trial every read counts 1.
 
 When a lens or `search` result ends with `related_reads`, run the ones that
 bear on the question, at most three, then answer from all you hold; never

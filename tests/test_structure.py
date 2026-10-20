@@ -761,24 +761,35 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
         self.assertIn("so the five reads count 7 and a run comes to about 8 to "
                       "10 of Free's 10, some days all of them; otherwise every "
                       "read counts 1.", daily)
-        self.assertIn("On Free (`plan` is `free` in `get_org_context`), say it "
-                      "in operations instead: an analysis counts 2 there, so a "
-                      "run uses about 8 to 10 of Free's 10 operations, and "
-                      "some days all of them.", daily)
+        # A trial held to Free's 10 a day (paused for its card, or waiting
+        # for its first charge) is weighted while its `plan` still reads
+        # `pro`, so the skill keys the cost on the server's own answer,
+        # `org.ops_weighted` (AdCopilot v2.43.1), never on `plan`.
+        self.assertIn("Where its `org.ops_weighted` is true (a workspace on "
+                      "Free's 10 a day), an analysis counts 2 operations", daily)
+        self.assertIn("Where `get_org_context`'s `org.ops_weighted` is true "
+                      "(Free, and a trial held to Free's 10 a day, whose "
+                      "`plan` still reads `pro`), say it in operations "
+                      "instead: an analysis counts 2 there, so a run uses "
+                      "about 8 to 10 of Free's 10 operations, and some days "
+                      "all of them.", daily)
+        self.assertNotIn("`plan` is `free`", daily)
         readme = " ".join(read("README.md").split())
-        self.assertIn("so a run alone comes to about 8 to 10 of Free's 10, "
-                      "some days all of them; on a paid plan or a running "
-                      "trial every read counts 1.", readme)
+        self.assertIn("On Free, and on a trial held to Free's 10 a day, an "
+                      "analysis such as budget pacing counts 2 operations and "
+                      "a single read 1, so a run alone comes to about 8 to 10 "
+                      "of Free's 10, some days all of them; on a paid plan or "
+                      "a running trial every read counts 1.", readme)
         audit = " ".join(read("commands/audit.md").split())
-        self.assertIn("on Free a full audit counts 4 operations and budget "
-                      "pacing 2, so this command uses 6 of Free's 10 a day; on "
-                      "a paid plan or a running trial each call counts 1.",
-                      audit)
+        self.assertIn("on Free, and on a trial held to Free's 10 a day, a full "
+                      "audit counts 4 operations and budget pacing 2, so this "
+                      "command uses 6 of Free's 10 a day; on a paid plan or a "
+                      "running trial each call counts 1.", audit)
         weekly = " ".join(read("commands/weekly.md").split())
-        self.assertIn("On Free, `budget_pacing` counts 2 and each other read "
-                      "1, so the summary uses about 5 or 6 of Free's 10 a day; "
-                      "on a paid plan or a running trial every read counts 1.",
-                      weekly)
+        self.assertIn("On Free, and on a trial held to Free's 10 a day, "
+                      "`budget_pacing` counts 2 and each other read 1, so the "
+                      "summary uses about 5 or 6 of Free's 10 a day; on a paid "
+                      "plan or a running trial every read counts 1.", weekly)
         for rel, text in (("skills/adcopilot-daily/SKILL.md", daily),
                           ("README.md", readme), ("commands/audit.md", audit),
                           ("commands/weekly.md", weekly)):
