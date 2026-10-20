@@ -6,8 +6,9 @@ description: Audit the account — the connector's full check list, then this mo
 No skill: `full_audit` and `budget_pacing` explain themselves. `get_org_context`
 first, then `full_audit` at `depth: deep`, then `budget_pacing`. What it costs:
 on Free, and on a trial held to Free's 10 a day, a full audit counts 4
-operations and budget pacing 2, so this command uses 6 of Free's 10 a day; on a
-paid plan or a running trial each call counts 1. When a call is refused because
+operations and budget pacing 2, so these two calls use 6 of Free's 10 a day,
+and each related read you run (below) adds 1 or 2 more; on a paid plan or a
+running trial each call counts 1. When a call is refused because
 it counts more than is left today, say what the refusal says, the lighter reads
 it names included, and run `budget_pacing` if it fits. Separate real
 findings from newness: a new account scores badly for reasons that are only its

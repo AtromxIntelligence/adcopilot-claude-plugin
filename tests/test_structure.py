@@ -781,15 +781,28 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
                       "of Free's 10, some days all of them; on a paid plan or "
                       "a running trial every read counts 1.", readme)
         audit = " ".join(read("commands/audit.md").split())
+        # Fourth review of AdCopilot #919: the command's own calls are a
+        # fixed figure, and the related reads the same file tells the model
+        # to run (at most three, a lens 2 or a single read 1) come on top, so
+        # the cost says so rather than a total the reads can pass.
         self.assertIn("on Free, and on a trial held to Free's 10 a day, a full "
-                      "audit counts 4 operations and budget pacing 2, so this "
-                      "command uses 6 of Free's 10 a day; on a paid plan or a "
-                      "running trial each call counts 1.", audit)
+                      "audit counts 4 operations and budget pacing 2, so these "
+                      "two calls use 6 of Free's 10 a day, and each related "
+                      "read you run (below) adds 1 or 2 more; on a paid plan "
+                      "or a running trial each call counts 1.", audit)
+        self.assertNotIn("so this command uses 6 of Free's 10 a day", audit)
         weekly = " ".join(read("commands/weekly.md").split())
         self.assertIn("On Free, and on a trial held to Free's 10 a day, "
                       "`budget_pacing` counts 2 and each other read 1, so the "
-                      "summary uses about 5 or 6 of Free's 10 a day; on a paid "
-                      "plan or a running trial every read counts 1.", weekly)
+                      "four reads use about 5 or 6 of Free's 10 a day, and "
+                      "each related read you run (below) adds 1 or 2 more; on "
+                      "a paid plan or a running trial every read counts 1.",
+                      weekly)
+        self.assertNotIn("so the summary uses about 5 or 6", weekly)
+        for text in (audit, weekly):
+            # the related reads are below the cost, and named there
+            self.assertLess(text.index("adds 1 or 2 more"),
+                            text.index("`related_reads`"))
         for rel, text in (("skills/adcopilot-daily/SKILL.md", daily),
                           ("README.md", readme), ("commands/audit.md", audit),
                           ("commands/weekly.md", weekly)):
