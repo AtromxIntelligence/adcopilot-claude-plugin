@@ -3,7 +3,7 @@ type: fixed
 # The fictional tenant of review-follows-related-reads (every value is
 # invented): two Search campaigns, results counted, 2 of 40 operations used
 # today. A copy of that case's answer, with one field changed by hand rather
-# than re-rendered: next_step is the review hand-off as AdCopilot v2.43.1
+# than re-rendered: next_step is the review hand-off as AdCopilot v2.43.2
 # words it (the audit clause, "or about checks from an AdCopilot audit ...
 # the fix-checks steps for audit checks"). plugin.skill stays
 # adcopilot-review: the server picks the skill by the account's situation,
