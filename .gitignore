@@ -7,3 +7,7 @@ Thumbs.db
 
 # Local evaluation output — never part of the plugin
 evals/results/
+
+# Python's compiled caches (the tests' own runs) — never part of the plugin
+__pycache__/
+*.py[cod]

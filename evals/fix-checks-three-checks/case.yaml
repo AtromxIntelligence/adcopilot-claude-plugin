@@ -4,7 +4,7 @@ description: >
   The audit page's "Fix all three" question, as AdCopilot v2.43.2 words it,
   on a running account whose results are counted (the tenant in this case's
   mocks is fictional; every value is invented; the state is
-  review-follows-related-reads'). It grades what plugin 0.2.13's
+  review-follows-related-reads'). It grades what plugin 0.2.14's
   adcopilot-fix-checks skill is for, from the 2026-10-20 chat where the same
   question was answered with three menus of numbered options, three extra
   reads and the schedule offer after the first check, and the day's

@@ -495,7 +495,7 @@ class DailyHabitBlock(unittest.TestCase):
         # offer a paragraph of its own and passed it. The block, the review
         # skill and the README say it is always its own paragraph.
         block = " ".join((self.blocks()[HABIT_CARRIERS[0]] or "").split())
-        # 0.2.13: it follows the read-back of an applied fix, not a finding.
+        # 0.2.14: it follows the read-back of an applied fix, not a finding.
         self.assertIn("The offer is always its own paragraph, with a blank line "
                       "before and after it: it goes right after the read-back "
                       "(and any line that sums the fixes up), never on the end of "
@@ -597,7 +597,7 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
         return " ".join((section(read(HABIT_CARRIERS[0]), HABIT_HEADING) or "").split())
 
     def test_the_offer_waits_for_a_fix_applied_and_read_back(self):
-        # 0.2.13 (the 2026-10-20 "Fix all three" chat): the offer came after
+        # 0.2.14 (the 2026-10-20 "Fix all three" chat): the offer came after
         # the first of three checks, beside its yes/no, and the day ran out
         # before any fix. It is made only in a reply that asks no yes/no on a
         # fix: after a fix applied and read back with no next fix proposed,
@@ -692,7 +692,7 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
 
     def test_the_readme_says_the_same_trigger_and_the_release_order(self):
         readme = " ".join(read("README.md").split())
-        # 0.2.13: the moment is after a fix applied and read back.
+        # 0.2.14: the moment is after a fix applied and read back.
         morning = " ".join((section(read("README.md"),
                                     "### Every morning, without asking") or "").split())
         self.assertIn("only in a reply that asks you no yes/no on a fix: once a "
@@ -777,6 +777,75 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
                       "counts toward your workspace's daily operations; on a "
                       "Monday, the daily check and the weekly summary together "
                       "can use all of a Free workspace's 10.", readme)
+
+    def test_free_counts_in_weighted_operations(self):
+        # AdCopilot v2.43.1 (D164, "Back for Free"): on Free a full audit or
+        # an account health score counts 4 operations, an analysis 2 and a
+        # single read 1; a paid plan and a running trial count every call 1.
+        daily = " ".join(read("skills/adcopilot-daily/SKILL.md").split())
+        # The run's own section names no plan to buy (`SALES`), so it says
+        # "otherwise" where the set-up and the README name who counts 1.
+        # 0.2.14: on a 10-a-day workspace the run makes three of the five.
+        self.assertIn("so the five reads would count 7 and a run about 8 to 10 "
+                      "of Free's 10, some days all of them, which is why such "
+                      "a day makes three (below); otherwise every read counts "
+                      "1.", daily)
+        self.assertIn("where `org.ops_weighted` is true the three count 5 of "
+                      "the 10.", daily)
+        # A trial held to Free's 10 a day (paused for its card, or waiting
+        # for its first charge) is weighted while its `plan` still reads
+        # `pro`, so the skill keys the cost on the server's own answer,
+        # `org.ops_weighted` (AdCopilot v2.43.1), never on `plan`.
+        self.assertIn("Where its `org.ops_weighted` is true (a workspace on "
+                      "Free's 10 a day), an analysis counts 2 operations", daily)
+        self.assertIn("Where `get_org_context`'s `org.ops_weighted` is true "
+                      "(Free, and a trial held to Free's 10 a day, whose "
+                      "`plan` still reads `pro`), say it in operations "
+                      "instead: an analysis counts 2 there, so a run makes "
+                      "its first three reads only, about 5 of Free's 10 "
+                      "operations, and leaves the rest of the day for the fix "
+                      "it ends on.", daily)
+        self.assertNotIn("`plan` is `free`", daily)
+        readme = " ".join(read("README.md").split())
+        self.assertIn("On Free, and on a trial held to Free's 10 a day, an "
+                      "analysis such as budget pacing counts 2 operations and "
+                      "a single read 1, so all five reads would come to about "
+                      "8 to 10 of Free's 10, some days all of them; there the "
+                      "run makes its first three reads only, about 5, so the "
+                      "fix it ends on still fits the same day. On a paid plan "
+                      "or a running trial every read counts 1.", readme)
+        audit = " ".join(read("commands/audit.md").split())
+        # Fourth review of AdCopilot #919: the command's own calls are a
+        # fixed figure, and the related reads the same file tells the model
+        # to run (at most three, a lens 2 or a single read 1) come on top, so
+        # the cost says so rather than a total the reads can pass.
+        self.assertIn("on Free, and on a trial held to Free's 10 a day, a full "
+                      "audit counts 4 operations and budget pacing 2, so these "
+                      "two calls use 6 of Free's 10 a day, and each related "
+                      "read you run (below) adds 1 or 2 more; on a paid plan "
+                      "or a running trial each call counts 1.", audit)
+        self.assertNotIn("so this command uses 6 of Free's 10 a day", audit)
+        weekly = " ".join(read("commands/weekly.md").split())
+        self.assertIn("On Free, and on a trial held to Free's 10 a day, "
+                      "`budget_pacing` counts 2 and each other read 1, so the "
+                      "four reads use about 5 or 6 of Free's 10 a day, and "
+                      "each related read you run (below) adds 1 or 2 more; on "
+                      "a paid plan or a running trial every read counts 1.",
+                      weekly)
+        self.assertNotIn("so the summary uses about 5 or 6", weekly)
+        self.assertIn("`/adcopilot:audit`'s (6 of Free's 10 for its two "
+                      "calls) and `/adcopilot:weekly`'s (about 5 or 6 for its "
+                      "four reads), each with 1 or 2 more for every related "
+                      "read run, now say so", readme)
+        for text in (audit, weekly):
+            # the related reads are below the cost, and named there
+            self.assertLess(text.index("adds 1 or 2 more"),
+                            text.index("`related_reads`"))
+        for rel, text in (("skills/adcopilot-daily/SKILL.md", daily),
+                          ("README.md", readme), ("commands/audit.md", audit),
+                          ("commands/weekly.md", weekly)):
+            # Never the everyone switch's words: paid plans count 1 per call.
+            self.assertNotIn("on every plan a full audit counts", text, rel)
         for rel in ("skills/adcopilot-daily/SKILL.md", "README.md"):
             text = " ".join(read(rel).split())
             self.assertNotIn("about five reads", text, rel)
@@ -1313,7 +1382,7 @@ class PluginVersionMarker(unittest.TestCase):
                     self.assertEqual(flat_text.count(DOCS_ROUTING), 1)
                 else:
                     self.assertEqual(flat_text.count(guard), 1)
-        # 13 from 0.2.13: adcopilot-fix-checks.
+        # 13 from 0.2.14: adcopilot-fix-checks.
         self.assertEqual(marked, 13)
 
     def test_the_marker_graders_need_the_version(self):
@@ -1454,7 +1523,7 @@ class ConditionalFindings(unittest.TestCase):
         "skills/adcopilot-daily/SKILL.md",
         "skills/adcopilot-launch/SKILL.md",
         "skills/adcopilot-measure/SKILL.md",
-        # 0.2.13: the fixes for an audit's checks, each read with its lens.
+        # 0.2.14: the fixes for an audit's checks, each read with its lens.
         "skills/adcopilot-fix-checks/SKILL.md",
     ]
     # Files that name a lens and relay none of its findings, with why.
@@ -3179,7 +3248,7 @@ class V241Alignment(unittest.TestCase):
                       "this version is published", note)
         self.assertIn("so that release goes out first", note)
         self.assertNotIn("no server release has to come first", note)
-        # 0.2.13 adds fix-checks-three-checks.
+        # 0.2.14 adds fix-checks-three-checks.
         self.assertIn("twenty-nine cases across the suite", flat("README.md"))
 
     def test_the_question_first_case(self):
@@ -3819,7 +3888,7 @@ class OlderFixturesOnV241(unittest.TestCase):
 
 
 class FixChecks(unittest.TestCase):
-    """0.2.13: the fixes for an AdCopilot audit's checks, from the 2026-10-20
+    """0.2.14: the fixes for an AdCopilot audit's checks, from the 2026-10-20
     "Fix all three in Claude" chat. The question the audit page sends (AdCopilot
     v2.43.2, `audit_asks.top_prompt` and `check_prompt`) must fire the skill;
     the skill says the cost first, recommends the order foundation first,
@@ -3952,6 +4021,29 @@ class FixChecks(unittest.TestCase):
         self.assertEqual(ctx["plugin"]["version"], manifest_version())
         self.assertIn("the fix-checks steps for audit checks", ctx["next_step"])
         self.assertIsNone(SALES.search(self.TOP3))
+
+
+class NoCompiledCaches(unittest.TestCase):
+    """A compiled cache is a build product of a local run, not plugin text:
+    a `.pyc` names the path it was compiled from, so committing one publishes
+    that machine's directory names in a public repository (review of
+    AdCopilot #919, PR #23). `.gitignore` keeps them out, and nothing
+    tracked may be one."""
+
+    def test_gitignore_ignores_python_caches(self):
+        lines = read(".gitignore").splitlines()
+        self.assertIn("__pycache__/", lines)
+        self.assertIn("*.py[cod]", lines)
+
+    def test_no_tracked_file_is_a_compiled_cache(self):
+        listed = subprocess.run(["git", "ls-files"], cwd=ROOT,
+                                capture_output=True, text=True)
+        if listed.returncode != 0:
+            self.skipTest("not a git checkout")
+        cached = [path for path in listed.stdout.splitlines()
+                  if "__pycache__/" in path
+                  or path.endswith((".pyc", ".pyo", ".pyd"))]
+        self.assertEqual(cached, [])
 
 
 if __name__ == "__main__":

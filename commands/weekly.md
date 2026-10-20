@@ -5,7 +5,7 @@ description: The week in one summary — last Monday to Sunday against the week 
 
 No skill: the connector's tools explain themselves.
 
-`get_org_context` first, with `source: "claude-plugin/0.2.13"`; the account's
+`get_org_context` first, with `source: "claude-plugin/0.2.14"`; the account's
 currency and time zone come from its answer, and the week runs Monday to Sunday
 in that time zone. Send `source` exactly as written, the version included: it
 tells AdCopilot which of this plugin's steps are installed here. The one
@@ -40,6 +40,12 @@ limit you hit:
    stopped. The change log does not hold a disapproval, so the read above
    cannot stand in for this one.
 4. **This month** — `budget_pacing`: whether the month is on track.
+
+What it costs: each read counts toward the workspace's daily operations. On
+Free, and on a trial held to Free's 10 a day, `budget_pacing` counts 2 and each
+other read 1, so the four reads use about 5 or 6 of Free's 10 a day, and each
+related read you run (below) adds 1 or 2 more; on a paid plan or a running
+trial every read counts 1.
 
 When a lens or `search` result ends with `related_reads`, run at most one
 that bears on the question, then answer from all you hold; never

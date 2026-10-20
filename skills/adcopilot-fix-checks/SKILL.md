@@ -11,7 +11,7 @@ The audit already ran. Your job is the fixes: one check at a time, inside what
 today allows, with one yes/no at a time and a read-back after every change.
 Run no new audit for it.
 
-Call `get_org_context` with `source: "claude-plugin/0.2.13"` first, before any
+Call `get_org_context` with `source: "claude-plugin/0.2.14"` first, before any
 other tool. Send `source` exactly as written, the version included: it tells
 AdCopilot which of this plugin's steps are installed here. When the answer's
 `plugin.skill` names an AdCopilot skill other than this one, `next_step` is
