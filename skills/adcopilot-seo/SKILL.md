@@ -8,7 +8,7 @@ description: Answer questions about the customer's organic search presence throu
 The customer wants to know how Google search sees their site. Answer it through
 the AdCopilot connector at `https://mcp.adcopilot.cloud/mcp`.
 
-Call `get_org_context` with `source: "claude-plugin/0.2.12"` first, before any
+Call `get_org_context` with `source: "claude-plugin/0.2.13"` first, before any
 other tool — the marker is how the server records that this workspace uses the
 plugin, and without it the customer keeps being told to install what they
 already have. Send `source` exactly as written, the version included: it tells
@@ -191,9 +191,9 @@ the click anyway. `analyze_search_terms` and `analyze_waste` show only the paid
 search terms and campaigns that spent with no conversions, which is the
 "paying but no result" bucket; the spend and results of each keyword stay a raw
 `keyword_view` read, because no lens returns them. When a `search` on `campaign`
-or `search_term_view` ends with `related_reads`, run the ones that bear on the
-comparison, at most three, then answer from all you hold; never repeat a read
-you hold, and offer, do not chase, the `related_reads` those reads bring back.
+or `search_term_view` ends with `related_reads`, run at most one that bears on
+the comparison, then answer from all you hold; never repeat a read
+you hold, and offer, do not chase, the `related_reads` that read brings back.
 They are reads only: a change is still only proposed. In a scheduled run, skip
 them.
 

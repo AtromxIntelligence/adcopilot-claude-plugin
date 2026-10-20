@@ -35,6 +35,8 @@ Five reads, in this order — when the instructions list their own, theirs win:
 
 A run is about six or seven reads, each counted toward the workspace's daily operations, which `get_org_context` reports. If they run out, say which reads were not reached.
 
+On a workspace with 10 operations a day (`org.ops_today_cap` is 10 or less), make the first three reads only, even when the instructions list five, so the day keeps room for the fix the report ends on and its read-back. Say in one line, after the three, that ads Google stopped and what changed were left for the chat, so today's operations hold the fix.
+
 The report:
 
 - First line, alone: **All clear** or **Needs a look**.

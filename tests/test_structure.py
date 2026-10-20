@@ -495,11 +495,12 @@ class DailyHabitBlock(unittest.TestCase):
         # offer a paragraph of its own and passed it. The block, the review
         # skill and the README say it is always its own paragraph.
         block = " ".join((self.blocks()[HABIT_CARRIERS[0]] or "").split())
+        # 0.2.13: it follows the read-back of an applied fix, not a finding.
         self.assertIn("The offer is always its own paragraph, with a blank line "
-                      "before and after it: it goes right after the paragraph or "
-                      "list that gives that finding (and any line that sums that "
-                      "finding up), never on the end of one of that finding's "
-                      "sentences and never inside one of its bullets.", block)
+                      "before and after it: it goes right after the read-back "
+                      "(and any line that sums the fixes up), never on the end of "
+                      "one of its sentences and never inside one of its "
+                      "bullets.", block)
         self.assertIn("nothing else changed: a paragraph of its own, two "
                       "sentences, never split into more", block)
         # It sits between where the offer goes and what the close does, so it
@@ -513,8 +514,8 @@ class DailyHabitBlock(unittest.TestCase):
                       "line before and after it, never on the end of a finding's "
                       "sentences and never inside a bullet.", nxt)
         readme = " ".join(read("README.md").split())
-        self.assertIn("The offer comes, as a paragraph of its own, right after "
-                      "the first finding the morning check also reads", readme)
+        self.assertIn("The offer comes, as a paragraph of its own, only in a "
+                      "reply that asks you no yes/no on a fix", readme)
 
     def test_the_finding_in_the_braces_is_kept_short(self):
         # The value line is 32 words before the finding; a long finding would
@@ -595,12 +596,26 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
     def block(self):
         return " ".join((section(read(HABIT_CARRIERS[0]), HABIT_HEADING) or "").split())
 
-    def test_the_offer_comes_right_after_the_first_finding_the_check_reads(self):
+    def test_the_offer_waits_for_a_fix_applied_and_read_back(self):
+        # 0.2.13 (the 2026-10-20 "Fix all three" chat): the offer came after
+        # the first of three checks, beside its yes/no, and the day ran out
+        # before any fix. It is made only in a reply that asks no yes/no on a
+        # fix: after a fix applied and read back with no next fix proposed,
+        # or at the close of a reply that proposes none.
         block = self.block()
-        self.assertIn("Make it right after the first finding in the reply that "
-                      "the morning check also reads", block)
-        self.assertIn("tie it to that finding, with the figure you just read "
+        self.assertIn("Make it only in a reply that asks them no yes/no on a "
+                      "fix: once a fix they approved has been applied and read "
+                      "back and the reply proposes no next fix (the last one is "
+                      "done, or nothing left is worth its money), or at the "
+                      "close of a reply that proposes no fix at all.", block)
+        self.assertIn("Never make it beside a fix that waits for their answer: "
+                      "the yes/no comes first, and the offer waits.", block)
+        self.assertIn("When a fix applied in this conversation was for a "
+                      "finding the morning check also reads", block)
+        self.assertIn("tie it to that finding, with the figure you read "
                       "and never one you did not", block)
+        # The 0.2.11 moment, right after the first finding, is gone.
+        self.assertNotIn("Make it right after the first finding", block)
         # The old rule promised the check would catch ANY finding with a cost.
         self.assertNotIn("puts a cost or a loss on", block)
         # The old rules put it at the end of every reply.
@@ -613,7 +628,7 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
             with self.subTest(finding=finding):
                 self.assertIn(finding, block)
                 self.assertIn(line, " ".join(SCHEDULED_CHECKIN.split()))
-        named = block.split("the morning check also reads \u2014 ")[1].split(" \u2014 and tie it")[0]
+        named = block.split("the morning check also reads \u2014 ")[1].split(" \u2014 tie it")[0]
         self.assertEqual([p.strip() for p in named.split(",")],
                          [f for f, _l in self.CHECK_READS])
 
@@ -677,8 +692,15 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
 
     def test_the_readme_says_the_same_trigger_and_the_release_order(self):
         readme = " ".join(read("README.md").split())
-        self.assertIn("right after the first finding the morning check also "
-                      "reads", readme)
+        # 0.2.13: the moment is after a fix applied and read back.
+        morning = " ".join((section(read("README.md"),
+                                    "### Every morning, without asking") or "").split())
+        self.assertIn("only in a reply that asks you no yes/no on a fix: once a "
+                      "fix you approved has been made and read back and no next "
+                      "fix is proposed, or at the close of a reply that proposes "
+                      "none. When that fix was for a finding the morning check "
+                      "also reads", morning)
+        self.assertNotIn("right after the first finding", morning)
         self.assertIn("With any other finding, or none, the offer closes the "
                       "reply instead, without that claim.", readme)
         self.assertNotIn("puts a cost or a loss on", readme)
@@ -723,8 +745,13 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
     def test_the_review_skill_words_it_the_same_way(self):
         nxt = " ".join((section(read("skills/adcopilot-review/SKILL.md"),
                                 "## What is next") or "").split())
-        self.assertIn("right after the first finding in the reply that the "
-                      "morning check also reads", nxt)
+        self.assertIn("Its moment is a reply that asks them no yes/no on a fix: "
+                      "once a fix they approved has been applied and read back "
+                      "and the reply proposes no next fix, or at the close of a "
+                      "reply that proposes none. Never beside a fix that waits "
+                      "for their answer. When a fix applied in this "
+                      "conversation was for a finding the morning check also "
+                      "reads", nxt)
         self.assertIn("for any other finding, even one that costs money (a "
                       "tracking fault, a Quality Score problem, a targeting "
                       "problem), or none, the close, before any question the "
@@ -1286,7 +1313,8 @@ class PluginVersionMarker(unittest.TestCase):
                     self.assertEqual(flat_text.count(DOCS_ROUTING), 1)
                 else:
                     self.assertEqual(flat_text.count(guard), 1)
-        self.assertEqual(marked, 12)
+        # 13 from 0.2.13: adcopilot-fix-checks.
+        self.assertEqual(marked, 13)
 
     def test_the_marker_graders_need_the_version(self):
         """Each case's marks-plugin-use grader counts the calls it fails on, so
@@ -1426,6 +1454,8 @@ class ConditionalFindings(unittest.TestCase):
         "skills/adcopilot-daily/SKILL.md",
         "skills/adcopilot-launch/SKILL.md",
         "skills/adcopilot-measure/SKILL.md",
+        # 0.2.13: the fixes for an audit's checks, each read with its lens.
+        "skills/adcopilot-fix-checks/SKILL.md",
     ]
     # Files that name a lens and relay none of its findings, with why.
     EXCUSED = {
@@ -3149,7 +3179,8 @@ class V241Alignment(unittest.TestCase):
                       "this version is published", note)
         self.assertIn("so that release goes out first", note)
         self.assertNotIn("no server release has to come first", note)
-        self.assertIn("twenty-eight cases across the suite", flat("README.md"))
+        # 0.2.13 adds fix-checks-three-checks.
+        self.assertIn("twenty-nine cases across the suite", flat("README.md"))
 
     def test_the_question_first_case(self):
         ctx = mock(self.QUESTION, "get_org_context")
@@ -3784,6 +3815,143 @@ class OlderFixturesOnV241(unittest.TestCase):
                     pattern, flags = grader(case, name)
                 with self.subTest(case=case, grader=name):
                     self.assertIsNone(re.search(pattern, record, flags))
+
+
+
+class FixChecks(unittest.TestCase):
+    """0.2.13: the fixes for an AdCopilot audit's checks, from the 2026-10-20
+    "Fix all three in Claude" chat. The question the audit page sends (AdCopilot
+    v2.43.1, `audit_asks.top_prompt` and `check_prompt`) must fire the skill;
+    the skill says the cost first, recommends the order foundation first,
+    reads each check with its own lens and runs no new audit, asks one yes/no
+    at a time with at most five rows, reads back every change, warns before
+    the call that uses the last of the day, and makes the habit offer only
+    after a fix is applied and read back. Around it: the review and
+    /adcopilot:negatives ask one yes/no (AskUserQuestion in Claude Code), the
+    model may start /adcopilot:negatives, every surface runs at most one
+    related read, and a 10-a-day morning check makes three reads."""
+
+    SKILL = "skills/adcopilot-fix-checks/SKILL.md"
+    # The server's own questions (AdCopilot v2.43.1), as the audit page and
+    # the check-in emails send them.
+    TOP3 = ('My AdCopilot audit of Google Ads account 123-456-7890 flagged '
+            'three checks to fix first: "Enhanced conversions enabled" (G43), '
+            '"Close variant pollution" (G18) and "Zero-conversion keywords" '
+            "(G-WS1). First tell me what today's AdCopilot allowance covers, "
+            "then fix them one at a time in the order you recommend. One yes/no "
+            "at a time; change nothing until I say yes.")
+    ONE_YES_NO = ('("Shall I block these 6? Reply yes, or name any to keep.")')
+    FIVE_ROWS = 'then "and N more; ask to see them"'
+
+    def test_the_description_names_the_audit_questions(self):
+        fm = frontmatter(read(self.SKILL))
+        self.assertRegex(fm, r"(?m)^name: adcopilot-fix-checks$")
+        desc = re.search(r"^description: (.+)$", fm, re.M).group(1)
+        for words in ("My AdCopilot audit of Google Ads account", "flagged",
+                      '"failed"', '"warned on"', "(G18)", "(G43)", "(G-WS1)"):
+            with self.subTest(words=words):
+                self.assertIn(words, desc)
+        self.assertIn("flagged three checks to fix first", self.TOP3)
+        self.assertIsNone(SALES.search(desc))
+
+    def test_cost_first_and_the_order_recommended(self):
+        text = flat(self.SKILL)
+        self.assertIn("Before the first read, say in one line what the fixes "
+                      "cost and what is left", text)
+        self.assertIn("`org.ops_today_cap` and `org.ops_today_used`", text)
+        self.assertIn("Foundation first", text)
+        self.assertIn("never ask the customer to pick it", text)
+        self.assertIn("Keep two operations for applying and reading back the "
+                      "fix they approve.", text)
+        self.assertIn("Before a call that would use the last of today's "
+                      "operations, say what it covers and ask first", text)
+
+    def test_each_family_has_its_flow(self):
+        text = flat(self.SKILL)
+        for words in ("Read `analyze_search_terms`",
+                      "These are the `/adcopilot:negatives` steps",
+                      "Read `analyze_waste`",
+                      "`update_keyword` with `status` PAUSED",
+                      "Pause, never remove.",
+                      "Read `conversion_setup_audit`",
+                      "the `adcopilot-measure` skill's steps",
+                      "give as clicks, one step at a time, waiting for each",
+                      "Run no new audit for it."):
+            with self.subTest(words=words):
+                self.assertIn(words, text)
+        self.assertNotIn("`full_audit`", text)
+
+    def test_one_decision_a_message(self):
+        text = flat(self.SKILL)
+        self.assertIn("Show at most 5 rows of any list, costliest first, "
+                      + self.FIVE_ROWS, text)
+        self.assertIn("End each message with exactly one question: a yes/no on "
+                      "the fix you recommend " + self.ONE_YES_NO, text)
+        self.assertIn("No numbered menu, no second question", text)
+        self.assertIn("AskUserQuestion", text)
+
+    def test_every_change_is_read_back_and_the_offer_waits_for_it(self):
+        text = flat(self.SKILL)
+        self.assertIn("Apply it. Then read back only what its own result does "
+                      "not show", text)
+        self.assertIn("say how to undo it", text)
+        self.assertIn("Once a fix is applied and read back, and "
+                      "`get_org_context` handed you its recipe, "
+                      "`routine.schedule`, make the daily-habit offer", text)
+        self.assertIn("never in the same message as a yes/no", text)
+
+    def test_the_review_and_negatives_ask_one_yes_no(self):
+        review = flat("skills/adcopilot-review/SKILL.md")
+        self.assertIn("never a numbered menu, and never a request to pick the "
+                      "order; recommend it.", review)
+        self.assertIn("Show at most 5 rows of any list, costliest first, "
+                      + self.FIVE_ROWS, review)
+        self.assertIn("AskUserQuestion", review)
+        self.assertIn("On such a day, before a call that would use the last of "
+                      "today's operations, say what it covers and ask first.",
+                      review)
+        negatives = flat("commands/negatives.md")
+        self.assertIn("The one question: a yes/no on the themes you recommend "
+                      "blocking", negatives)
+        self.assertIn("AskUserQuestion", negatives)
+        self.assertIn("at most 5 rows", negatives)
+
+    def test_the_model_may_start_negatives(self):
+        fm = frontmatter(read("commands/negatives.md"))
+        self.assertNotIn("disable-model-invocation", fm)
+        self.assertIn("a question about how the ads are doing is the review's",
+                      fm)
+
+    def test_every_surface_runs_at_most_one_related_read(self):
+        stale = re.compile(r"bears? on the [\w' ]{1,40}?, at most three")
+        carriers = 0
+        for rel in model_read_files():
+            text = flat(rel)
+            with self.subTest(file=rel):
+                self.assertIsNone(stale.search(text))
+            if "related_reads" in text and "at most one that bears on" in text:
+                carriers += 1
+        self.assertGreaterEqual(carriers, 8)
+
+    def test_a_ten_a_day_morning_check_makes_three_reads(self):
+        run = " ".join((section(read("skills/adcopilot-daily/SKILL.md"),
+                                "## The run") or "").split())
+        self.assertIn("On a workspace with 10 operations a day "
+                      "(`org.ops_today_cap` is 10 or less), make the first three "
+                      "reads only", run)
+        self.assertIn("Five reads, in this order", read("skills/adcopilot-daily/SKILL.md"))
+
+    def test_the_case_grades_the_skill(self):
+        case = read("evals/fix-checks-three-checks/case.yaml")
+        self.assertIn("tags: [fix-checks]", case)
+        self.assertIn('"fix-checks": "adcopilot-fix-checks"',
+                      read("evals/ablation/delta.py"))
+        self.assertIn("adcopilot-fix-checks", grader_block(case, "skill-fired"))
+        self.assertIn("min: 0", grader_block(case, "runs-no-new-audit"))
+        ctx = mock("fix-checks-three-checks", "get_org_context")
+        self.assertEqual(ctx["plugin"]["version"], manifest_version())
+        self.assertIn("the fix-checks steps for audit checks", ctx["next_step"])
+        self.assertIsNone(SALES.search(self.TOP3))
 
 
 if __name__ == "__main__":
