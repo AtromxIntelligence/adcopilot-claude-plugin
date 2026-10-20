@@ -3831,5 +3831,28 @@ class OlderFixturesOnV241(unittest.TestCase):
                     self.assertIsNone(re.search(pattern, record, flags))
 
 
+class NoCompiledCaches(unittest.TestCase):
+    """A compiled cache is a build product of a local run, not plugin text:
+    a `.pyc` names the path it was compiled from, so committing one publishes
+    that machine's directory names in a public repository (review of
+    AdCopilot #919, PR #23). `.gitignore` keeps them out, and nothing
+    tracked may be one."""
+
+    def test_gitignore_ignores_python_caches(self):
+        lines = read(".gitignore").splitlines()
+        self.assertIn("__pycache__/", lines)
+        self.assertIn("*.py[cod]", lines)
+
+    def test_no_tracked_file_is_a_compiled_cache(self):
+        listed = subprocess.run(["git", "ls-files"], cwd=ROOT,
+                                capture_output=True, text=True)
+        if listed.returncode != 0:
+            self.skipTest("not a git checkout")
+        cached = [path for path in listed.stdout.splitlines()
+                  if "__pycache__/" in path
+                  or path.endswith((".pyc", ".pyo", ".pyd"))]
+        self.assertEqual(cached, [])
+
+
 if __name__ == "__main__":
     unittest.main()
