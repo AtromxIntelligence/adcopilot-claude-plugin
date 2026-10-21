@@ -101,10 +101,12 @@ written for Meta's own connector, before AdCopilot had one: it says AdCopilot
 has no Meta integration and reads two platforms side by side. This plugin's
 skills tell Claude to follow them, not that skill, for a Meta question. While
 you test, start a Meta conversation with one of the commands below, so this
-plugin's skill is the one that runs; to rule the other skill out entirely,
-test in a Claude Code session without the `adcopilot` plugin (`/plugin`, then
-disable it for the session). That skill is rewritten when AdCopilot for Meta
-Ads is released.
+plugin's skill is the one that runs. To rule the other skill out entirely in
+Claude Code, disable the `adcopilot` plugin while you test (`/plugin`, or
+`claude plugin disable adcopilot`) and enable it again afterwards
+(`claude plugin enable adcopilot`): disabling it is a setting that stays until
+you change it back, not a one-session switch. That skill is rewritten when
+AdCopilot for Meta Ads is released.
 
 ## What you get
 
