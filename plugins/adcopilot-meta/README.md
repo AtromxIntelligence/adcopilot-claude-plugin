@@ -3,11 +3,13 @@
 AdCopilot for Meta Ads reads your Meta ad accounts from your AI client:
 campaigns, ad sets and ads with their results, who saw them and on which
 placements, the ads' text, audiences, your Pages' posts and your pixels'
-health. Its skills and commands only read and change nothing in Meta: every
-change is yours to make in Meta's own Ads Manager or Events Manager. It reports
-Meta on its own,
-never added to, compared with or mixed with Google figures, even when
-AdCopilot's Google connector is in the same chat.
+health. It reads freely, and it makes one change, only after you say yes in
+the conversation: pausing or resuming a campaign, ad set or ad
+(`meta_set_status`). It never deletes or archives anything, never changes
+anything in a scheduled task, and every other change is yours to make in Meta's
+own Ads Manager or Events Manager. It reports Meta on its own, never added to,
+compared with or mixed with Google figures, even when AdCopilot's Google
+connector is in the same chat.
 
 This plugin bundles the hosted AdCopilot for Meta Ads connector,
 `https://mcp.adcopilot.cloud/meta/mcp`, and carries the steps the connector
@@ -135,8 +137,12 @@ Three skills, which Claude draws on when the conversation calls for them:
 
 ## What it will not do
 
-- **Change anything in Meta.** The plugin's steps only read. Every change is
-  made by you, in Meta's own screens.
+- **Change Meta without your yes.** The one change it can make is pausing or
+  resuming a campaign, ad set or ad (`meta_set_status`): Claude proposes it,
+  names what it stops or starts, and runs it only after you say yes in the
+  conversation, never in a scheduled task. It never deletes or archives, and
+  budgets, targeting, audiences and the ads themselves are changed by you, in
+  Meta's own screens.
 - **Mix Meta with Google.** It reports Meta on its own, and sends nothing read
   from Meta into AdCopilot's Google tools.
 - **See what you did not share.** It reads only the ad accounts, Pages and
@@ -158,8 +164,10 @@ written against AdCopilot's Meta connector as designed, before that connector
 is deployed: the tool names and the `meta_get_context` fields it relies on are
 checked against the live connector before any release. It ships three skills
 and three commands, and no agent. Every first call passes
-`source: "claude-plugin-meta/0.1.0"`, which tells AdCopilot which of this
-plugin's steps are installed.
+`source: "claude-plugin-meta/0.1.0"`, except in a scheduled task or routine,
+which passes `source: "claude-scheduled"` so that AdCopilot refuses any change
+in it. The marketplace entry is added in the release that makes the connector
+available, not before.
 
 ## Licence
 

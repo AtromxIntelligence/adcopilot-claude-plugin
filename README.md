@@ -159,12 +159,15 @@ AdCopilot for Meta Ads. It bundles AdCopilot's Meta connector,
 the Google one above, with its own sign-in and its own tools, and three skills
 and three commands (`/adcopilot-meta:setup`, `/adcopilot-meta:review` and
 `/adcopilot-meta:pixel`) that read Meta ad accounts and report Meta on its own,
-never mixed with Google figures. Its skills and commands only read.
+never mixed with Google figures. Its skills read; the one change its connector
+makes, pausing or resuming a campaign, ad set or ad, runs only after the
+person's yes in the conversation, never in a scheduled task.
 
 It is in testing. AdCopilot serves the Meta connector only to the workspaces it
 has switched on while Meta reviews AdCopilot's app, and the pull request that
 adds the plugin stays a draft until the connector is available to customers,
-so the published marketplace does not list it yet. Testers run it from that
+and the marketplace gains its entry only in the release that makes the
+connector available, so the marketplace does not list it yet. Testers run it from that
 branch with `claude --plugin-dir plugins/adcopilot-meta`; its own
 [README](plugins/adcopilot-meta/README.md) has the steps for each AI client.
 Nothing in it changes what the `adcopilot` plugin loads, or its connector.

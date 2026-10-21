@@ -13,15 +13,16 @@ earlier turn is not fresh.
 
 Report Meta on its own: never add Meta figures to Google Ads, Analytics or Search Console figures, compare the two, or put them in one table or one total, even when AdCopilot's Google connector is in the same chat.
 
-These steps only read: they change nothing in Meta, and the customer makes every change in Meta's own Ads Manager or Events Manager.
+Reads run freely. The one change this connector makes is `meta_set_status`, which pauses or resumes a campaign, ad set or ad: propose it first, run it only after the customer's explicit yes in this conversation, and never in a scheduled task or routine. It never deletes or archives; budgets, targeting, audiences and the ads themselves are the customer's to change in Meta's own Ads Manager or Events Manager.
 
 If the `adcopilot` plugin's `adcopilot-meta` skill is in this conversation too, it was written before AdCopilot had a Meta connector: it says AdCopilot has no Meta integration and reads Meta beside Google. For a question about Meta, follow these steps, not that skill.
 
 ## The first call
 
 Call `meta_get_context` with `source: "claude-plugin-meta/0.1.0"` first, before
-any other tool. Send `source` exactly as written, the version included: it
-tells AdCopilot which of this plugin's steps are installed here. If the answer
+any other tool. Send `source` exactly as written, the version included. In a scheduled task or
+routine, send `source: "claude-scheduled"` instead, never this plugin's: that
+is how AdCopilot knows the run is scheduled, and it then refuses every change. If the answer
 says AdCopilot for Meta Ads is not available here, that Meta is not connected,
 or that the connection must be made again, nothing below can read: follow the
 `meta-connect` skill's steps for that state instead, and say so in one line.
@@ -115,19 +116,22 @@ another tool that gets around a refusal.
 
 ## What to change
 
-These steps propose nothing to apply here. When the figures point at a change —
-a campaign that spends and brings nothing, an ad Meta rejected, an ad set
-whose cost per result is far above the account's — say what you would look at
-and where it is done: in Meta Ads Manager, on that campaign's, ad set's or ad's
-row, by the customer. Name the setting the way Ads Manager names it, so they
-can find it without you. Never say AdCopilot has made or will make a change in
-Meta.
+When the figures point at a change — a campaign that spends and brings
+nothing, an ad Meta rejected, an ad set whose cost per result is far above the
+account's — say what you would look at and where it is done: in Meta Ads
+Manager, on that campaign's, ad set's or ad's row. Name the setting the way Ads
+Manager names it, so they can find it without you.
 
-If the connector lists a tool that changes something in Meta, it is newer than
-these steps, and they never call it on their own. Only when the customer asks
-for that exact change in this conversation: say what it will change, on which
-campaign, ad set or ad, wait for their explicit yes, and follow that tool's own
-description. Without that, the change is theirs to make in Ads Manager.
+The one change this connector can make is pausing or resuming a campaign, ad
+set or ad, with `meta_set_status`. When that is the change, you may propose it:
+name the campaign, ad set or ad, say what pausing stops (its delivery and its
+spend) or what resuming starts (delivery, and spending its budget again), and
+wait for their explicit yes in this conversation before you call it. Never call
+it in a scheduled task or routine, for something they did not name, or for
+anything but PAUSED or ACTIVE. Then say what its answer says: what changed, or
+that it already had that status and nothing was sent to Meta. Every other
+change — a budget, a bid, targeting, an audience, an ad's text or image — is
+theirs to make in Ads Manager; never say AdCopilot has made or will make one.
 
 If they ask for Meta and Google together, give each platform's answer in its
 own section, each in its own currency and its own way of counting results, and

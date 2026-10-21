@@ -15,7 +15,7 @@ you.
 
 Report Meta on its own: never add Meta figures to Google Ads, Analytics or Search Console figures, compare the two, or put them in one table or one total, even when AdCopilot's Google connector is in the same chat.
 
-These steps only read: they change nothing in Meta, and the customer makes every change in Meta's own Ads Manager or Events Manager.
+Reads run freely. The one change this connector makes is `meta_set_status`, which pauses or resumes a campaign, ad set or ad: propose it first, run it only after the customer's explicit yes in this conversation, and never in a scheduled task or routine. It never deletes or archives; budgets, targeting, audiences and the ads themselves are the customer's to change in Meta's own Ads Manager or Events Manager.
 
 If the `adcopilot` plugin's `adcopilot-meta` skill is in this conversation too, it was written before AdCopilot had a Meta connector: it says AdCopilot has no Meta integration and reads Meta beside Google. For a question about Meta, follow these steps, not that skill.
 
@@ -23,8 +23,9 @@ If the `adcopilot` plugin's `adcopilot-meta` skill is in this conversation too, 
 
 Call `meta_get_context` with `source: "claude-plugin-meta/0.1.0"` before
 anything else, and treat its answer as the only source of truth about this
-connector. Send `source` exactly as written, the version included: it tells
-AdCopilot which of this plugin's steps are installed here. The answer says
+connector. Send `source` exactly as written, the version included. In a scheduled task or
+routine, send `source: "claude-scheduled"` instead, never this plugin's: that
+is how AdCopilot knows the run is scheduled, and it then refuses every change. The answer says
 whether AdCopilot for Meta Ads is available for this workspace, whether the
 person has connected Meta in AdCopilot, whether that connection must be made
 again and why, how many Meta ad accounts were found and how many are switched
@@ -89,7 +90,8 @@ back in plain sentences, never a table:
   Nothing below applies.
 - When `plan_includes` is false, say the server's `plan_line` as it is written
   and add nothing to it: no name, no amount and no suggestion of your own.
-  Connecting Meta can still be done, and the server says what it allows.
+  Do not send them to `connect_url` while `plan_includes` is false: AdCopilot's
+  connect page refuses it before Facebook is asked, with the same sentence.
 - When `connected` is false, Meta is not connected in AdCopilot yet: step 3.
 - When `needs_reconnect` is true, the Meta connection is there but cannot be
   used: say `reconnect_reason` in plain words and send them to `connect_url`
@@ -172,9 +174,10 @@ holds is older than the connector's: say the hint's own sentence, once, and
 carry on with the tools you have. A tool in the answer's `tools` that is not in
 your list is one this client has not picked up yet, not one AdCopilot lacks.
 
-A tool in `tools` that changes something in Meta is newer than these steps:
-these steps never call it. Say it is there only if they ask what AdCopilot for
-Meta Ads can do.
+`meta_set_status` is the one tool in `tools` that changes something in Meta: it
+pauses or resumes a campaign, ad set or ad. These steps never call it. Say it is
+there when they ask what AdCopilot for Meta Ads can do, and when they ask for
+that change, follow the `meta-review` skill's rule for it.
 
 ## What breaks
 

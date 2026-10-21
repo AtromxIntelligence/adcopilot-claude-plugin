@@ -1962,15 +1962,23 @@ class MetaPlugin(unittest.TestCase):
     What is pinned, and why:
     - The manifests: the plugin's own name, the Google plugin's author and
       legal links, the connector at exactly `/meta/mcp` under the server key
-      `meta`, and the marketplace's first entry left as it was.
+      `meta`, and the marketplace left as it was: the plugin gets its entry
+      only in the release that makes the connector available (AdCopilot's
+      PRODUCT-FACTS §10.26: nothing installable before `ADSMCP_META=live`).
     - Tool names fit Claude's 64 characters. A plugin's tools are named
       `mcp__plugin_<plugin>_<server>__<tool>`; with the server key
       `adcopilot-meta`, `meta_insights_breakdown` would be 66. The Google
       plugin's `ga4_update_attribution_settings` already sits at exactly 64.
     - Meta is reported on its own (Meta's Platform Terms on combining its data
       with other platforms are open with counsel, so the connector never puts
-      Meta beside Google), and the steps only read: one sentence each, the
-      same in every skill and command.
+      Meta beside Google), and the one change rule: reads run freely, and the
+      connector's one write, `meta_set_status` (pause or resume), is proposed
+      first, run only on the customer's yes and never in a scheduled run. One
+      sentence each, the same in every skill and command, and the server's
+      own instructions say the same.
+    - A scheduled task or routine sends `source: "claude-scheduled"`, never the
+      plugin's marker: only that source makes AdCopilot refuse a change in a
+      run nobody watches (D186).
     - The first call is `meta_get_context` with the plugin's own marker,
       `claude-plugin-meta/<version>`, held to the manifest's version, and never
       the Google plugin's `claude-plugin/<version>`.
@@ -2002,9 +2010,16 @@ class MetaPlugin(unittest.TestCase):
                     "Ads, Analytics or Search Console figures, compare the two, "
                     "or put them in one table or one total, even when "
                     "AdCopilot's Google connector is in the same chat.")
-    READS_ONLY = ("These steps only read: they change nothing in Meta, and the "
-                  "customer makes every change in Meta's own Ads Manager or "
-                  "Events Manager.")
+    WRITE_RULE = ("Reads run freely. The one change this connector makes is "
+                  "`meta_set_status`, which pauses or resumes a campaign, ad "
+                  "set or ad: propose it first, run it only after the "
+                  "customer's explicit yes in this conversation, and never in "
+                  "a scheduled task or routine. It never deletes or archives; "
+                  "budgets, targeting, audiences and the ads themselves are the "
+                  "customer's to change in Meta's own Ads Manager or Events "
+                  "Manager.")
+    SCHEDULED = ('In a scheduled task or routine, send `source: '
+                 '"claude-scheduled"` instead, never this plugin\'s')
     OLDER_SKILL = ("If the `adcopilot` plugin's `adcopilot-meta` skill is in "
                    "this conversation too, it was written before AdCopilot had "
                    "a Meta connector: it says AdCopilot has no Meta integration "
@@ -2068,15 +2083,13 @@ class MetaPlugin(unittest.TestCase):
         self.assertGreater(len(read(self.rel("README.md")).split()), 40)
         self.assertIn("not by Meta", m["description"])
 
-    def test_the_marketplace_lists_it_second_and_leaves_google_first(self):
+    def test_the_marketplace_does_not_list_it_until_the_connector_is_live(self):
+        """Merging this folder must not make it installable: the marketplace
+        entry is added in the release that sets `ADSMCP_META=live`."""
         market = json.loads(read(".claude-plugin/marketplace.json"))
-        self.assertEqual([p["name"] for p in market["plugins"]],
-                         ["adcopilot", self.PLUGIN])
-        google, meta = market["plugins"]
-        self.assertEqual(google["source"], "./")
-        self.assertEqual(meta["source"], "./" + self.DIR)
-        self.assertEqual(meta["category"], "Marketing")
-        self.assertEqual(self.manifest()["name"], meta["name"])
+        self.assertEqual([p["name"] for p in market["plugins"]], ["adcopilot"])
+        self.assertEqual(market["plugins"][0]["source"], "./")
+        self.assertNotIn(self.DIR, read(".claude-plugin/marketplace.json"))
 
     def test_the_connector_is_the_meta_door_under_a_short_key(self):
         servers = json.loads(read(self.rel(".mcp.json")))["mcpServers"]
@@ -2128,12 +2141,42 @@ class MetaPlugin(unittest.TestCase):
                 self.assertIn("call `meta_get_context` and follow its `next_step` "
                               "instead", text)
 
-    def test_every_file_reports_meta_alone_and_only_reads(self):
+    def test_every_file_reports_meta_alone_and_states_the_one_change_rule(self):
         for rel in self.skill_files() + self.command_files():
             text = flat(rel)
             with self.subTest(file=rel):
                 self.assertEqual(text.count(self.REPORT_ALONE), 1)
-                self.assertEqual(text.count(self.READS_ONLY), 1)
+                self.assertEqual(text.count(self.WRITE_RULE), 1)
+                self.assertNotIn("only read", text)
+                self.assertNotIn("newer than these steps", text)
+
+    def test_the_listing_text_names_the_one_change(self):
+        """The plugin's description and its README say what the bundled
+        connector can change, so neither disagrees with `meta_set_status`'s
+        destructive annotation."""
+        desc = self.manifest()["description"]
+        self.assertIn("pausing or resuming a campaign, ad set or ad", desc)
+        self.assertIn("only after your yes", desc)
+        self.assertNotIn("only read", desc)
+        readme = flat(self.rel("README.md"))
+        self.assertIn("`meta_set_status`", readme)
+        self.assertIn("**Change Meta without your yes.**", readme)
+        self.assertNotIn("only read", readme)
+        self.assertNotIn("Change anything in Meta", readme)
+        root = section(read("README.md"), "## AdCopilot for Meta Ads (internal)")
+        self.assertNotIn("only read", " ".join(root.split()))
+
+    def test_a_scheduled_run_sends_the_scheduled_source(self):
+        for rel in self.skill_files():
+            text = flat(rel)
+            with self.subTest(file=rel):
+                self.assertEqual(text.count(self.SCHEDULED), 1)
+                # The front door keeps `source` in memory only: it records no
+                # installed steps.
+                self.assertNotIn("which of this plugin's steps are installed", text)
+        self.assertNotIn("which of this plugin's steps are installed",
+                         flat(self.rel("README.md")))
+        self.assertIn('`source: "claude-scheduled"`', flat(self.rel("README.md")))
 
     def test_every_skill_takes_a_meta_question_from_the_older_skill(self):
         for rel in self.skill_files():
@@ -2142,10 +2185,20 @@ class MetaPlugin(unittest.TestCase):
 
     def test_a_write_tool_is_never_called_unasked(self):
         review = flat(self.rel("skills", "meta-review", "SKILL.md"))
-        self.assertIn("they never call it on their own", review)
-        self.assertIn("wait for their explicit yes", review)
+        self.assertIn("wait for their explicit yes in this conversation before "
+                      "you call it", review)
+        self.assertIn("Never call it in a scheduled task or routine", review)
+        self.assertIn("that it already had that status and nothing was sent", review)
         connect = flat(self.rel("skills", "meta-connect", "SKILL.md"))
-        self.assertIn("these steps never call it", connect)
+        self.assertIn("These steps never call it.", connect)
+        tracking = flat(self.rel("skills", "meta-tracking", "SKILL.md"))
+        self.assertNotIn("meta_set_status`,", tracking.replace(self.WRITE_RULE, ""))
+
+    def test_a_workspace_whose_plan_gives_no_meta_is_not_sent_to_connect(self):
+        connect = flat(self.rel("skills", "meta-connect", "SKILL.md"))
+        self.assertIn("Do not send them to `connect_url` while `plan_includes` "
+                      "is false", connect)
+        self.assertNotIn("can still be done", connect)
 
     def test_every_skill_starts_with_the_front_door_and_its_marker(self):
         marker = 'source: "claude-plugin-meta/%s"' % self.manifest()["version"]
@@ -2172,8 +2225,6 @@ class MetaPlugin(unittest.TestCase):
     def test_nothing_the_model_is_told_names_a_plan_a_price_or_a_limit(self):
         texts = [(rel, flat(rel)) for rel in self.model_read()]
         texts.append(("plugin.json description", self.manifest()["description"]))
-        market = json.loads(read(".claude-plugin/marketplace.json"))
-        texts.append(("marketplace entry", market["plugins"][1]["description"]))
         for label, text in texts:
             with self.subTest(file=label):
                 found = self.PLAN_PRICE_LIMIT.search(text)

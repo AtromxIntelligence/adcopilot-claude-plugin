@@ -11,12 +11,6 @@
       "source": "./",
       "description": "The AI agent that runs your Google Ads, with Google Analytics, Google Search Console and Google Tag Manager in your AI client, and the manual steps spelled out.",
       "category": "Marketing"
-    },
-    {
-      "name": "adcopilot-meta",
-      "source": "./plugins/adcopilot-meta",
-      "description": "AdCopilot for Meta Ads: reads your Meta ad accounts, campaigns, ad sets, ads, audiences, Pages and pixel health in your AI client, and reports Meta on its own. Its own connector, beside the Google one. In testing.",
-      "category": "Marketing"
     }
   ]
 }

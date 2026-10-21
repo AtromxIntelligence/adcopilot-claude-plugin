@@ -13,15 +13,16 @@ it is made: Meta Events Manager.
 
 Report Meta on its own: never add Meta figures to Google Ads, Analytics or Search Console figures, compare the two, or put them in one table or one total, even when AdCopilot's Google connector is in the same chat.
 
-These steps only read: they change nothing in Meta, and the customer makes every change in Meta's own Ads Manager or Events Manager.
+Reads run freely. The one change this connector makes is `meta_set_status`, which pauses or resumes a campaign, ad set or ad: propose it first, run it only after the customer's explicit yes in this conversation, and never in a scheduled task or routine. It never deletes or archives; budgets, targeting, audiences and the ads themselves are the customer's to change in Meta's own Ads Manager or Events Manager.
 
 If the `adcopilot` plugin's `adcopilot-meta` skill is in this conversation too, it was written before AdCopilot had a Meta connector: it says AdCopilot has no Meta integration and reads Meta beside Google. For a question about Meta, follow these steps, not that skill.
 
 ## The first call
 
 Call `meta_get_context` with `source: "claude-plugin-meta/0.1.0"` first, before
-any other tool. Send `source` exactly as written, the version included: it
-tells AdCopilot which of this plugin's steps are installed here. If the answer
+any other tool. Send `source` exactly as written, the version included. In a scheduled task or
+routine, send `source: "claude-scheduled"` instead, never this plugin's: that
+is how AdCopilot knows the run is scheduled, and it then refuses every change. If the answer
 says AdCopilot for Meta Ads is not available here, that Meta is not connected,
 or that the connection must be made again, follow the `meta-connect` skill's
 steps for that state instead, and say so in one line. When `plan_includes` is
