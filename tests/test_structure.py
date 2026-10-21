@@ -3890,7 +3890,7 @@ class OlderFixturesOnV241(unittest.TestCase):
 class FixChecks(unittest.TestCase):
     """0.2.14: the fixes for an AdCopilot audit's checks, from the 2026-10-20
     "Fix all three in Claude" chat. The question the audit page sends (AdCopilot
-    v2.43.2, `audit_asks.top_prompt` and `check_prompt`) must fire the skill;
+    v2.43.3, `audit_asks.top_prompt` and `check_prompt`) must fire the skill;
     the skill says the cost first, recommends the order foundation first,
     reads each check with its own lens and runs no new audit, asks one yes/no
     at a time with at most five rows, reads back every change, warns before
@@ -3901,7 +3901,7 @@ class FixChecks(unittest.TestCase):
     related read, and a 10-a-day morning check makes three reads."""
 
     SKILL = "skills/adcopilot-fix-checks/SKILL.md"
-    # The server's own questions (AdCopilot v2.43.2), as the audit page and
+    # The server's own questions (AdCopilot v2.43.3), as the audit page and
     # the check-in emails send them.
     TOP3 = ('My AdCopilot audit of Google Ads account 123-456-7890 flagged '
             'three checks to fix first: "Enhanced conversions enabled" (G43), '

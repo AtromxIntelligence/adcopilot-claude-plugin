@@ -1,7 +1,7 @@
 schema_version: "1.1"
 name: fix-checks-three-checks
 description: >
-  The audit page's "Fix all three" question, as AdCopilot v2.43.2 words it,
+  The audit page's "Fix all three" question, as AdCopilot v2.43.3 words it,
   on a running account whose results are counted (the tenant in this case's
   mocks is fictional; every value is invented; the state is
   review-follows-related-reads'). It grades what plugin 0.2.14's
