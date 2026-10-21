@@ -3985,6 +3985,16 @@ class FindingActions(unittest.TestCase):
                 self.assertIn("One whose `kind` is `skeleton` is a draft", text)
                 self.assertIn("never fill it in yourself", text)
 
+    def test_a_ready_call_carries_the_condition_its_why_gives(self):
+        """AdCopilot v2.44 (A2 review): a disapproved ad's pause is for an
+        ad the customer won't fix; an ad Google approves on appeal keeps
+        serving, so a pause proposed "as it stands" carries that condition."""
+        for rel in self.SURFACES:
+            text = flat(rel)
+            with self.subTest(file=rel):
+                self.assertIn("with the condition its `why` gives", text)
+                self.assertIn("never one Google approves on appeal", text)
+
     def test_the_review_skills_phrase_rule_is_for_its_own_negatives(self):
         text = flat("skills/adcopilot-review/SKILL.md")
         self.assertIn("an audit's negatives Exact as it built them", text)

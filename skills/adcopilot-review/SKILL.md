@@ -175,10 +175,12 @@ sentence. Never turn it into an instruction.
 
 A finding may carry its fix in `recommended_actions`. One whose `kind` is
 `tool` is a ready call, its IDs read from the account: propose it as it
-stands, an audit's negatives Exact as it built them. One whose `kind` is
-`skeleton` is a draft: `needs` says what only the customer can give, such as
-the searches to block or the campaign to take budget from. Ask for that, and
-never fill it in yourself.
+stands, an audit's negatives Exact as it built them, with the condition its
+`why` gives (a disapproved ad's pause is for an ad they won't fix, never one
+Google approves on appeal). One whose `kind` is `skeleton` is a draft:
+`needs` says what only the customer can give, such as the searches to block
+or the campaign to take budget from. Ask for that, and never fill it in
+yourself.
 
 **Then one recommendation**, with the money spelled out both ways — what it
 costs to act and what it costs to do nothing — as a proposal they say yes or no
