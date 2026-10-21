@@ -6,8 +6,9 @@ Run with `python3 -m unittest discover -s tests -v` from the repository root
 
 What it pins, and why each one is here:
 
-- The daily-habit block. Every interactive flow — the three teaching skills
-  and the four commands that have no skill of their own — ends with the same
+- The daily-habit block. Every interactive flow — the three teaching skills,
+  the fix-checks skill and the four commands that have no skill of their
+  own — ends with the same
   offer to make the check a daily habit. It is repeated verbatim, like the
   teaching contract, because a skill cannot include another file in every
   surface the plugin runs on (an eval run has no Read tool at all). A copy
@@ -87,6 +88,10 @@ HABIT_CARRIERS = [
     "skills/adcopilot-connect/SKILL.md",
     "skills/adcopilot-launch/SKILL.md",
     "skills/adcopilot-measure/SKILL.md",
+    # 0.2.14 (review of AdCopilot #942, item 5): a skill cannot include
+    # another file, and from 0.2.7 the server leaves the offer to the skill
+    # that owns the turn, so fix-checks carries the block itself.
+    "skills/adcopilot-fix-checks/SKILL.md",
     "commands/audit.md",
     "commands/daily.md",
     "commands/weekly.md",
@@ -603,11 +608,23 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
         # fix: after a fix applied and read back with no next fix proposed,
         # or at the close of a reply that proposes none.
         block = self.block()
-        self.assertIn("Make it only in a reply that asks them no yes/no on a "
-                      "fix: once a fix they approved has been applied and read "
-                      "back and the reply proposes no next fix (the last one is "
-                      "done, or nothing left is worth its money), or at the "
-                      "close of a reply that proposes no fix at all.", block)
+        # Review of AdCopilot #942 (item 4): "only once no next fix is
+        # proposed" was reached only with nothing left to fix, and on Free the
+        # limit comes first. The first fix's read-back makes the offer in
+        # place of the next fix's yes/no, and that yes/no waits a reply.
+        self.assertIn("Make it in a reply that asks them no yes/no on a fix: "
+                      "the reply that reads back the first fix they approved, "
+                      "where the offer stands in for the next fix's yes/no "
+                      "(name the next fix in one line without asking, and "
+                      "propose it in the reply after), or the close of a reply "
+                      "that proposes no fix at all.", block)
+        self.assertNotIn("the reply proposes no next fix", block)
+        # Item 8: a 10-a-day morning check does not read what changed.
+        self.assertIn("without saying the check would have caught it. On a "
+                      "workspace with 10 operations a day "
+                      "(`org.ops_today_cap` is 10 or less) the morning check "
+                      "leaves what changed for the chat, so there a change "
+                      "nobody asked for is one of these.", block)
         self.assertIn("Never make it beside a fix that waits for their answer: "
                       "the yes/no comes first, and the offer waits.", block)
         self.assertIn("When a fix applied in this conversation was for a "
@@ -695,11 +712,14 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
         # 0.2.14: the moment is after a fix applied and read back.
         morning = " ".join((section(read("README.md"),
                                     "### Every morning, without asking") or "").split())
-        self.assertIn("only in a reply that asks you no yes/no on a fix: once a "
-                      "fix you approved has been made and read back and no next "
-                      "fix is proposed, or at the close of a reply that proposes "
-                      "none. When that fix was for a finding the morning check "
-                      "also reads", morning)
+        # Review of AdCopilot #942 (item 4): the first fix's read-back.
+        self.assertIn("only in a reply that asks you no yes/no on a fix: the "
+                      "reply that reads back the first fix you approved, where "
+                      "it stands in for the next fix's yes/no (the next fix is "
+                      "named, and proposed in the reply after), or at the close "
+                      "of a reply that proposes none. When that fix was for a "
+                      "finding the morning check also reads", morning)
+        self.assertNotIn("no next fix is proposed", morning)
         self.assertNotIn("right after the first finding", morning)
         self.assertIn("With any other finding, or none, the offer closes the "
                       "reply instead, without that claim.", readme)
@@ -746,12 +766,16 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
         nxt = " ".join((section(read("skills/adcopilot-review/SKILL.md"),
                                 "## What is next") or "").split())
         self.assertIn("Its moment is a reply that asks them no yes/no on a fix: "
-                      "once a fix they approved has been applied and read back "
-                      "and the reply proposes no next fix, or at the close of a "
-                      "reply that proposes none. Never beside a fix that waits "
-                      "for their answer. When a fix applied in this "
-                      "conversation was for a finding the morning check also "
-                      "reads", nxt)
+                      "the reply that reads back the first fix they approved, "
+                      "where it stands in for the next fix's yes/no (name the "
+                      "next fix in one line without asking, and propose it in "
+                      "the reply after), or the close of a reply that proposes "
+                      "none. Never beside a fix that waits for their answer. "
+                      "When a fix applied in this conversation was for a "
+                      "finding the morning check also reads", nxt)
+        self.assertIn("on a workspace with 10 operations a day the morning "
+                      "check leaves what changed for the chat, so not that one "
+                      "there", nxt)
         self.assertIn("for any other finding, even one that costs money (a "
                       "tracking fault, a Quality Score problem, a targeting "
                       "problem), or none, the close, before any question the "
@@ -788,9 +812,9 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
         # 0.2.14: on a 10-a-day workspace the run makes three of the five.
         self.assertIn("so the five reads would count 7 and a run about 8 to 10 "
                       "of Free's 10, some days all of them, which is why such "
-                      "a day makes three (below); otherwise every read counts "
+                      "a day makes four (below); otherwise every read counts "
                       "1.", daily)
-        self.assertIn("where `org.ops_weighted` is true the three count 5 of "
+        self.assertIn("where `org.ops_weighted` is true the four count 6 of "
                       "the 10.", daily)
         # A trial held to Free's 10 a day (paused for its card, or waiting
         # for its first charge) is weighted while its `plan` still reads
@@ -802,7 +826,7 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
                       "(Free, and a trial held to Free's 10 a day, whose "
                       "`plan` still reads `pro`), say it in operations "
                       "instead: an analysis counts 2 there, so a run makes "
-                      "its first three reads only, about 5 of Free's 10 "
+                      "its first four reads only, about 6 of Free's 10 "
                       "operations, and leaves the rest of the day for the fix "
                       "it ends on.", daily)
         self.assertNotIn("`plan` is `free`", daily)
@@ -811,8 +835,9 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
                       "analysis such as budget pacing counts 2 operations and "
                       "a single read 1, so all five reads would come to about "
                       "8 to 10 of Free's 10, some days all of them; there the "
-                      "run makes its first three reads only, about 5, so the "
-                      "fix it ends on still fits the same day. On a paid plan "
+                      "run makes its first four reads only, about 6, leaving "
+                      "what changed for the chat, so the fix it ends on still "
+                      "fits the same day. On a paid plan "
                       "or a running trial every read counts 1.", readme)
         audit = " ".join(read("commands/audit.md").split())
         # Fourth review of AdCopilot #919: the command's own calls are a
@@ -3898,7 +3923,11 @@ class FixChecks(unittest.TestCase):
     after a fix is applied and read back. Around it: the review and
     /adcopilot:negatives ask one yes/no (AskUserQuestion in Claude Code), the
     model may start /adcopilot:negatives, every surface runs at most one
-    related read, and a 10-a-day morning check makes three reads."""
+    related read, and a 10-a-day morning check makes four reads. Review of
+    AdCopilot #942: a change costs one call per keyword it pauses (or per
+    campaign or list it adds negatives to) plus a read-back, the habit block
+    is carried whole, /adcopilot:negatives is applied, not started, and the
+    example asks only for rows that were shown."""
 
     SKILL = "skills/adcopilot-fix-checks/SKILL.md"
     # The server's own questions (AdCopilot v2.43.3), as the audit page and
@@ -3909,7 +3938,7 @@ class FixChecks(unittest.TestCase):
             "(G-WS1). First tell me what today's AdCopilot allowance covers, "
             "then fix them one at a time in the order you recommend. One yes/no "
             "at a time; change nothing until I say yes.")
-    ONE_YES_NO = ('("Shall I block these 6? Reply yes, or name any to keep.")')
+    ONE_YES_NO = ('("Shall I block these 5? Reply yes, or name any to keep.")')
     FIVE_ROWS = 'then "and N more; ask to see them"'
 
     def test_the_description_names_the_audit_questions(self):
@@ -3930,15 +3959,27 @@ class FixChecks(unittest.TestCase):
         self.assertIn("`org.ops_today_cap` and `org.ops_today_used`", text)
         self.assertIn("Foundation first", text)
         self.assertIn("never ask the customer to pick it", text)
-        self.assertIn("Keep two operations for applying and reading back the "
-                      "fix they approve.", text)
+        # Review of AdCopilot #942 (item 2): `update_keyword` changes one
+        # keyword a call, so a pause of four is four calls and a read-back.
+        self.assertIn("The change is one call per keyword it pauses "
+                      "(`update_keyword` changes one keyword a call), or per "
+                      "campaign or list it adds never-show-for words to (one "
+                      "call takes them all).", text)
+        self.assertIn("Keep what the fix they approve costs: one call per "
+                      "keyword it pauses, or per campaign or list it adds "
+                      "never-show-for words to, plus one read-back.", text)
+        self.assertIn("propose the costliest part that fits", text)
+        self.assertNotIn("Keep two operations", text)
+        self.assertNotIn("about 3 operations where every call counts 1", text)
         self.assertIn("Before a call that would use the last of today's "
                       "operations, say what it covers and ask first", text)
 
     def test_each_family_has_its_flow(self):
         text = flat(self.SKILL)
         for words in ("Read `analyze_search_terms`",
-                      "These are the `/adcopilot:negatives` steps",
+                      "Apply them the way the `/adcopilot:negatives` command "
+                      "does, with the read you already hold; do not start that "
+                      "command",
                       "Read `analyze_waste`",
                       "`update_keyword` with `status` PAUSED",
                       "Pause, never remove.",
@@ -3955,7 +3996,8 @@ class FixChecks(unittest.TestCase):
         self.assertIn("Show at most 5 rows of any list, costliest first, "
                       + self.FIVE_ROWS, text)
         self.assertIn("End each message with exactly one question: a yes/no on "
-                      "the fix you recommend " + self.ONE_YES_NO, text)
+                      "the fix you recommend " + self.ONE_YES_NO + "; a yes "
+                      "covers only the rows you showed.", text)
         self.assertIn("No numbered menu, no second question", text)
         self.assertIn("AskUserQuestion", text)
 
@@ -3964,10 +4006,13 @@ class FixChecks(unittest.TestCase):
         self.assertIn("Apply it. Then read back only what its own result does "
                       "not show", text)
         self.assertIn("say how to undo it", text)
-        self.assertIn("Once a fix is applied and read back, and "
+        self.assertIn("Once the first fix is applied and read back, and "
                       "`get_org_context` handed you its recipe, "
-                      "`routine.schedule`, make the daily-habit offer", text)
+                      "`routine.schedule`, make the daily-habit offer in that "
+                      "reply, as \"The daily habit\" below says", text)
         self.assertIn("never in the same message as a yes/no", text)
+        self.assertIn(self.SKILL, HABIT_CARRIERS)
+        self.assertNotIn("the way the `adcopilot-review` skill words it", text)
 
     def test_the_review_and_negatives_ask_one_yes_no(self):
         review = flat("skills/adcopilot-review/SKILL.md")
@@ -3990,6 +4035,11 @@ class FixChecks(unittest.TestCase):
         self.assertNotIn("disable-model-invocation", fm)
         self.assertIn("a question about how the ads are doing is the review's",
                       fm)
+        # Review of AdCopilot #942 (item 14): an audit check is fix-checks',
+        # which applies the write steps with the 30-day read it holds.
+        self.assertIn("checks from an AdCopilot audit are the fix-checks "
+                      "skill's", fm)
+        self.assertNotIn("audit check about search terms is being fixed", fm)
 
     def test_every_surface_runs_at_most_one_related_read(self):
         stale = re.compile(r"bears? on the [\w' ]{1,40}?, at most three")
@@ -4002,12 +4052,16 @@ class FixChecks(unittest.TestCase):
                 carriers += 1
         self.assertGreaterEqual(carriers, 8)
 
-    def test_a_ten_a_day_morning_check_makes_three_reads(self):
+    def test_a_ten_a_day_morning_check_makes_four_reads(self):
+        # Review of AdCopilot #942 (item 8): three reads skipped the
+        # disapproved ads the offer says the check would have caught; four
+        # keep them (6 of 10 weighted) and leave only what changed.
         run = " ".join((section(read("skills/adcopilot-daily/SKILL.md"),
                                 "## The run") or "").split())
         self.assertIn("On a workspace with 10 operations a day "
-                      "(`org.ops_today_cap` is 10 or less), make the first three "
+                      "(`org.ops_today_cap` is 10 or less), make the first four "
                       "reads only", run)
+        self.assertIn("that what changed was left for the chat", run)
         self.assertIn("Five reads, in this order", read("skills/adcopilot-daily/SKILL.md"))
 
     def test_the_case_grades_the_skill(self):

@@ -176,7 +176,8 @@ sentence. Never turn it into an instruction.
 **Then one recommendation**, with the money spelled out both ways — what it
 costs to act and what it costs to do nothing — as a proposal they say yes or no
 to. Never apply it first. It is the one question the reply ends on ("Shall I
-block these 6? Reply yes, or name any to keep."): never a numbered menu, and
+block these 5? Reply yes, or name any to keep."; a yes covers only the rows you
+showed): never a numbered menu, and
 never a request to pick the order; recommend it. Anything else that needs their
 call waits for the next reply. In Claude Code, put that yes/no to them with the
 AskUserQuestion tool when you have it, with the same options in the same
@@ -264,13 +265,16 @@ two different days (`routine.scheduled_first_seen_at` and
 AdCopilot's own emailed check-in (`routine.daily.status` `in_app`) is not their
 schedule. Word it by `routine.schedule.offer`, as the daily-habit block every
 other flow carries does. Its moment is a reply that asks them no yes/no on a
-fix: once a fix they approved has been applied and read back and the reply
-proposes no next fix, or at the close of a reply that proposes none. Never
-beside a fix that waits for their answer. When a fix applied in this
+fix: the reply that reads back the first fix they approved, where it stands in
+for the next fix's yes/no (name the next fix in one line without asking, and
+propose it in the reply after), or the close of a reply that proposes none.
+Never beside a fix that waits for their answer. When a fix applied in this
 conversation was for a finding the morning check also reads (searches that
 spent with no sale, a campaign out of budget or off its budget pace, a
-disapproved ad, a drop against the 7-day average, a change nobody asked for),
-it is tied to that finding as that block words it (it would have caught this on
+disapproved ad, a drop against the 7-day average, a change nobody asked for;
+on a workspace with 10 operations a day the morning check leaves what changed
+for the chat, so not that one there), it is tied to that finding as that block
+words it (it would have caught this on
 its first morning; it only reads; "All clear" or "Needs a look" plus one yes/no
 fix); for any other finding, even one that costs money (a tracking fault, a
 Quality Score problem, a targeting problem), or none, the close, before any
