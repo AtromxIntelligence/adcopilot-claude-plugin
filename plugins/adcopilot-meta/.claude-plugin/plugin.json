@@ -1,0 +1,29 @@
+{
+  "name": "adcopilot-meta",
+  "version": "0.1.0",
+  "description": "AdCopilot for Meta Ads reads your Meta ad accounts from your AI client: campaigns, ad sets and ads with their results, who saw them and on which placements, the ads' text, audiences, your Pages' posts and your pixels' health. It reads freely and makes one change only after your yes: pausing or resuming a campaign, ad set or ad. It never deletes or archives; every other change is yours to make in Meta's Ads Manager or Events Manager. It reports Meta on its own, never mixed with Google figures. Made by Atromx Intelligence, not by Meta.",
+  "author": {
+    "name": "Atromx Intelligence",
+    "url": "https://adcopilot.cloud"
+  },
+  "homepage": "https://adcopilot.cloud",
+  "privacyPolicyUrl": "https://adcopilot.cloud/privacy",
+  "documentationUrl": "https://adcopilot.cloud/docs",
+  "termsOfServiceUrl": "https://adcopilot.cloud/terms",
+  "repository": "https://github.com/AtromxIntelligence/adcopilot-claude-plugin",
+  "license": "MIT",
+  "keywords": [
+    "meta-ads",
+    "facebook-ads",
+    "instagram-ads",
+    "ads-manager",
+    "meta-pixel",
+    "events-manager",
+    "ad-performance",
+    "adcopilot",
+    "ai-agent",
+    "mcp"
+  ],
+  "displayName": "AdCopilot for Meta Ads",
+  "icon": "./.claude-plugin/icon.png"
+}

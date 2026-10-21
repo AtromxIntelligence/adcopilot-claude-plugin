@@ -58,7 +58,15 @@ What it pins, and why each one is here:
   Meta's official page and AdCopilot's guide, labels every figure with its
   source, keeps one platform to a change, asks before a change through either
   connector, and carries no plan or price word and nothing Meta has not
-  published. The manifests do not claim a Meta integration.
+  published. The Google plugin's manifests do not claim a Meta integration.
+- AdCopilot for Meta Ads (`plugins/adcopilot-meta`, MetaPlugin): the
+  marketplace's second plugin, on the Meta connector at `/meta/mcp` under the
+  server key `meta` (every tool name within 64 characters), its first entry
+  left as it was; every skill and command reports Meta on its own and only
+  reads; each skill starts with `meta_get_context` and the plugin's own
+  marker at the manifest's version; nothing it tells the model names a plan,
+  a price or a limit; and each skill takes a Meta question from the Google
+  plugin's older `adcopilot-meta` skill.
 - Cursor (0.2.12's Cursor round): wherever the plugin works out which client
   it is in, Cursor is checked first, `claude mcp` is never run there, and the
   connector may be named `server`; the daily-habit offer is made only when
@@ -1918,12 +1926,363 @@ class MetaSkill(unittest.TestCase):
         self.assertIn("on the roadmap, with no date", entry)
 
     def test_the_manifests_claim_no_meta_integration(self):
-        # AdCopilot has none. The listing leads with Google, and a manifest that
-        # named Meta, Facebook or Instagram would read as support.
-        for rel in (".claude-plugin/plugin.json", ".claude-plugin/marketplace.json",
-                    ".mcp.json"):
+        # The Google plugin has none. Its listing leads with Google, and a
+        # manifest of its that named Meta, Facebook or Instagram would read as
+        # support. AdCopilot for Meta Ads is a plugin of its own
+        # (`plugins/adcopilot-meta`, MetaPlugin below), so the marketplace names
+        # Meta in its second entry; the Google plugin's manifest, its connector,
+        # the marketplace's own text and its first entry still do not.
+        market = json.loads(read(".claude-plugin/marketplace.json"))
+        texts = [
+            (".claude-plugin/plugin.json", read(".claude-plugin/plugin.json")),
+            (".mcp.json", read(".mcp.json")),
+            ("marketplace.json plugins[0]", json.dumps(market["plugins"][0])),
+            ("marketplace.json name, description, owner",
+             json.dumps({k: v for k, v in market.items() if k != "plugins"})),
+        ]
+        self.assertEqual(market["plugins"][0]["name"], "adcopilot")
+        for label, text in texts:
+            with self.subTest(file=label):
+                self.assertNotRegex(text, r"(?i)\b(meta|facebook|instagram)\b")
+
+
+class MetaPlugin(unittest.TestCase):
+    """`plugins/adcopilot-meta`: AdCopilot for Meta Ads, the second plugin this
+    marketplace lists.
+
+    The founder's decision (2026-10-20, restated 2026-10-21): every new ad
+    platform ships as its own MCP connector and its own plugin, and the Google
+    connector stays one connector, unchanged. Meta is the first. Its connector
+    is a sibling of Google's on the same host, `/meta/mcp` (AdCopilot D224:
+    never a path under `/mcp`, which a client's resource check would read as
+    Google's), with its own sign-in, and until Meta's App Review passes it is
+    switched on for AdCopilot's own workspaces only. So this plugin is in
+    testing: the PR that adds it stays a draft until the connector is live.
+
+    What is pinned, and why:
+    - The manifests: the plugin's own name, the Google plugin's author and
+      legal links, the connector at exactly `/meta/mcp` under the server key
+      `meta`, and the marketplace left as it was: the plugin gets its entry
+      only in the release that makes the connector available (AdCopilot's
+      PRODUCT-FACTS §10.26: nothing installable before `ADSMCP_META=live`).
+    - Tool names fit Claude's 64 characters. A plugin's tools are named
+      `mcp__plugin_<plugin>_<server>__<tool>`; with the server key
+      `adcopilot-meta`, `meta_insights_breakdown` would be 66. The Google
+      plugin's `ga4_update_attribution_settings` already sits at exactly 64.
+    - Meta is reported on its own (Meta's Platform Terms on combining its data
+      with other platforms are open with counsel, so the connector never puts
+      Meta beside Google), and the one change rule: reads run freely, and the
+      connector's one write, `meta_set_status` (pause or resume), is proposed
+      first, run only on the customer's yes and never in a scheduled run. One
+      sentence each, the same in every skill and command, and the server's
+      own instructions say the same.
+    - A scheduled task or routine sends `source: "claude-scheduled"`, never the
+      plugin's marker: only that source makes AdCopilot refuse a change in a
+      run nobody watches (D186).
+    - The first call is `meta_get_context` with the plugin's own marker,
+      `claude-plugin-meta/<version>`, held to the manifest's version, and never
+      the Google plugin's `claude-plugin/<version>`.
+    - Nothing the model is told names a plan, a price or a limit: a plan
+      fact is the server's `plan_line`, said as written (the directory policy
+      that keeps sales wording out of what the model is told).
+    - The Google plugin's `adcopilot-meta` skill predates this connector and
+      says AdCopilot has no Meta integration, so every skill here says to
+      follow its own steps for a Meta question."""
+
+    DIR = "plugins/adcopilot-meta"
+    URL = "https://mcp.adcopilot.cloud/meta/mcp"
+    GOOGLE_URL = "https://mcp.adcopilot.cloud/mcp"
+    PLUGIN = "adcopilot-meta"
+    SERVER = "meta"
+    SKILLS = ("meta-connect", "meta-review", "meta-tracking")
+    COMMANDS = {"setup": "meta-connect", "review": "meta-review",
+                "pixel": "meta-tracking"}
+    # The connector's milestone-1 tools as designed (twelve reads, the front
+    # door first), and the one write its design review asked for. Every
+    # `meta_` name the plugin's text uses must be one of these.
+    TOOLS = ("meta_get_context", "meta_list_ad_accounts",
+             "meta_account_overview", "meta_list_campaigns", "meta_list_ad_sets",
+             "meta_list_ads", "meta_insights_breakdown",
+             "meta_list_ad_creatives", "meta_pixel_health",
+             "meta_list_audiences", "meta_list_pages", "meta_list_page_posts",
+             "meta_set_status")
+    REPORT_ALONE = ("Report Meta on its own: never add Meta figures to Google "
+                    "Ads, Analytics or Search Console figures, compare the two, "
+                    "or put them in one table or one total, even when "
+                    "AdCopilot's Google connector is in the same chat.")
+    WRITE_RULE = ("Reads run freely. The one change this connector makes is "
+                  "`meta_set_status`, which pauses or resumes a campaign, ad "
+                  "set or ad: propose it first, run it only after the "
+                  "customer's explicit yes in this conversation, and never in "
+                  "a scheduled task or routine. It never deletes or archives; "
+                  "budgets, targeting, audiences and the ads themselves are the "
+                  "customer's to change in Meta's own Ads Manager or Events "
+                  "Manager.")
+    SCHEDULED = ('In a scheduled task or routine, send `source: '
+                 '"claude-scheduled"` instead, never this plugin\'s')
+    OLDER_SKILL = ("If the `adcopilot` plugin's `adcopilot-meta` skill is in "
+                   "this conversation too, it was written before AdCopilot had "
+                   "a Meta connector: it says AdCopilot has no Meta integration "
+                   "and reads Meta beside Google. For a question about Meta, "
+                   "follow these steps, not that skill.")
+    # Plan, price and limit words, and any amount of money. "Cost" is not
+    # here: cost per result is the customer's own Meta figure. Nor is
+    # "purchase": it is one of Meta's results.
+    PLAN_PRICE_LIMIT = re.compile(
+        r"\b(plans?|pric(e|es|ing)|paid|free|upgrade[sd]?|subscri\w+|trial|"
+        r"discount\w*|starter|tier|billing|quota|limits?|allowance|"
+        r"operations?)\b|[$€£₹]\s?\d", re.I)
+
+    def rel(self, *parts):
+        return "/".join((self.DIR,) + parts)
+
+    def manifest(self):
+        return json.loads(read(self.rel(".claude-plugin", "plugin.json")))
+
+    def model_read(self):
+        """Every skill and command file the model reads, from disk."""
+        found = []
+        for sub in ("skills", "commands", "agents"):
+            for dirpath, _dirs, names in os.walk(os.path.join(ROOT, self.DIR, sub)):
+                for name in sorted(names):
+                    if name.endswith(".md"):
+                        found.append(os.path.relpath(os.path.join(dirpath, name), ROOT))
+        return sorted(found)
+
+    def skill_files(self):
+        return [self.rel("skills", s, "SKILL.md") for s in self.SKILLS]
+
+    def command_files(self):
+        return [self.rel("commands", c + ".md") for c in sorted(self.COMMANDS)]
+
+    def test_what_ships_is_three_skills_three_commands_and_no_agent(self):
+        self.assertEqual(sorted(os.listdir(os.path.join(ROOT, self.DIR, "skills"))),
+                         sorted(self.SKILLS))
+        self.assertEqual(sorted(os.listdir(os.path.join(ROOT, self.DIR, "commands"))),
+                         sorted(c + ".md" for c in self.COMMANDS))
+        self.assertFalse(os.path.exists(os.path.join(ROOT, self.DIR, "agents")))
+        self.assertFalse(os.path.exists(os.path.join(ROOT, self.DIR, "hooks")))
+        self.assertEqual(self.model_read(),
+                         sorted(self.skill_files() + self.command_files()))
+
+    def test_the_manifest(self):
+        m = self.manifest()
+        root = json.loads(read(".claude-plugin/plugin.json"))
+        self.assertEqual(m["name"], self.PLUGIN)
+        self.assertRegex(m["version"], r"^\d+\.\d+\.\d+$")
+        self.assertEqual(m["displayName"], "AdCopilot for Meta Ads")
+        for key in ("author", "homepage", "privacyPolicyUrl", "documentationUrl",
+                    "termsOfServiceUrl", "repository", "license"):
+            with self.subTest(key=key):
+                self.assertEqual(m[key], root[key])
+        self.assertTrue(m["icon"].startswith("./"))
+        self.assertTrue(os.path.isfile(os.path.join(ROOT, self.DIR, m["icon"][2:])))
+        # The directory needs a README of 40 words and a licence in the
+        # plugin's own folder: an install gets only that folder.
+        self.assertTrue(os.path.isfile(os.path.join(ROOT, self.DIR, "LICENSE")))
+        self.assertGreater(len(read(self.rel("README.md")).split()), 40)
+        self.assertIn("not by Meta", m["description"])
+
+    def test_the_marketplace_does_not_list_it_until_the_connector_is_live(self):
+        """Merging this folder must not make it installable: the marketplace
+        entry is added in the release that sets `ADSMCP_META=live`."""
+        market = json.loads(read(".claude-plugin/marketplace.json"))
+        self.assertEqual([p["name"] for p in market["plugins"]], ["adcopilot"])
+        self.assertEqual(market["plugins"][0]["source"], "./")
+        self.assertNotIn(self.DIR, read(".claude-plugin/marketplace.json"))
+
+    def test_the_connector_is_the_meta_door_under_a_short_key(self):
+        servers = json.loads(read(self.rel(".mcp.json")))["mcpServers"]
+        self.assertEqual(list(servers), [self.SERVER])
+        self.assertEqual(servers[self.SERVER], {"type": "http", "url": self.URL})
+        # A sibling of Google's /mcp, never a path under it.
+        self.assertFalse(self.URL.startswith(self.GOOGLE_URL + "/"))
+        google = json.loads(read(".mcp.json"))["mcpServers"]
+        self.assertEqual(google, {"adcopilot": {"type": "http", "url": self.GOOGLE_URL}})
+
+    def test_every_tool_name_fits_64_characters(self):
+        for tool in self.TOOLS:
+            full = "mcp__plugin_%s_%s__%s" % (self.PLUGIN, self.SERVER, tool)
+            with self.subTest(tool=tool):
+                self.assertLessEqual(len(full), 64, full)
+
+    def test_every_tool_the_text_names_is_one_the_connector_has(self):
+        named = set()
+        for rel in self.model_read() + [self.rel("README.md")]:
+            named |= set(re.findall(r"\bmeta_[a-z_]+\b", read(rel)))
+        self.assertTrue(named)
+        self.assertEqual(sorted(named - set(self.TOOLS)), [])
+        # None of the Google connector's own tools: this plugin's steps run
+        # on the Meta connector only.
+        for rel in self.model_read():
             with self.subTest(file=rel):
-                self.assertNotRegex(read(rel), r"(?i)\b(meta|facebook|instagram)\b")
+                for google_tool in ("get_org_context", "save_org_context",
+                                    "full_audit", "search", "list_accessible_customers"):
+                    self.assertNotIn("`%s`" % google_tool, read(rel))
+
+    def test_frontmatter(self):
+        for rel in self.skill_files() + self.command_files():
+            fm = frontmatter(read(rel))
+            with self.subTest(file=rel):
+                name = re.search(r"^name: (\S+)$", fm, re.M)
+                self.assertIsNotNone(name)
+                expected = (rel.split("/")[-2] if rel.endswith("SKILL.md")
+                            else rel.split("/")[-1][:-3])
+                self.assertEqual(name.group(1), expected)
+                desc = re.search(r"^description: (.+)$", fm, re.M)
+                self.assertIsNotNone(desc, "the description is one line")
+                self.assertLessEqual(len(desc.group(1)), 1024)
+
+    def test_each_command_follows_its_skill_or_the_server(self):
+        for command, skill in self.COMMANDS.items():
+            text = flat(self.rel("commands", command + ".md"))
+            with self.subTest(command=command):
+                self.assertIn("Follow the `%s` skill." % skill, text)
+                self.assertIn("call `meta_get_context` and follow its `next_step` "
+                              "instead", text)
+
+    def test_every_file_reports_meta_alone_and_states_the_one_change_rule(self):
+        for rel in self.skill_files() + self.command_files():
+            text = flat(rel)
+            with self.subTest(file=rel):
+                self.assertEqual(text.count(self.REPORT_ALONE), 1)
+                self.assertEqual(text.count(self.WRITE_RULE), 1)
+                self.assertNotIn("only read", text)
+                self.assertNotIn("newer than these steps", text)
+
+    def test_the_listing_text_names_the_one_change(self):
+        """The plugin's description and its README say what the bundled
+        connector can change, so neither disagrees with `meta_set_status`'s
+        destructive annotation."""
+        desc = self.manifest()["description"]
+        self.assertIn("pausing or resuming a campaign, ad set or ad", desc)
+        self.assertIn("only after your yes", desc)
+        self.assertNotIn("only read", desc)
+        readme = flat(self.rel("README.md"))
+        self.assertIn("`meta_set_status`", readme)
+        self.assertIn("**Change Meta without your yes.**", readme)
+        self.assertNotIn("only read", readme)
+        self.assertNotIn("Change anything in Meta", readme)
+        root = section(read("README.md"), "## AdCopilot for Meta Ads (internal)")
+        self.assertNotIn("only read", " ".join(root.split()))
+
+    def test_a_scheduled_run_sends_the_scheduled_source(self):
+        for rel in self.skill_files():
+            text = flat(rel)
+            with self.subTest(file=rel):
+                self.assertEqual(text.count(self.SCHEDULED), 1)
+                # The front door keeps `source` in memory only: it records no
+                # installed steps.
+                self.assertNotIn("which of this plugin's steps are installed", text)
+        self.assertNotIn("which of this plugin's steps are installed",
+                         flat(self.rel("README.md")))
+        self.assertIn('`source: "claude-scheduled"`', flat(self.rel("README.md")))
+
+    def test_every_skill_takes_a_meta_question_from_the_older_skill(self):
+        for rel in self.skill_files():
+            with self.subTest(file=rel):
+                self.assertEqual(flat(rel).count(self.OLDER_SKILL), 1)
+
+    def test_a_write_tool_is_never_called_unasked(self):
+        review = flat(self.rel("skills", "meta-review", "SKILL.md"))
+        self.assertIn("wait for their explicit yes in this conversation before "
+                      "you call it", review)
+        self.assertIn("Never call it in a scheduled task or routine", review)
+        self.assertIn("that it already had that status and nothing was sent", review)
+        connect = flat(self.rel("skills", "meta-connect", "SKILL.md"))
+        self.assertIn("These steps never call it.", connect)
+        tracking = flat(self.rel("skills", "meta-tracking", "SKILL.md"))
+        self.assertNotIn("meta_set_status`,", tracking.replace(self.WRITE_RULE, ""))
+
+    def test_a_workspace_whose_plan_gives_no_meta_is_not_sent_to_connect(self):
+        connect = flat(self.rel("skills", "meta-connect", "SKILL.md"))
+        self.assertIn("Do not send them to `connect_url` while `plan_includes` "
+                      "is false", connect)
+        self.assertNotIn("can still be done", connect)
+
+    def test_every_skill_starts_with_the_front_door_and_its_marker(self):
+        marker = 'source: "claude-plugin-meta/%s"' % self.manifest()["version"]
+        for rel in self.skill_files():
+            with self.subTest(file=rel):
+                self.assertIn("Call `meta_get_context` with `%s`" % marker, flat(rel))
+
+    def test_every_marker_names_the_manifest_version(self):
+        version = self.manifest()["version"]
+        seen = 0
+        for rel in self.model_read() + [self.rel("README.md")]:
+            text = read(rel)
+            for m in re.finditer(r"claude-plugin-meta/([^\"\s`]*)", text):
+                seen += 1
+                with self.subTest(file=rel, value=m.group(0)):
+                    self.assertEqual(m.group(1), version)
+            with self.subTest(file=rel):
+                # Never the bare marker, and never the Google plugin's, which
+                # AdCopilot would count as the Google plugin.
+                self.assertNotIn('"claude-plugin-meta"', text)
+                self.assertNotRegex(text, r'"claude-plugin(/[^"]*)?"')
+        self.assertGreaterEqual(seen, len(self.SKILLS))
+
+    def test_nothing_the_model_is_told_names_a_plan_a_price_or_a_limit(self):
+        texts = [(rel, flat(rel)) for rel in self.model_read()]
+        texts.append(("plugin.json description", self.manifest()["description"]))
+        for label, text in texts:
+            with self.subTest(file=label):
+                found = self.PLAN_PRICE_LIMIT.search(text)
+                self.assertIsNone(found, found and found.group(0))
+
+    def test_a_plan_fact_is_the_servers_sentence(self):
+        for rel in self.skill_files():
+            with self.subTest(file=rel):
+                self.assertIn("`plan_line` as it is written", flat(rel))
+
+    def test_no_banned_words(self):
+        for rel in self.model_read() + [self.rel("README.md")]:
+            with self.subTest(file=rel):
+                self.assertIsNone(BANNED.search(read(rel)))
+
+    def test_every_connector_address_is_one_of_the_two(self):
+        for rel in self.model_read() + [self.rel("README.md")]:
+            for url in re.findall(r"https://mcp\.adcopilot\.cloud[^\s`)\"',]*", read(rel)):
+                with self.subTest(file=rel, url=url):
+                    self.assertIn(url.rstrip("."), (self.URL, self.GOOGLE_URL))
+
+    def test_the_cursor_link_adds_this_connector_by_its_name(self):
+        import base64
+        import urllib.parse
+        links = set()
+        for rel in self.model_read() + [self.rel("README.md")]:
+            links |= set(re.findall(r"https://cursor\.com/en/install-mcp\?[^\s`)]+",
+                                    read(rel)))
+        self.assertTrue(links)
+        for link in links:
+            with self.subTest(link=link):
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(link).query)
+                self.assertEqual(q["name"], [self.PLUGIN])
+                cfg = q["config"][0]
+                cfg += "=" * (-len(cfg) % 4)
+                self.assertEqual(json.loads(base64.b64decode(cfg)),
+                                 {"type": "http", "url": self.URL})
+
+    def test_the_readme_says_it_is_in_testing_and_how_to_test_it(self):
+        readme = read(self.rel("README.md"))
+        self.assertIn("**Status: in testing.**", readme)
+        self.assertIn("claude --plugin-dir plugins/adcopilot-meta", readme)
+        self.assertIn("/plugin install adcopilot-meta --marketplace "
+                      "AtromxIntelligence/adcopilot-claude-plugin", readme)
+        for name in self.SKILLS:
+            with self.subTest(skill=name):
+                self.assertIn("**%s**" % name, readme)
+        for command in self.COMMANDS:
+            with self.subTest(command=command):
+                self.assertIn("`/adcopilot-meta:%s`" % command, readme)
+        self.assertIn("**%s (" % self.manifest()["version"], readme)
+
+    def test_the_repository_readme_points_at_it(self):
+        sec = section(read("README.md"), "## AdCopilot for Meta Ads (internal)")
+        self.assertIsNotNone(sec)
+        self.assertIn("`plugins/adcopilot-meta`", sec)
+        self.assertIn(self.URL, sec)
+        self.assertIn("draft", sec)
 
 
 class Manifest(unittest.TestCase):

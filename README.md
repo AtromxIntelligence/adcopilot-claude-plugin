@@ -151,6 +151,32 @@ The instructions you save are AdCopilot's own morning-check recipe, word for wor
 - **Delete anything but a negative keyword.** The connector refuses a REMOVED status server-side: the campaign, ad group, ad and keyword tools accept only ENABLED or PAUSED, and the asset tools refuse a remove outright. Pausing is as far as it goes for all of those, and it is the server that enforces that rather than the assistant's good manners. The one exception is deliberate: each of the three ways to add a negative keyword has a removal behind it, so a negative can be taken back out — which is what makes "you can undo this" true when AdCopilot says it. Attaching a shared negative-keyword list is the genuinely one-way action; there is no detach tool, and a list is detached in Google Ads under Tools, Shared library, Exclusion lists.
 - **Change your account unasked, while your AI client asks before AdCopilot's write tools.** Reads run freely, and AdCopilot proposes each change first. For a hard stop, set your AI client to ask before AdCopilot's write tools: **Needs approval** in claude.ai, Cowork and the desktop app; in Claude Code, leave them off the allowlist and the session out of `auto` and `bypassPermissions` mode; in Cursor, use the **Allowlist** run mode and keep them off the allowlist (see **Approvals in Cursor** above; Cursor's cloud agents never ask). Take the question away and changes to what already exists, a budget or a switched-on campaign among them, apply without it; only a new campaign is still built paused. The one exception is `set_campaign_status`, the tool that pauses a campaign or switches one on: Claude Code (version 2.1.214 or later) asks before every use of it, whatever its settings, and a run with nobody there to answer cannot use it; the Claude desktop app may also ask every time for it. The plugin's skills pause or switch on a campaign only with that tool, never with a status in a change to the campaign's settings (`update_campaign`), which follows your settings like any other change.
 
+## AdCopilot for Meta Ads (internal)
+
+This marketplace also holds a second plugin, in `plugins/adcopilot-meta`:
+AdCopilot for Meta Ads. It bundles AdCopilot's Meta connector,
+`https://mcp.adcopilot.cloud/meta/mcp`, which is a connector of its own beside
+the Google one above, with its own sign-in and its own tools, and three skills
+and three commands (`/adcopilot-meta:setup`, `/adcopilot-meta:review` and
+`/adcopilot-meta:pixel`) that read Meta ad accounts and report Meta on its own,
+never mixed with Google figures. Its skills read; the one change its connector
+makes, pausing or resuming a campaign, ad set or ad, runs only after the
+person's yes in the conversation, never in a scheduled task.
+
+It is in testing. AdCopilot serves the Meta connector only to the workspaces it
+has switched on while Meta reviews AdCopilot's app, and the pull request that
+adds the plugin stays a draft until the connector is available to customers,
+and the marketplace gains its entry only in the release that makes the
+connector available, so the marketplace does not list it yet. Testers run it from that
+branch with `claude --plugin-dir plugins/adcopilot-meta`; its own
+[README](plugins/adcopilot-meta/README.md) has the steps for each AI client.
+Nothing in it changes what the `adcopilot` plugin loads, or its connector.
+
+The `adcopilot-meta` skill in the list above was written before AdCopilot had
+a Meta connector, and it is rewritten when AdCopilot for Meta Ads is released.
+Until then, the Meta plugin's skills tell Claude to follow their own steps for
+a Meta question.
+
 ## Support
 
 - Something wrong with the plugin (a command, a skill, this README): [open an issue here](https://github.com/AtromxIntelligence/adcopilot-claude-plugin/issues).
@@ -236,8 +262,10 @@ reads a secret.
 installs Claude Code from npm at a pinned version (`2.1.288`) and runs both
 `--strict` validations, `claude plugin validate . --strict` and
 `claude plugin validate .claude-plugin/plugin.json --strict`, which read local
-files and need no sign-in. It also checks that the three manifests parse, that
-every skill and command carries a `name:` and a `description:`, that the
+files and need no sign-in, and the same pair on each plugin folder under
+`plugins/`, since validating the root checks only the plugin at the root. It
+also checks that the manifests parse (the root's three and each plugin
+folder's two), that every skill and command carries a `name:` and a `description:`, that the
 structural tests in `tests/` pass (the daily-habit block identical in every
 flow that carries it, the unattended run's instructions read-only and its
 first call marked `claude-scheduled`, the instructions it hands over equal to
