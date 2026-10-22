@@ -18,8 +18,8 @@ Only the run sends `source: "claude-scheduled"`. With a person here, in the set-
 
 Nobody reads this until it has finished, so a question is a run that stops half-way.
 
-1. `get_org_context` first, with `source: "claude-scheduled"` — never `claude-plugin` in a run, even with this plugin here. That is how AdCopilot knows the schedule works, and why the offer to set one up stops.
-2. Read only. Call no tool that changes anything — nothing that creates, adds, updates, sets, pauses, links, attaches, enables or submits, in Google Ads, Analytics, Tag Manager or Search Console — and not `save_org_context` either, even where AdCopilot's instructions ask for notes as you go: the source marker already records the run, and the set-up keeps that tool on **Needs approval**, so a note would stop the run at a prompt nobody can answer. A finding that names the exact call that fixes it is reported, never run.
+1. `get_org_context` first, with `source: "claude-scheduled"` and `task: "AdCopilot morning check"` — never `claude-plugin` in a run, even with this plugin here, and that task even when the instructions do not name it. That is how AdCopilot knows the schedule works and that this run is its morning check, and why the offer to set one up stops.
+2. Read only. Call no tool that changes anything — nothing that creates, adds, updates, sets, pauses, links, attaches, enables or submits, in Google Ads, Analytics, Tag Manager or Search Console — and not `save_org_context` either, even where AdCopilot's instructions ask for notes as you go: the source marker already records the run, and a schedule set up before this plugin's 0.2.14 may still keep that tool on **Needs approval**, so a note would stop the run at a prompt nobody can answer. A finding that names the exact call that fixes it is reported, never run.
 3. Ask nothing. Never stop for an answer and never end on a request for one. If something is unknown — which account, a read refused, a product to re-add, the day's operations used up — say so in one line and carry on with the rest.
 4. Never offer to schedule anything. This is the schedule.
 5. Skip `related_reads`. A lens result in this run may end with them; the five reads below are the run, each is counted, and nobody is there to choose among more. Do not run one, and do not mention that it was there.
@@ -47,10 +47,10 @@ The report:
 
 Cursor first. If this is Cursor (`get_org_context`'s top-level `surface` is `cursor`, or Cursor's own instructions or the person say so), AdCopilot gives no scheduling steps there and `get_org_context` carries no `routine.schedule`: say that AdCopilot's emailed daily check-in, when `routine.daily.status` is `in_app`, is the morning check in Cursor, and record nothing. Never call `save_org_context` with `routine.own_schedule` from Cursor: AdCopilot keeps it for the whole workspace, so it would stop the offer in their Claude too. Everything below is for Claude.
 
-First, the instructions they will save. They are AdCopilot's own recipe, word for word, and their first sentence is what marks each run:
+First, the instructions they will save. They are AdCopilot's own recipe, word for word, and the call they open with is what marks each run as AdCopilot's morning check:
 
 ```text
-AdCopilot morning check, read-only. Call get_org_context first, with source "claude-scheduled". Do not use any tool that changes my account, and do not ask me questions; if something is unknown, say so and carry on. For {account}:
+AdCopilot morning check, read-only. Call get_org_context first, with source "claude-scheduled" and task "AdCopilot morning check". Do not use any tool that changes my account, and do not ask me questions; if something is unknown, say so and carry on. For {account}:
 1. Yesterday's spend, clicks, conversions and cost per conversion against my 7-day average.
 2. This month's budget pacing: on track, over or under, and any campaign limited by budget.
 3. The 5 search terms from the last 7 days that cost the most with no conversions, with their cost.
@@ -65,11 +65,11 @@ Say what it costs before they save it: about six or seven reads a run, each coun
 
 **Claude — claude.ai, Cowork, the desktop app:**
 
-1. Let the reads run with nobody there: Customize, then Connectors (or the AdCopilot plugin's own Connectors tab), then AdCopilot, then its tool permissions — set the read-only tools to **Always allow**. The write and delete tools stay on **Needs approval**.
+1. Let the run finish with nobody there: Customize, then Connectors (or the AdCopilot plugin's own Connectors tab), then AdCopilot, then **Tool permissions**. Set the **Read-only tools** to **Always allow**, because a scheduled run cannot answer a prompt. Under **Write/delete tools**, set “AdCopilot: what is connected and where you are” and “AdCopilot: save business notes and progress” to **Always allow** too: they keep AdCopilot's own notes and never change Google Ads, and the run's first call is the first of them. Keep every other Write/delete tool on **Needs approval**, so Claude asks before each change.
 2. Make the task. Either, in a new chat: "Schedule a task for every weekday at 8:07 AM my time with these instructions:" followed by the instructions, then confirm. Or, in the sidebar, **Scheduled**, then **Set up manually**: name it "AdCopilot morning check", paste the instructions, approval mode **Manually approve**, frequency weekdays at 08:07, **Save**.
 3. **Run now** once, and check that it finished without stopping to ask.
 
-On Claude Team or Enterprise, if every read in the run waits for approval, the task can be switched to **Automatically approve**. Say plainly what that does before they switch: it stops asking before each tool, changes included, so the read-only instructions are what keep the run to reads — keep them exactly as written. Setting AdCopilot's **Write/delete tools** to **Blocked** stops a change outright, but then no chat can make one either; that is their call.
+On Claude Team or Enterprise, if every read in the run waits for approval, the task can be switched to **Automatically approve**. Say plainly what that does before they switch: it stops asking before each tool, changes included, so the read-only instructions are what keep the run to reads — keep them exactly as written. Setting AdCopilot's other **Write/delete tools** to **Blocked**, every one but the two AdCopilot tools above, stops a change outright, but then no chat can make one either; that is their call.
 
 Claude's Free plan has no scheduled tasks; say so plainly — there, AdCopilot's emailed daily check-in, when it is on, is the morning check — and call `save_org_context` with `routine.own_schedule` `unavailable`, so neither AdCopilot nor this plugin offers it again.
 

@@ -23,7 +23,10 @@ description: >
   answers with its tool list and no server instructions, and the shared
   get_org_context schema in evals/mocks names only "claude-plugin". The
   tools-only arm sent it on none of its three runs on 2026-10-18. A run
-  without it is under the 0.8 line, 16/21 = 0.76. The skill's delta here is
+  without it is under the 0.8 line, 18/23 = 0.78. From 0.2.14 the morning
+  check's own task, "AdCopilot morning check", weighs 2: this prompt names
+  none, so it too comes from the skill, and a run that misses only the task
+  still passes, 21/23 = 0.91. The skill's delta here is
   then the marker's weight, which the
   ablation script's comment warns against for the plugin marker; for this
   marker it is the point, because claude-scheduled changes what the server
@@ -61,6 +64,19 @@ graders:
     min: 0
     max: 0
     weight: 5
+    arm: with-only
+  - name: names-the-morning-check
+    type: tool_used
+    # 0.2.14: counts get_org_context calls whose input lacks task "AdCopilot
+    # morning check" (schedule_recipe.CHECKIN_TASK), the marker AdCopilot
+    # counts as its morning check (C5). This prompt is an older saved recipe
+    # that names no task, so the task comes from the skill. Fails closed on an
+    # input not shaped as JSON.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"task"\s*:\s*"AdCopilot morning check")'
+    min: 0
+    max: 0
+    weight: 2
     arm: with-only
   - name: read-the-server-first
     type: regex

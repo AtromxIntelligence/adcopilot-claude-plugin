@@ -24,13 +24,16 @@ What it pins, and why each one is here:
   conversation after AdCopilot has recorded that it cannot.
 - The unattended run. `adcopilot-daily` passes `claude-scheduled`, never
   `claude-plugin`, and its instructions say read-only and ask-nothing — the
-  two properties a scheduled run with nobody to answer depends on. It calls
-  no `save_org_context` either: Claude lists that tool with the write tools,
-  every set-up keeps those on Needs approval (the plugin's own steps since
-  0.2.4, and AdCopilot's `schedule_recipe.ALWAYS_ALLOW_STEP`), and a note
-  that waits for approval stops the run. Founder answer 6 (notes in a run)
-  waits for AdCopilot's step, docs and mails to change first (PR #22, second
-  review).
+  two properties a scheduled run with nobody to answer depends on, and its
+  first call names AdCopilot's morning check as its `task`. It calls no
+  `save_org_context` either: Claude lists that tool with the write tools, and
+  every set-up made before 0.2.14 keeps those on Needs approval, so a note
+  that waits for approval stops the run. From 0.2.14 the set-up says what
+  AdCopilot's `schedule_recipe.ALWAYS_ALLOW_STEP` says (v2.44.0): the
+  read-only tools and AdCopilot's two notes tools, by the titles Claude shows,
+  on Always allow, every other write tool on Needs approval. Founder answer 6
+  (notes in a run) waits until the people who already schedule the check
+  have been told and that notice has been measured.
   With no account named it never falls back to a manager account, which
   Google refuses metrics for.
 - Honesty about what keeps a run to reads (D71's family). Nothing on the
@@ -41,7 +44,8 @@ What it pins, and why each one is here:
   the run carries sales or upgrade wording.
 - The instructions the set-up hands over are AdCopilot's own recipe, word for
   word (`ads_mcp_cloud/schedule_recipe.py`, SCHEDULED_CHECKIN, as of
-  AdCopilot v2.30.2); its first sentence is what marks the run.
+  AdCopilot v2.44.0); the call it opens with, `CHECKIN_FIRST_CALL`, is what
+  marks the run as the morning check.
   The server's emails, docs and dashboard do not all carry it yet, so nothing
   here says they do.
 - The eval graders and the offer agree: the regexes that look for the offer
@@ -138,13 +142,19 @@ OFFER_CLOSE_FIRST = ("A read-only check that runs by itself every weekday at 8:0
                      "with \"All clear\" or \"Needs a look\" plus one yes/no fix.")
 
 # AdCopilot's own recipe (server: ads_mcp_cloud/schedule_recipe.py,
-# SCHEDULED_CHECKIN, AdCopilot v2.30.2). `{account}` is filled
-# in by the set-up. Change it there first, then here and in the skill.
+# SCHEDULED_CHECKIN, AdCopilot v2.44.0, read on release/v2.44.1 and on the
+# deployed code). `{account}` is filled in by the set-up. Change it there
+# first, then here and in the skill. Its first call is the server's
+# CHECKIN_FIRST_CALL: the scheduled source and the morning check's own task
+# (CHECKIN_TASK, C5), the marker AdCopilot counts as its morning check.
+CHECKIN_TASK = "AdCopilot morning check"
+CHECKIN_FIRST_CALL = ("Call get_org_context first, with source "
+                      "\"claude-scheduled\" and task \"AdCopilot morning "
+                      "check\".")
 SCHEDULED_CHECKIN = (
-    "AdCopilot morning check, read-only. Call get_org_context first, with "
-    "source \"claude-scheduled\". Do not use any tool that changes my "
-    "account, and do not ask me questions; if something is unknown, say so "
-    "and carry on. For {account}:\n"
+    "AdCopilot morning check, read-only. " + CHECKIN_FIRST_CALL + " Do not "
+    "use any tool that changes my account, and do not ask me questions; if "
+    "something is unknown, say so and carry on. For {account}:\n"
     "1. Yesterday's spend, clicks, conversions and cost per conversion "
     "against my 7-day average.\n"
     "2. This month's budget pacing: on track, over or under, and any campaign "
@@ -157,6 +167,13 @@ SCHEDULED_CHECKIN = (
     "single most valuable fix, written as a yes/no question I can answer when "
     "I open this."
 )
+
+# The same recipe as v2.41.0 rendered it, before C5 gave its first call a
+# `task`: the frozen eval fixtures re-rendered with that release's code
+# (OlderFixturesOnV241) still carry it, and a recipe saved then opens with it.
+SCHEDULED_CHECKIN_V241 = SCHEDULED_CHECKIN.replace(
+    CHECKIN_FIRST_CALL,
+    "Call get_org_context first, with source \"claude-scheduled\".", 1)
 
 # Sales or upgrade wording, which the directory policy keeps out of anything
 # the model is told (plan D7), and the three words the copy rules ban.
@@ -233,18 +250,39 @@ DAILY_WITH_A_PERSON = ("Only the run sends `source: \"claude-scheduled\"`. "
 # at d9bd20ae. A scheduled run cannot answer that prompt, so a run that keeps a
 # note never finishes. The ban stays until the server's step, docs and mails
 # say Always allow for that tool and existing schedulers have been told.
+# 0.2.14: the set-up now lets that tool through (ALWAYS_ALLOW_STEP below), but
+# every schedule set up before it still asks; the ban lifts only once those
+# people have been told (AdCopilot's notice notice_2026_10_schedule_allow) and
+# the notice has been measured.
 RUN_NO_NOTE = ("and not `save_org_context` either, even where AdCopilot's "
                "instructions ask for notes as you go: the source marker "
-               "already records the run, and the set-up keeps that tool on "
-               "**Needs approval**, so a note would stop the run at a prompt "
-               "nobody can answer.")
+               "already records the run, and a schedule set up before this "
+               "plugin's 0.2.14 may still keep that tool on **Needs "
+               "approval**, so a note would stop the run at a prompt nobody "
+               "can answer.")
 # The 0.2.13 first draft's two sentences, which would have stalled every run
 # set up before them.
 RUN_NOTES = ("`save_org_context` is allowed for AdCopilot's own notes only")
 SET_UP_NOTE_ALLOWED = ("set `save_org_context` alone to **Always allow**")
-# The set-up's first Claude step as every plugin version since 0.2.4 and the
-# server's own step word it: every write and delete tool keeps asking.
+# The set-up's first Claude step as every plugin version from 0.2.4 to 0.2.13
+# worded it: every write and delete tool kept asking, `get_org_context` and
+# `save_org_context` included, so from v2.42.3 (which annotates
+# get_org_context as not read-only) a run set up that way stopped at its first
+# call. Gone from 0.2.14.
 SET_UP_WRITES_ASK = ("The write and delete tools stay on **Needs approval**.")
+# 0.2.14: what AdCopilot's `schedule_recipe.ALWAYS_ALLOW_STEP` says (v2.44.0,
+# its CONTEXT_TOOL_TITLE and SAVE_TOOL_TITLE): the two AdCopilot tools Claude
+# lists under Write/delete tools that a run needs, by the titles Claude shows,
+# on Always allow; every other write tool on Needs approval.
+CONTEXT_TOOL_TITLE = "AdCopilot: what is connected and where you are"
+SAVE_TOOL_TITLE = "AdCopilot: save business notes and progress"
+SET_UP_ALWAYS_ALLOW = (
+    "Set the **Read-only tools** to **Always allow**, because a scheduled run "
+    "cannot answer a prompt. Under **Write/delete tools**, set “%s” and “%s” "
+    "to **Always allow** too: they keep AdCopilot's own notes and never change "
+    "Google Ads, and the run's first call is the first of them. Keep every "
+    "other Write/delete tool on **Needs approval**, so Claude asks before each "
+    "change." % (CONTEXT_TOOL_TITLE, SAVE_TOOL_TITLE))
 
 # The rule for a finding whose own text carries a condition (plugin #10). The
 # same words on every surface that relays a lens's findings.
@@ -3930,7 +3968,7 @@ class OlderFixturesOnV241(unittest.TestCase):
                 if offer:
                     self.assertEqual(ctx["routine"]["schedule"]["offer"], offer)
                     self.assertEqual(ctx["routine"]["schedule"]["instructions"],
-                                     SCHEDULED_CHECKIN.format(
+                                     SCHEDULED_CHECKIN_V241.format(
                                          account="Google Ads account 123-456-7890"))
                 else:
                     self.assertNotIn("schedule", ctx["routine"])
@@ -4127,28 +4165,36 @@ class ScheduledSourceMarker(unittest.TestCase):
         self.assertNotIn(RUN_NOTES, run)
         self.assertNotIn("`session_note`", run)
 
-    def test_the_set_up_keeps_every_write_tool_asking(self):
-        # The run keeps no note, so the set-up has no reason to let one tool
-        # run unasked: Claude's tool permissions apply to every chat on the
-        # connector, where save_org_context also takes a profile patch, a
-        # decision and a routine. The step says what every earlier version
-        # and AdCopilot's own step say.
+    def test_the_set_up_lets_the_runs_two_adcopilot_tools_through(self):
+        # 0.2.14: since v2.42.3 Claude lists get_org_context, every run's
+        # first call, under Write/delete tools, so a set-up that kept every
+        # write tool asking stalled the run at that call. The step now says
+        # what AdCopilot's ALWAYS_ALLOW_STEP says: read-only tools and the
+        # two AdCopilot tools, by the titles Claude shows, on Always allow;
+        # every other write tool still asks. The run keeps its ban on notes
+        # all the same (test_the_run_keeps_no_note): schedules set up before
+        # this version still ask before save_org_context.
         setup = section(read(self.DAILY), "## The set-up") or ""
         claude = setup[setup.find("**Claude — claude.ai, Cowork, the desktop app:**"):]
         step1 = " ".join(claude[claude.find("\n1. "):claude.find("\n2. ")].split())
-        self.assertIn(SET_UP_WRITES_ASK, step1)
+        self.assertIn(SET_UP_ALWAYS_ALLOW, step1)
+        self.assertIn("**Tool permissions**", step1)
+        self.assertNotIn(SET_UP_WRITES_ASK, step1)
         self.assertNotIn(SET_UP_NOTE_ALLOWED, step1)
-        self.assertEqual(" ".join(read(self.DAILY).split()).count("**Always allow**"), 1)
-        # The run keeps no note exactly while the set-up keeps it asking.
+        # Never a tool identifier: Claude shows the title, not the name.
+        self.assertNotIn("`get_org_context`", step1)
+        self.assertNotIn("`save_org_context`", step1)
+        self.assertEqual(" ".join(read(self.DAILY).split()).count("**Always allow**"), 2)
         run = " ".join((section(read(self.DAILY), "## The run") or "").split())
-        self.assertEqual(RUN_NO_NOTE in run, SET_UP_WRITES_ASK in step1)
+        self.assertEqual(run.count(RUN_NO_NOTE), 1)
 
     def test_the_release_check_expects_no_note(self):
         releasing = " ".join((section(read("README.md"), "## Releasing") or "").split())
         step6 = releasing[releasing.find("6. The scheduled run"):
                           releasing.find("7. `claude plugin validate")]
-        self.assertIn("and no `save_org_context` either (the set-up keeps that "
-                      "tool asking first, so a note would stop the run)", step6)
+        self.assertIn("and no `save_org_context` either (a schedule set up "
+                      "before 0.2.14 keeps that tool asking first, so a note "
+                      "would stop it)", step6)
         self.assertNotIn("**Always allow**", step6)
         # The run forbids a change in every product it can reach, so the
         # release check does too: under "in Google Ads" alone, a run that
@@ -4163,8 +4209,9 @@ class ScheduledSourceMarker(unittest.TestCase):
         self.assertNotIn(SET_UP_NOTE_ALLOWED, note)
         for part in ("still calls no `save_org_context`",
                      "a run that kept a note would stop there and never finish",
-                     "set `save_org_context` to **Always allow** and the people "
-                     "who have already scheduled the check have been told"):
+                     "once AdCopilot has told the people who already schedule "
+                     "the check to set the two tools to **Always allow**, and "
+                     "that notice has been measured"):
             with self.subTest(part=part):
                 self.assertIn(part, note)
 
@@ -4294,33 +4341,129 @@ class ScheduledSourceMarker(unittest.TestCase):
         start = notes.find("**%s (" % manifest_version())
         note = " ".join(notes[start:].split("\n\n", 1)[0].split())
         for part in ('`source: "claude-scheduled"`', "never `claude-plugin`",
-                     "`save_org_context`",
-                     "no server release has to come first"):
+                     "`save_org_context`", CONTEXT_TOOL_TITLE, SAVE_TOOL_TITLE,
+                     CHECKIN_FIRST_CALL,
+                     "AdCopilot v2.44.0, deployed 2026-10-22"):
             with self.subTest(part=part):
                 self.assertIn(part, note)
 
-    def test_the_readme_note_says_any_scheduled_task_counts_as_the_check(self):
-        # PR #22, second review: AdCopilot reads the scheduled marker as its
-        # morning check (`tools_adcopilot._SOURCE_DESC`, `scheduled_seen` in
-        # email_automation, engagement_auto, routines, situations, trial_board
-        # and tools_analysis._scheduled_now at d9bd20ae). Once every skill
-        # sends it, a customer's own weekly-report task stops the morning-check
-        # offer and mails. The note says so, so the founder sees it.
+    def test_the_readme_note_says_only_the_recipe_is_the_morning_check(self):
+        # PR #22's second review: AdCopilot read any run marked
+        # claude-scheduled as its morning check, so a customer's own weekly
+        # task stopped the morning-check offer. C5 (AdCopilot v2.43,
+        # `schedule_recipe.CHECKIN_TASK`, `is_morning_check_task`) counts only
+        # a run whose first call also names the morning check's task; the
+        # note says what the server does now, not what it did at d9bd20ae.
         notes = section(read("README.md"), "## AdCopilot version") or ""
         start = notes.find("**%s (" % manifest_version())
         note = " ".join(notes[start:].split("\n\n", 1)[0].split())
-        for part in ("AdCopilot reads a run marked `claude-scheduled` as its "
-                     "morning check",
-                     "a customer's own scheduled task counts as one too",
-                     "the schedule offer in AdCopilot's mails",
-                     "the win-back's second mail and the Free week",
-                     "on the dashboard's Home card",
-                     "sightings on two different days stop the in-chat offer",
-                     "the trial board counts the workspace as scheduled",
-                     "`related_reads`",
-                     "stops being offered the morning check although none runs"):
+        for part in ("counts only a run whose first call also names that task "
+                     "as its morning check",
+                     "a customer's own scheduled task is a scheduled run, not "
+                     "the morning check",
+                     "even when an older saved copy of the recipe does not "
+                     "name it"):
             with self.subTest(part=part):
                 self.assertIn(part, note)
+        self.assertNotIn("a customer's own scheduled task counts as one too", note)
+
+
+
+class AlwaysAllowStep(unittest.TestCase):
+    """0.2.14: every copy of the step that lets a scheduled run finish names
+    both AdCopilot tools Claude lists under Write/delete tools.
+
+    v2.42.3 annotates `get_org_context` as not read-only, so Claude lists it,
+    titled "AdCopilot: what is connected and where you are", under
+    Write/delete tools beside "AdCopilot: save business notes and progress".
+    A copy of the set-up step that puts only the read-only tools on Always
+    allow leaves the run's first call on Needs approval, and the run stops
+    there with nobody to answer: 23 scheduling workspaces last ran between
+    2026-10-16 and the v2.42.3 deploy, and 19 of them were not seen again.
+    AdCopilot's own step (`schedule_recipe.ALWAYS_ALLOW_STEP`, v2.44.0) names
+    both titles; every copy here must too, and the run's first call names the
+    morning check's task (`CHECKIN_FIRST_CALL`)."""
+
+    DAILY = "skills/adcopilot-daily/SKILL.md"
+    # Words only a copy of the permissions step carries.
+    STEP = re.compile(r"Always allow|Tool permissions|tool permissions")
+
+    def copies(self):
+        """(file, paragraph) for every paragraph or list item, in the files
+        the model reads and in the README, that gives the permissions step."""
+        found = []
+        for rel in model_read_files() + ["README.md"]:
+            for para in re.split(r"\n\s*\n|\n(?=\d+\. |- )", read(rel)):
+                if self.STEP.search(para):
+                    found.append((rel, " ".join(para.split())))
+        return found
+
+    def test_every_copy_names_both_tools(self):
+        copies = self.copies()
+        files = sorted({rel for rel, _ in copies})
+        # The set-up step in the daily skill, and the README's account of it.
+        self.assertIn(self.DAILY, files)
+        self.assertIn("README.md", files)
+        for rel, para in copies:
+            with self.subTest(file=rel, para=para[:80]):
+                self.assertIn(CONTEXT_TOOL_TITLE, para)
+                self.assertIn(SAVE_TOOL_TITLE, para)
+                self.assertIn("Needs approval", para)
+
+    def test_the_old_step_is_gone_everywhere(self):
+        for rel in model_read_files() + ["README.md"]:
+            text = flat(rel)
+            with self.subTest(file=rel):
+                self.assertNotIn(SET_UP_WRITES_ASK, text)
+                self.assertNotIn("set the read-only tools to **Always allow**", text)
+        manifest = " ".join(read(".claude-plugin/plugin.json").split())
+        self.assertNotIn("Always allow", manifest)
+
+    def test_the_titles_are_the_servers(self):
+        # schedule_recipe.CONTEXT_TOOL_TITLE and SAVE_TOOL_TITLE at v2.44.0,
+        # quoted as AdCopilot's step quotes them.
+        self.assertEqual(CONTEXT_TOOL_TITLE,
+                         "AdCopilot: what is connected and where you are")
+        self.assertEqual(SAVE_TOOL_TITLE,
+                         "AdCopilot: save business notes and progress")
+        self.assertIn("“%s” and “%s”" % (CONTEXT_TOOL_TITLE, SAVE_TOOL_TITLE),
+                      SET_UP_ALWAYS_ALLOW)
+        self.assertEqual(flat(self.DAILY).count(SET_UP_ALWAYS_ALLOW), 1)
+
+    def test_the_run_names_the_morning_check_task(self):
+        self.assertEqual(CHECKIN_FIRST_CALL,
+                         'Call get_org_context first, with source '
+                         '"claude-scheduled" and task "AdCopilot morning check".')
+        self.assertIn('task "%s"' % CHECKIN_TASK, CHECKIN_FIRST_CALL)
+        self.assertEqual(SCHEDULED_CHECKIN.count(CHECKIN_FIRST_CALL), 1)
+        self.assertTrue(SCHEDULED_CHECKIN.startswith(
+            CHECKIN_TASK + ", read-only. " + CHECKIN_FIRST_CALL + " "))
+        setup = section(read(self.DAILY), "## The set-up") or ""
+        self.assertEqual(fenced(setup).count(CHECKIN_FIRST_CALL), 1)
+        run = section(read(self.DAILY), "## The run") or ""
+        step1 = " ".join(run[run.find("\n1. "):run.find("\n2. ")].split())
+        self.assertIn('`source: "claude-scheduled"` and `task: "%s"`'
+                      % CHECKIN_TASK, step1)
+        self.assertIn("even when the instructions do not name it", step1)
+
+    def test_the_scheduled_case_grades_the_task(self):
+        text = read("evals/daily-scheduled-run/case.yaml")
+        block = grader_block(text, "names-the-morning-check")
+        self.assertIn("arm: with-only", block)
+        pattern = re.compile(re.search(r"^\s+input_match: '((?:[^']|'')*)'\s*$",
+                                       block, re.M).group(1).replace("''", "'"))
+        for call in ('{"source":"claude-scheduled"}', '{}', 'not json',
+                     '{"source":"claude-scheduled","task":"Weekly report"}'):
+            with self.subTest(counted=call):
+                self.assertRegex(call, pattern)
+        for call in ('{"source":"claude-scheduled","task":"AdCopilot morning check"}',
+                     '{"task": "AdCopilot morning check", "source": "claude-scheduled"}'):
+            with self.subTest(passed=call):
+                self.assertNotRegex(call, pattern)
+        # The prompt is an older saved recipe: it names no task, so the task
+        # comes from the skill alone.
+        m = re.search(r"^  prompt: \|\n((?:    .*\n)+)", text, re.M)
+        self.assertNotIn("task", " ".join(m.group(1).split()))
 
 
 if __name__ == "__main__":
