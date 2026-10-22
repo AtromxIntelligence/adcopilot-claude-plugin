@@ -81,6 +81,9 @@ graders:
     arm: with-only
   - name: never-writes-to-adcopilot
     type: tool_used
+    # Any save fails, a note included: Claude lists save_org_context with the
+    # write tools, every set-up keeps those on Needs approval, and a run that
+    # keeps a note stops at a prompt nobody answers (PR #22, second review).
     tool: mcp__plugin_adcopilot_adcopilot__save_org_context
     min: 0
     max: 0

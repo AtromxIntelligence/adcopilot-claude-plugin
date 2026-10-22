@@ -24,9 +24,15 @@ What it pins, and why each one is here:
   conversation after AdCopilot has recorded that it cannot.
 - The unattended run. `adcopilot-daily` passes `claude-scheduled`, never
   `claude-plugin`, and its instructions say read-only and ask-nothing — the
-  two properties a scheduled run with nobody to answer depends on. With no
-  account named it never falls back to a manager account, which Google
-  refuses metrics for.
+  two properties a scheduled run with nobody to answer depends on. It calls
+  no `save_org_context` either: Claude lists that tool with the write tools,
+  every set-up keeps those on Needs approval (the plugin's own steps since
+  0.2.4, and AdCopilot's `schedule_recipe.ALWAYS_ALLOW_STEP`), and a note
+  that waits for approval stops the run. Founder answer 6 (notes in a run)
+  waits for AdCopilot's step, docs and mails to change first (PR #22, second
+  review).
+  With no account named it never falls back to a manager account, which
+  Google refuses metrics for.
 - Honesty about what keeps a run to reads (D71's family). Nothing on the
   server makes a scheduled run read-only; on Automatically approve, or in a
   Claude Code routine, the instructions are all that does. Neither the skill
@@ -70,6 +76,17 @@ What it pins, and why each one is here:
   the turn to a skill that is not installed; /adcopilot:audit gives Cursor's
   refresh for a stale tool list first; and one approval sentence serves every
   client, its Cursor half naming the Allowlist run mode.
+- The scheduled marker (0.2.13, founder answer 3): every file that tells the
+  model to send `source: "claude-plugin/<version>"` also says, in one
+  sentence the same in each, that a scheduled run sends
+  `source: "claude-scheduled"` instead and never `claude-plugin`. Those are
+  the strings AdCopilot reads (`schedule_recipe.SCHEDULED_SOURCE`,
+  `tools_adcopilot.PLUGIN_SOURCE`, `scheduled_guard.is_scheduled_source` at
+  release/v2.42.0, d9bd20ae): a scheduled task whose own words carry no
+  marker, answered by the review skill with the plugin marker, was never
+  seen as a scheduled run. `adcopilot-daily` says both halves:
+  the run sends the scheduled marker, a person's set-up or reply the
+  versioned plugin marker, never the scheduled one.
 """
 
 import json
@@ -171,8 +188,9 @@ BARE_MARKER = 'source: "claude-plugin"'
 # next_step hands it the steps ("follow the AdCopilot review steps installed
 # in this assistant") and the playbook's branch becomes `[PLUGIN]`; on the bare
 # one plugin_version is None, so plugin_skill is None and the full branch
-# comes back.
-NO_SKILLS = ("The one exception is where the AdCopilot skills are not "
+# comes back. It was "The one exception" until 0.2.13, when a scheduled run
+# became the other (SCHEDULED_SOURCE_RULE).
+NO_SKILLS = ("One exception is where the AdCopilot skills are not "
              "installed: Cursor can add this command without them, and then "
              "`adcopilot-review` is not among your skills. There, send "
              "`source: \"claude-plugin\"`, with no version, so AdCopilot hands "
@@ -180,6 +198,53 @@ NO_SKILLS = ("The one exception is where the AdCopilot skills are not "
              "`next_step` and `playbook` carry those steps themselves.")
 VERSIONED_COMMANDS = ("commands/audit.md", "commands/daily.md",
                       "commands/negatives.md", "commands/weekly.md")
+
+# 0.2.13 (founder answer 3): the two `source` values AdCopilot reads, as the
+# server spells them at release/v2.42.0 (d9bd20ae):
+# `schedule_recipe.SCHEDULED_SOURCE` (read by `tools_adcopilot._note_source`
+# and `scheduled_guard.is_scheduled_source`, spacing and case aside) and
+# `tools_adcopilot.PLUGIN_SOURCE`, with "/<version>" after it from 0.2.7
+# (`tools_adcopilot._plugin_marker`).
+SERVER_SCHEDULED_SOURCE = "claude-scheduled"
+SERVER_PLUGIN_SOURCE = "claude-plugin"
+# The sentence every file that sends the versioned marker carries, once, the
+# same in each: a scheduled run sends the scheduled marker instead. Without it
+# a scheduled task whose own words carry no marker (any task but AdCopilot's
+# recipe) reaches the server through the review skill with the plugin marker,
+# and the server never sees a scheduled run.
+SCHEDULED_SOURCE_RULE = ("In a scheduled run, started by a Claude scheduled "
+                         "task or a Claude Code routine with nobody there to "
+                         "answer, send `source: \"claude-scheduled\"` instead, "
+                         "never `claude-plugin`: `claude-scheduled` is how "
+                         "AdCopilot knows the run is unattended.")
+# adcopilot-daily's own pair: the run sends the scheduled marker (its step 1),
+# and a person's set-up or reply sends the versioned plugin marker, never the
+# scheduled one.
+DAILY_WITH_A_PERSON = ("Only the run sends `source: \"claude-scheduled\"`. "
+                       "With a person here, in the set-up or after the run, "
+                       "call `get_org_context` with `source: "
+                       "\"claude-plugin/%s\"`, never `claude-scheduled`, "
+                       "which would tell AdCopilot nobody is there.")
+# The run keeps no note (PR #22, second review). Founder answer 6 let it keep
+# AdCopilot's own notes, but the server annotates save_org_context as a write
+# (`tools_adcopilot._WRITE`, readOnlyHint false), so Claude lists it with the
+# write tools, and every set-up keeps those on Needs approval: the plugin's own
+# steps from 0.2.4 to 0.2.12 and AdCopilot's `schedule_recipe.ALWAYS_ALLOW_STEP`
+# at d9bd20ae. A scheduled run cannot answer that prompt, so a run that keeps a
+# note never finishes. The ban stays until the server's step, docs and mails
+# say Always allow for that tool and existing schedulers have been told.
+RUN_NO_NOTE = ("and not `save_org_context` either, even where AdCopilot's "
+               "instructions ask for notes as you go: the source marker "
+               "already records the run, and the set-up keeps that tool on "
+               "**Needs approval**, so a note would stop the run at a prompt "
+               "nobody can answer.")
+# The 0.2.13 first draft's two sentences, which would have stalled every run
+# set up before them.
+RUN_NOTES = ("`save_org_context` is allowed for AdCopilot's own notes only")
+SET_UP_NOTE_ALLOWED = ("set `save_org_context` alone to **Always allow**")
+# The set-up's first Claude step as every plugin version since 0.2.4 and the
+# server's own step word it: every write and delete tool keeps asking.
+SET_UP_WRITES_ASK = ("The write and delete tools stay on **Needs approval**.")
 
 # The rule for a finding whose own text carries a condition (plugin #10). The
 # same words on every surface that relays a lens's findings.
@@ -843,7 +908,10 @@ class UnattendedRun(unittest.TestCase):
         run = section(self.skill(), "## The run") or ""
         self.assertRegex(run, r"Read only\.")
         self.assertRegex(run, r"Ask nothing\.")
-        self.assertIn("save_org_context", run)  # named as a tool the run does not call
+        # save_org_context is named as a tool the run does not call (PR #22,
+        # second review: a note would wait at an approval prompt).
+        self.assertIn("save_org_context", run)
+        self.assertEqual(" ".join(run.split()).count(RUN_NO_NOTE), 1)
         self.assertRegex(run, r"Never offer to schedule")
 
     def test_the_lenses(self):
@@ -980,8 +1048,9 @@ class Commands(unittest.TestCase):
         `adcopilot-launch` makes the call), and a test that cannot tell a
         delegation from a read would fail on prose.
 
-        `adcopilot-daily` is the one exception: its run is unattended, so it
-        passes `source: "claude-scheduled"` instead.
+        `adcopilot-daily` carries both: its run is unattended, so it passes
+        `source: "claude-scheduled"`, and from 0.2.13 its set-up and the reply
+        after a run, with a person here, pass the versioned marker.
         """
         for name in ("audit", "daily", "weekly", "negatives"):
             with self.subTest(command=name):
@@ -1000,12 +1069,13 @@ class Commands(unittest.TestCase):
                 continue
             checked += 1
             with self.subTest(surface=rel):
-                marker = ('source: "claude-scheduled"'
-                          if "adcopilot-daily" in rel
-                          else plugin_marker())
-                self.assertIn(
-                    marker, text,
-                    "%s calls get_org_context without %s" % (rel, marker))
+                markers = ([plugin_marker()] + (['source: "claude-scheduled"']
+                                                if "adcopilot-daily" in rel
+                                                else []))
+                for marker in markers:
+                    self.assertIn(
+                        marker, text,
+                        "%s calls get_org_context without %s" % (rel, marker))
         self.assertGreaterEqual(checked, 7, "expected every reading skill and "
                                             "agent to be checked, saw %d" % checked)
 
@@ -1295,7 +1365,11 @@ class PluginVersionMarker(unittest.TestCase):
                         m.group(1), manifest_version(),
                         "%s marks plugin use as %s but the manifest is %s — move "
                         "every copy with the bump" % (rel, m.group(0), manifest_version()))
-        self.assertGreaterEqual(seen, 14, "expected the 14 marker sites, saw %d" % seen)
+        # 13 from 0.2.13's second review: one in each marked file. Connect's
+        # and launch's later steps say "the `source` the first rule gives",
+        # "the same `source`" and "the `source` given under Arriving mid-arc",
+        # so a scheduled run meets the literal only beside its exception.
+        self.assertGreaterEqual(seen, 13, "expected the 13 marker sites, saw %d" % seen)
 
     def test_no_bare_marker_is_left(self):
         # Outside the four commands' no-skills exception, nowhere.
@@ -1348,7 +1422,9 @@ class PluginVersionMarker(unittest.TestCase):
                     self.assertEqual(flat_text.count(DOCS_ROUTING), 1)
                 else:
                     self.assertEqual(flat_text.count(guard), 1)
-        self.assertEqual(marked, 12)
+        # 13 from 0.2.13: adcopilot-daily's set-up and its reply after a run
+        # send the versioned marker too.
+        self.assertEqual(marked, 13)
 
     def test_the_marker_graders_need_the_version(self):
         """Each case's marks-plugin-use grader counts the calls it fails on, so
@@ -1395,6 +1471,44 @@ class PluginVersionMarker(unittest.TestCase):
         self.assertIn('source: \\"claude-plugin/$VERSION\\"', script)
         self.assertIn(".claude-plugin/plugin.json", script)
         self.assertIn("*/adcopilot-daily/SKILL.md) ;;", script)
+
+    def test_the_ablation_stub_says_what_a_scheduled_run_sends(self):
+        # PR #22, second review: the stub kept the plugin marker but dropped
+        # the scheduled-run sentence that is now part of the same marker text,
+        # so review-scheduled-unmarked failed its baseline by construction and
+        # the review skill's delta measured the forced marker. The script's
+        # own stub loop runs here on a copy of the skills.
+        import shutil
+        import tempfile
+        bash = shutil.which("bash")
+        if bash is None:
+            self.skipTest("no bash")
+        script = read("evals/ablation/tools-only.sh")
+        loop = re.search(r'(?ms)^for skill in "\$COPY"/skills/\*/SKILL\.md; do$.*?^done$',
+                         script)
+        self.assertIsNotNone(loop, "the stub loop is not where it was")
+        with tempfile.TemporaryDirectory() as work:
+            shutil.copytree(os.path.join(ROOT, "skills"), os.path.join(work, "skills"))
+            done = subprocess.run(
+                [bash, "-c", "set -euo pipefail\n" + loop.group(0)],
+                env=dict(os.environ, COPY=work, VERSION=manifest_version()),
+                capture_output=True, text=True)
+            self.assertEqual(done.returncode, 0, done.stderr)
+            stubs = {name: open(os.path.join(work, "skills", name, "SKILL.md"),
+                                encoding="utf-8").read()
+                     for name in os.listdir(os.path.join(work, "skills"))}
+        for name, stub in sorted(stubs.items()):
+            body = " ".join(stub.split("\n---\n", 1)[1].split())
+            with self.subTest(skill=name):
+                if name == "adcopilot-daily":
+                    self.assertNotIn("source", body)
+                    continue
+                self.assertIn(plugin_marker(), body)
+                self.assertEqual(body.count(SCHEDULED_SOURCE_RULE), 1)
+                self.assertGreater(body.find(SCHEDULED_SOURCE_RULE),
+                                   body.find(plugin_marker()))
+        self.assertNotIn("expected to fail there",
+                         read("evals/review-scheduled-unmarked/case.yaml"))
 
 
 class WhatTheServerDefersTo(unittest.TestCase):
@@ -1951,6 +2065,24 @@ class Manifest(unittest.TestCase):
             parts(manifest), parts(newest),
             "the manifest (%s) is behind the newest tag (v%s) — bump "
             ".claude-plugin/plugin.json before tagging" % (manifest, newest))
+
+    def test_no_compiled_python_is_tracked(self):
+        """0.2.13's first push committed tests/__pycache__/*.pyc, compiled by
+        the builder's own test run: a plugin install copies the repository,
+        so it would have shipped to every user, and the file recorded the
+        local scratch path it was compiled in. Nothing compiled is tracked,
+        and .gitignore keeps the next one out."""
+        listed = subprocess.run(["git", "ls-files", "-z"], cwd=ROOT,
+                                capture_output=True, text=True)
+        if listed.returncode != 0:
+            self.skipTest("not a git checkout")
+        tracked = [p for p in listed.stdout.split("\0")
+                   if "__pycache__/" in p or p.endswith((".pyc", ".pyo"))]
+        self.assertEqual(tracked, [])
+        ignore = read(".gitignore").splitlines()
+        for rule in ("__pycache__/", "*.pyc"):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, ignore)
 
 
 class AuditorToolList(unittest.TestCase):
@@ -2522,9 +2654,9 @@ class ReleaseNoteAndMarker(unittest.TestCase):
                         seen += 1
                         with self.subTest(file=rel):
                             self.assertEqual(m.group(1), manifest_version())
-        # 15 at 0.2.12: three in adcopilot-connect, two in adcopilot-launch,
-        # one in each other marked file.
-        self.assertGreaterEqual(seen, 15)
+        # 13 at 0.2.13: one in each marked file, adcopilot-daily among them
+        # (connect had three and launch two until the second review).
+        self.assertGreaterEqual(seen, 13)
 
 
 # The server's own hand-off text for a running, counted account (AdCopilot
@@ -3869,6 +4001,326 @@ class NoCompiledCaches(unittest.TestCase):
                   if "__pycache__/" in path
                   or path.endswith((".pyc", ".pyo", ".pyd"))]
         self.assertEqual(cached, [])
+
+
+class ScheduledSourceMarker(unittest.TestCase):
+    """0.2.13: which `source` a scheduled run sends, and what it may save.
+
+    Founder answer 3: every file that tells the model which `source` to pass
+    to `get_org_context` says that a scheduled run passes "claude-scheduled",
+    never "claude-plugin", and otherwise "claude-plugin/<version>". Until
+    0.2.12 only adcopilot-daily's run said so; a scheduled task whose own
+    words carry no marker, answered by the review skill, sent the plugin
+    marker, and the server (`tools_adcopilot._note_source`, and from
+    release/v2.42.0 `scheduled_guard.note_front_door`) never saw a scheduled
+    run. Founder answer 6 would let the run use `save_org_context` for
+    AdCopilot's own notes, and v2.42.0's guard leaves that tool alone
+    (`scheduled_guard.guarded`), but Claude asks before it on every set-up
+    made so far, so the run still keeps no note (PR #22, second review)."""
+
+    DAILY = "skills/adcopilot-daily/SKILL.md"
+    REVIEW = "skills/adcopilot-review/SKILL.md"
+    KEEP = ("Send `source` exactly as written, the version included: it tells "
+            "AdCopilot which of this plugin's steps are installed here.")
+    CASE = "daily-scheduled-run"
+
+    def marked(self):
+        return [rel for rel in model_read_files()
+                if plugin_marker() in read(rel)]
+
+    def test_the_values_are_the_ones_the_server_reads(self):
+        self.assertIn('`source: "%s"`' % SERVER_SCHEDULED_SOURCE,
+                      SCHEDULED_SOURCE_RULE)
+        self.assertIn("never `%s`" % SERVER_PLUGIN_SOURCE, SCHEDULED_SOURCE_RULE)
+        self.assertNotIn(BARE_MARKER, SCHEDULED_SOURCE_RULE)
+        self.assertEqual(plugin_marker(), 'source: "%s/%s"'
+                         % (SERVER_PLUGIN_SOURCE, manifest_version()))
+        # AdCopilot's recipe opens with the same value.
+        self.assertIn('source "%s"' % SERVER_SCHEDULED_SOURCE, SCHEDULED_CHECKIN)
+
+    def test_every_file_that_sends_the_plugin_marker_says_what_a_run_sends(self):
+        checked = 0
+        for rel in self.marked():
+            if rel == self.DAILY:
+                continue
+            checked += 1
+            text = flat(rel)
+            with self.subTest(file=rel):
+                self.assertEqual(text.count(SCHEDULED_SOURCE_RULE), 1)
+                # Beside the marker it overrides: after the keep sentence, and
+                # in the four commands after the no-skills exception too.
+                self.assertGreater(text.find(SCHEDULED_SOURCE_RULE),
+                                   text.find(self.KEEP))
+                if rel in VERSIONED_COMMANDS:
+                    self.assertGreater(text.find(SCHEDULED_SOURCE_RULE),
+                                       text.find(NO_SKILLS))
+        self.assertEqual(checked, 12)
+
+    def test_the_plugin_marker_is_written_once_beside_its_exception(self):
+        # PR #22, second review: connect's steps 2 and 3 and launch's step 1
+        # restated `source: "claude-plugin/<version>"` with no exception, so a
+        # scheduled run working through the steps met the plain marker again.
+        # Each marked file writes it once, in the paragraph that says what a
+        # scheduled run sends instead (adcopilot-daily: what a person's
+        # set-up or reply sends), and every later call refers back to it.
+        marked = self.marked()
+        self.assertEqual(len(marked), 13)
+        for rel in marked:
+            text = read(rel)
+            with self.subTest(file=rel):
+                self.assertEqual(text.count(plugin_marker()), 1)
+                para = [p for p in re.split(r"\n\s*\n", text)
+                        if plugin_marker() in p][0]
+                para = " ".join(para.split())
+                if rel == self.DAILY:
+                    self.assertIn(" ".join((DAILY_WITH_A_PERSON
+                                            % manifest_version()).split()), para)
+                else:
+                    self.assertIn(SCHEDULED_SOURCE_RULE, para)
+        refer = {"skills/adcopilot-connect/SKILL.md": (
+                     "Call `get_org_context` with the `source` the first rule gives.",
+                     "calling `get_org_context` again, with the same `source`."),
+                 "skills/adcopilot-launch/SKILL.md": (
+                     'Call `get_org_context` with the `source` given under '
+                     '"Arriving mid-arc".',)}
+        for rel, lines in refer.items():
+            for line in lines:
+                with self.subTest(file=rel, line=line):
+                    self.assertEqual(flat(rel).count(line), 1)
+
+    def test_the_review_skill_says_it_with_its_first_call(self):
+        top = read(self.REVIEW).split("## Spend the reads you are given", 1)[0]
+        self.assertEqual(" ".join(top.split()).count(SCHEDULED_SOURCE_RULE), 1)
+
+    def test_the_scheduled_marker_is_written_nowhere_else(self):
+        # Outside the rule, only adcopilot-daily names the scheduled value: a
+        # person's conversation that sent it would be read as a run nobody is
+        # there for.
+        for rel in model_read_files():
+            if rel == self.DAILY:
+                continue
+            with self.subTest(file=rel):
+                rest = flat(rel).replace(SCHEDULED_SOURCE_RULE, "")
+                self.assertNotIn(SERVER_SCHEDULED_SOURCE, rest)
+
+    def test_daily_says_both_halves(self):
+        text = read(self.DAILY)
+        intro = " ".join(text.split("\n## The run\n", 1)[0].split())
+        self.assertEqual(intro.count(" ".join(
+            (DAILY_WITH_A_PERSON % manifest_version()).split())), 1)
+        run = section(text, "## The run") or ""
+        self.assertIn('`source: "claude-scheduled"`', run)
+        self.assertIn("never `claude-plugin`", run)
+        self.assertNotIn('source: "claude-plugin', run)
+        # Its own words, not the other files' sentence.
+        self.assertEqual(flat(self.DAILY).count(SCHEDULED_SOURCE_RULE), 0)
+
+    def test_the_run_keeps_no_note(self):
+        # PR #22, second review: Claude asks before save_org_context on every
+        # set-up made so far (the plugin's own steps up to 0.2.12 and
+        # AdCopilot's ALWAYS_ALLOW_STEP), so a run that keeps a note waits at
+        # a prompt nobody answers. The run keeps its ban, with the reason, and
+        # the first draft's allowance is gone.
+        run = " ".join((section(read(self.DAILY), "## The run") or "").split())
+        self.assertEqual(run.count(RUN_NO_NOTE), 1)
+        self.assertIn("Call no tool that changes anything", run)
+        self.assertNotIn(RUN_NOTES, run)
+        self.assertNotIn("`session_note`", run)
+
+    def test_the_set_up_keeps_every_write_tool_asking(self):
+        # The run keeps no note, so the set-up has no reason to let one tool
+        # run unasked: Claude's tool permissions apply to every chat on the
+        # connector, where save_org_context also takes a profile patch, a
+        # decision and a routine. The step says what every earlier version
+        # and AdCopilot's own step say.
+        setup = section(read(self.DAILY), "## The set-up") or ""
+        claude = setup[setup.find("**Claude — claude.ai, Cowork, the desktop app:**"):]
+        step1 = " ".join(claude[claude.find("\n1. "):claude.find("\n2. ")].split())
+        self.assertIn(SET_UP_WRITES_ASK, step1)
+        self.assertNotIn(SET_UP_NOTE_ALLOWED, step1)
+        self.assertEqual(" ".join(read(self.DAILY).split()).count("**Always allow**"), 1)
+        # The run keeps no note exactly while the set-up keeps it asking.
+        run = " ".join((section(read(self.DAILY), "## The run") or "").split())
+        self.assertEqual(RUN_NO_NOTE in run, SET_UP_WRITES_ASK in step1)
+
+    def test_the_release_check_expects_no_note(self):
+        releasing = " ".join((section(read("README.md"), "## Releasing") or "").split())
+        step6 = releasing[releasing.find("6. The scheduled run"):
+                          releasing.find("7. `claude plugin validate")]
+        self.assertIn("and no `save_org_context` either (the set-up keeps that "
+                      "tool asking first, so a note would stop the run)", step6)
+        self.assertNotIn("**Always allow**", step6)
+        # The run forbids a change in every product it can reach, so the
+        # release check does too: under "in Google Ads" alone, a run that
+        # created an Analytics event or a Tag Manager tag would pass step 6.
+        products = "in Google Ads, Analytics, Tag Manager or Search Console"
+        run = " ".join((section(read(self.DAILY), "## The run") or "").split())
+        self.assertIn(products, run)
+        self.assertIn("calls no tool that changes anything " + products, step6)
+        note = section(read("README.md"), "## AdCopilot version") or ""
+        note = " ".join(note[note.find("**%s (" % manifest_version()):]
+                        .split("\n\n", 1)[0].split())
+        self.assertNotIn(SET_UP_NOTE_ALLOWED, note)
+        for part in ("still calls no `save_org_context`",
+                     "a run that kept a note would stop there and never finish",
+                     "set `save_org_context` to **Always allow** and the people "
+                     "who have already scheduled the check have been told"):
+            with self.subTest(part=part):
+                self.assertIn(part, note)
+
+    def test_the_scheduled_case_fails_any_save(self):
+        # A note included: on the set-ups that exist, it stops the run.
+        text = read("evals/%s/case.yaml" % self.CASE)
+        saves = [b for b in re.split(r"\n  - name: ", text)[1:]
+                 if re.search(r"^\s+tool: \S*__save_org_context\s*$", b, re.M)]
+        self.assertEqual(len(saves), 1, "one grader on save_org_context")
+        block = grader_block(text, "never-writes-to-adcopilot")
+        for line in ("type: tool_used", "min: 0", "max: 0"):
+            with self.subTest(line=line):
+                self.assertRegex(block, r"(?m)^\s+%s\s*$" % re.escape(line))
+        # Counted on every call, whatever it carries.
+        self.assertNotIn("input_match", block)
+        self.assertNotIn("notes-only-to-adcopilot", text)
+        self.assertNotIn("kept a note in AdCopilot", text)
+        self.assertIn("or saved anything", text)
+
+    UNMARKED = "review-scheduled-unmarked"
+
+    def test_a_case_runs_the_review_skill_in_a_task_without_the_marker(self):
+        # The PR #22 review: the case 0.2.13 exists for, a scheduled task in
+        # the customer's own words answered by adcopilot-review, had no eval;
+        # only daily-scheduled-run, where adcopilot-daily answers, graded the
+        # marker. This case's prompt is not AdCopilot's recipe and names no
+        # source, so the marker can come only from the skill.
+        self.assertTrue(os.path.isfile(os.path.join(
+            ROOT, "evals", self.UNMARKED, "case.yaml")), "no %s case" % self.UNMARKED)
+        text = read("evals/%s/case.yaml" % self.UNMARKED)
+        self.assertIn("tags: [review]\n", text)
+        self.assertIn("adcopilot-review", grader_block(text, "skill-fired"))
+        m = re.search(r"^  prompt: \|\n((?:    .*\n)+)", text, re.M)
+        self.assertIsNotNone(m)
+        prompt = " ".join(m.group(1).split())
+        self.assertIn("scheduled task", prompt)
+        self.assertFalse(prompt.startswith("AdCopilot morning check"))
+        for word in ("claude-scheduled", "claude-plugin", "source",
+                     "get_org_context", "morning check"):
+            with self.subTest(absent=word):
+                self.assertNotIn(word, prompt)
+        # The marker grader is daily-scheduled-run's, line for line.
+        def rule(case):
+            block = grader_block(read("evals/%s/case.yaml" % case),
+                                 "marks-the-scheduled-run")
+            return [l.strip() for l in block.splitlines()
+                    if not l.strip().startswith("#")]
+        self.assertEqual(rule(self.UNMARKED), rule(self.CASE))
+        block = grader_block(text, "marks-the-scheduled-run")
+        pattern = re.compile(re.search(r"^\s+input_match: '((?:[^']|'')*)'\s*$",
+                                       block, re.M).group(1).replace("''", "'"))
+        counted = ['{}', '{"source":"claude-plugin/%s"}' % manifest_version(),
+                   '{"source": "claude-plugin"}', '{"source":"chatgpt"}', 'not json']
+        passed = ['{"source":"claude-scheduled"}',
+                  '{"tools":["full_audit"],"source": "claude-scheduled"}']
+        for call in counted:
+            with self.subTest(call=call):
+                self.assertRegex(call, pattern)
+        for call in passed:
+            with self.subTest(call=call):
+                self.assertNotRegex(call, pattern)
+        # A run that never reads the server would pass the grader above on
+        # zero calls; this one fails it.
+        server, _ = grader(self.UNMARKED, "read-the-server-first")
+        self.assertRegex('"tool": "mcp__plugin_adcopilot_adcopilot__get_org_context", '
+                         '"input": "{}"', server)
+        self.assertNotRegex('"tool": "mcp__plugin_adcopilot_adcopilot__full_audit", '
+                            '"input": "{\\"source\\": \\"get_org_context\\"}"', server)
+        # Nothing in Google Ads changes; a note is not graded here.
+        writes, _ = grader(self.UNMARKED, "never-changes-google-ads")
+        self.assertIn("match: not_contains",
+                      grader_block(text, "never-changes-google-ads"))
+        for tool in ("add_negative_keywords", "update_campaign",
+                     "set_campaign_status", "gtm_create_tag",
+                     "ga4_create_conversion_event"):
+            with self.subTest(write=tool):
+                self.assertRegex('"tool": "mcp__plugin_adcopilot_adcopilot__%s"' % tool,
+                                 writes)
+        for tool in ("get_org_context", "full_audit", "analyze_waste",
+                     "analyze_search_terms", "budget_pacing", "search",
+                     "conversion_setup_audit", "save_org_context"):
+            with self.subTest(read=tool):
+                self.assertNotRegex('"tool": "mcp__plugin_adcopilot_adcopilot__%s"' % tool,
+                                    writes)
+
+    def test_the_unmarked_case_is_served_the_scheduled_answer(self):
+        # The answer v2.41.0 gives a call marked claude-scheduled: no plugin
+        # block, so no skill named and the playbook's full branch; the same
+        # data as review-follows-related-reads but the two sightings the call
+        # stamps before the answer is read.
+        ctx = mock(self.UNMARKED, "get_org_context")
+        source = mock("review-follows-related-reads", "get_org_context")
+        self.assertNotIn("plugin", ctx)
+        self.assertNotIn("[PLUGIN]", ctx["playbook"])
+        self.assertIn("[%s]" % ctx["situation"], ctx["playbook"])
+        self.assertNotIn("installed in this assistant", ctx["next_step"])
+        self.assertIsNone(ctx["overlays"]["schedule_offer"])
+        self.assertNotIn("schedule", ctx["routine"])
+        stamp = ctx["routine"]["scheduled_last_seen_at"]
+        self.assertRegex(stamp, r"^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$")
+        self.assertEqual(ctx["routine"]["scheduled_first_seen_at"], stamp)
+        differ = sorted(k for k in set(ctx) | set(source)
+                        if ctx.get(k) != source.get(k))
+        self.assertEqual(differ, ["next_step", "playbook", "plugin", "routine"])
+        rest = dict(ctx["routine"], scheduled_first_seen_at=None,
+                    scheduled_last_seen_at=None)
+        was = dict(source["routine"], scheduled_first_seen_at=None,
+                   scheduled_last_seen_at=None)
+        self.assertEqual(rest, was)
+        head = read("evals/%s/mocks/adcopilot/get_org_context.md" % self.UNMARKED)
+        head = " ".join(re.match(r"^---\n(.*?)\n---\n", head, re.S).group(1)
+                        .replace("#", " ").split())
+        self.assertIn("Re-rendered with AdCopilot release/v2.41.0's own code "
+                      "(967d743b", head)
+        # The other mocks are the source case's, byte for byte.
+        mocks = os.path.join(ROOT, "evals", self.UNMARKED, "mocks", "adcopilot")
+        for name in sorted(os.listdir(mocks)):
+            if name == "get_org_context.md":
+                continue
+            with self.subTest(mock=name):
+                self.assertEqual(
+                    read("evals/%s/mocks/adcopilot/%s" % (self.UNMARKED, name)),
+                    read("evals/review-follows-related-reads/mocks/adcopilot/%s" % name))
+
+    def test_the_readme_note_says_both(self):
+        notes = section(read("README.md"), "## AdCopilot version") or ""
+        start = notes.find("**%s (" % manifest_version())
+        note = " ".join(notes[start:].split("\n\n", 1)[0].split())
+        for part in ('`source: "claude-scheduled"`', "never `claude-plugin`",
+                     "`save_org_context`",
+                     "no server release has to come first"):
+            with self.subTest(part=part):
+                self.assertIn(part, note)
+
+    def test_the_readme_note_says_any_scheduled_task_counts_as_the_check(self):
+        # PR #22, second review: AdCopilot reads the scheduled marker as its
+        # morning check (`tools_adcopilot._SOURCE_DESC`, `scheduled_seen` in
+        # email_automation, engagement_auto, routines, situations, trial_board
+        # and tools_analysis._scheduled_now at d9bd20ae). Once every skill
+        # sends it, a customer's own weekly-report task stops the morning-check
+        # offer and mails. The note says so, so the founder sees it.
+        notes = section(read("README.md"), "## AdCopilot version") or ""
+        start = notes.find("**%s (" % manifest_version())
+        note = " ".join(notes[start:].split("\n\n", 1)[0].split())
+        for part in ("AdCopilot reads a run marked `claude-scheduled` as its "
+                     "morning check",
+                     "a customer's own scheduled task counts as one too",
+                     "the schedule offer in AdCopilot's mails",
+                     "the win-back's second mail and the Free week",
+                     "on the dashboard's Home card",
+                     "sightings on two different days stop the in-chat offer",
+                     "the trial board counts the workspace as scheduled",
+                     "`related_reads`",
+                     "stops being offered the morning check although none runs"):
+            with self.subTest(part=part):
+                self.assertIn(part, note)
 
 
 if __name__ == "__main__":

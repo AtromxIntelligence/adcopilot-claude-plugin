@@ -10,12 +10,16 @@ the `adcopilot-daily` skill's run instead, and none of what follows.
 
 `get_org_context` first, with `source: "claude-plugin/0.2.13"`. Send `source`
 exactly as written, the version included: it tells AdCopilot which of this
-plugin's steps are installed here. The one exception is where the AdCopilot
+plugin's steps are installed here. One exception is where the AdCopilot
 skills are not installed: Cursor can add this command without them, and then
 `adcopilot-review` is not among your skills. There, send
 `source: "claude-plugin"`, with no version, so AdCopilot hands no step to a
 skill that is not here, and `get_org_context`'s `next_step` and `playbook` carry
-those steps themselves. When the answer's `plugin.skill` names an AdCopilot
+those steps themselves. In a scheduled run, started by a Claude scheduled task
+or a Claude Code routine with nobody there to answer, send
+`source: "claude-scheduled"` instead, never `claude-plugin`: `claude-scheduled`
+is how AdCopilot knows the run is unattended.
+When the answer's `plugin.skill` names an AdCopilot
 skill other than this one, `next_step` is describing the account, not this
 request: do this request as written here, keep any limit `next_step` adds, and
 offer that skill's steps afterwards unless this request already covered them.
