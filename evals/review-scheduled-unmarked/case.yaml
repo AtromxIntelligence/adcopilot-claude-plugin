@@ -6,7 +6,7 @@ description: >
   fictional; every value is invented). It is not AdCopilot's morning-check
   recipe: it does not begin "AdCopilot morning check, read-only" and carries no
   marker sentence, so adcopilot-daily does not own it and adcopilot-review
-  answers it. This is the case 0.2.13 was written for: before it, the review
+  answers it. This is the case #22 (0.2.14) was written for: before it, the review
   skill sent the plugin marker, and AdCopilot read the run as a conversation
   with a person in it. Every get_org_context call must carry source
   "claude-scheduled", none "claude-plugin". The mocks are

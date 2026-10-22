@@ -36,7 +36,7 @@ both ways and let the main conversation carry it to them.
 
 ## Start
 
-Call `get_org_context` (with `source: "claude-plugin/0.2.13"`) first and obey
+Call `get_org_context` (with `source: "claude-plugin/0.2.14"`) first and obey
 its `playbook` and `cross_reads`. `cross_reads.ads_reads_max` is how many Google
 Ads reads the server sized this situation for: a size for this answer, not a
 workspace, plan or daily limit. Only when `cross_reads.reads_left_today` is
@@ -122,9 +122,9 @@ lens covers it (the period against the one before by day, spend and results per
 keyword, disapproved ads). A hand-written `search` for what a lens returns reads
 one slice of it.
 
-When a lens or `search` result ends with `related_reads`, run the ones that bear
-on the question, at most three, then answer from all you hold. Never repeat a
-read you hold. Offer, do not chase, the `related_reads` those reads bring back.
+When a lens or `search` result ends with `related_reads`, run at most one that
+bears on the question, then answer from all you hold. Never repeat a
+read you hold. Offer, do not chase, the `related_reads` that read brings back.
 They are reads only: a change is still only proposed, for the customer to take
 up in their own conversation. If the one named is a tool you do not hold, say
 which read you could not run rather than leaving it out. If your instructions

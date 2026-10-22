@@ -11,7 +11,7 @@ A thin answer is the failure here. Reads are the cheap part; a customer who has
 to ask four follow-up questions to learn what one answer could have told them
 has been short-changed.
 
-Call `get_org_context` with `source: "claude-plugin/0.2.13"` first, before any
+Call `get_org_context` with `source: "claude-plugin/0.2.14"` first, before any
 other tool — the marker is how the server records that this workspace uses the
 plugin, and without it the customer keeps being told to install what they
 already have. Send `source` exactly as written, the version included: it tells
@@ -45,18 +45,19 @@ list to be economical — if a read would have changed what you say, make it.
 Only when `cross_reads.reads_left_today` is present is the day itself short.
 Then `ads_reads_max` has already been sized to leave room for the fix: spend
 those reads, then propose. The change they say yes to, and its read-back, are
-what the rest of the day is for.
+what the rest of the day is for. On such a day, before a call that would use
+the last of today's operations, say what it covers and ask first.
 
 What you cannot read, say you cannot read. Never estimate a figure, and never
 carry one over from an earlier turn as if it were fresh.
 
 ## Follow `related_reads`
 
-When a lens or `search` result ends with `related_reads`, run the ones that bear
-on the question, at most three, then answer from all you hold. Each names its
+When a lens or `search` result ends with `related_reads`, run at most one that
+bears on the question, then answer from all you hold. Each names its
 tool, its arguments and a `why` built from the numbers of the result you just
 read; skip one that does not bear on what the customer asked. Never repeat a
-read you hold. Offer, do not chase, the `related_reads` those reads bring back.
+read you hold. Offer, do not chase, the `related_reads` that read brings back.
 They are reads only: a change is still only proposed. They count toward this
 answer's reads. If this answer's reads are spent before a related read, offer
 it as the next read in one statement, never a second question and never as a
@@ -168,7 +169,8 @@ number as money.
 
 **Then at most three findings, biggest money first.** Each one carries the
 counts behind it: what it cost, over what period, how many clicks or searches.
-A finding without a number is an opinion.
+A finding without a number is an opinion. Show at most 5 rows of any list,
+costliest first, then "and N more; ask to see them".
 
 A finding that says "if X" is not a step until you have checked X. Either make
 the read it names and say what you found, or carry the condition into your own
@@ -176,7 +178,13 @@ sentence. Never turn it into an instruction.
 
 **Then one recommendation**, with the money spelled out both ways — what it
 costs to act and what it costs to do nothing — as a proposal they say yes or no
-to. Never apply it first.
+to. Never apply it first. It is the one question the reply ends on ("Shall I
+block these 5? Reply yes, or name any to keep."; a yes covers only the rows you
+showed): never a numbered menu, and
+never a request to pick the order; recommend it. Anything else that needs their
+call waits for the next reply. In Claude Code, put that yes/no to them with the
+AskUserQuestion tool when you have it, with the same options in the same
+words.
 
 For two to three weeks after anything went live — a campaign switched on, or a
 change to how it bids or what it counts — recommend no bidding change: Google's
@@ -259,22 +267,28 @@ two different days (`routine.scheduled_first_seen_at` and
 `unavailable` or `declined`, and then it sends no `routine.schedule`.
 AdCopilot's own emailed check-in (`routine.daily.status` `in_app`) is not their
 schedule. Word it by `routine.schedule.offer`, as the daily-habit block every
-other flow carries does. Its moment is right after the first finding in the
-reply that the morning check also reads (searches that spent with no sale, a
-campaign out of budget or off its budget pace, a disapproved ad, a drop against
-the 7-day average, a change nobody asked for), tied to that finding as that
-block words it (it would have caught this on its first morning; it only reads;
-"All clear" or "Needs a look" plus one yes/no fix); for any other finding, even
-one that costs money (a tracking fault, a Quality Score problem, a targeting
-problem), or none, the close, before any question the reply ends on, without
-saying the check would have caught it. Either way the offer is its own
-paragraph, with a blank line before and after it, never on the end of a
-finding's sentences and never inside a bullet. If the server's `next_step`
-also asks for a check-in offer, this one answers it — never two. A no ends it
-for this conversation: ask once whether their Claude can create scheduled
-tasks, and record `routine.own_schedule` `unavailable` if it cannot, else
-`declined` — only from Claude, because AdCopilot keeps it for the whole
-workspace and a record made from Cursor or another client would stop the offer
-in their Claude too. On a yes, follow the `adcopilot-daily` skill's set-up
-rather than inventing steps here. Leave it for another day when the reply ends
-on something they must fix first.
+other flow carries does. Its moment is a reply that asks them no yes/no on a
+fix: the reply that reads back the first fix they approved, where it stands in
+for the next fix's yes/no (name the next fix in one line without asking, and
+propose it in the reply after), or the close of a reply that proposes none.
+Never beside a fix that waits for their answer. When a fix applied in this
+conversation was for a finding the morning check also reads (searches that
+spent with no sale, a campaign out of budget or off its budget pace, a
+disapproved ad, a drop against the 7-day average, a change nobody asked for;
+on a workspace with 10 operations a day the morning check leaves what changed
+for the chat, so not that one there), it is tied to that finding as that block
+words it (it would have caught this on
+its first morning; it only reads; "All clear" or "Needs a look" plus one yes/no
+fix); for any other finding, even one that costs money (a tracking fault, a
+Quality Score problem, a targeting problem), or none, the close, before any
+question the reply ends on, without saying the check would have caught it.
+Either way the offer is its own paragraph, with a blank line before and after
+it, never on the end of a finding's sentences and never inside a bullet. If the
+server's `next_step` also asks for a check-in offer, this one answers it —
+never two. A no ends it for this conversation: ask once whether their Claude
+can create scheduled tasks, and record `routine.own_schedule` `unavailable` if
+it cannot, else `declined` — only from Claude, because AdCopilot keeps it for
+the whole workspace and a record made from Cursor or another client would stop
+the offer in their Claude too. On a yes, follow the `adcopilot-daily` skill's
+set-up rather than inventing steps here. Leave it for another day when the
+reply ends on something they must fix first.

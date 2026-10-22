@@ -33,7 +33,8 @@ import sys
 
 TAG_TO_SKILL = {"connect": "adcopilot-connect", "measure": "adcopilot-measure", "launch": "adcopilot-launch",
                 "daily": "adcopilot-daily", "review": "adcopilot-review", "docs": "adcopilot-docs",
-                "seo": "adcopilot-seo", "meta": "adcopilot-meta"}
+                "seo": "adcopilot-seo", "meta": "adcopilot-meta",
+                "fix-checks": "adcopilot-fix-checks"}
 
 
 UNREADABLE = []

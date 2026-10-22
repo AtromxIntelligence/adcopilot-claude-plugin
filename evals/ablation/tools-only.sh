@@ -51,7 +51,7 @@ command -v rsync >/dev/null || { echo "rsync is not on PATH" >&2; exit 1; }
 #    the skill bodies alone, and every marks-plugin-use grader needs it, so the
 #    stub keeps that one sentence: without it the baseline arm would fail the
 #    marker on every case and each skill's delta would be the marker's weight,
-#    not what its body teaches. From 0.2.13 the marker text also says what a
+#    not what its body teaches. From 0.2.14 (#22) the marker text also says what a
 #    scheduled run sends instead (claude-scheduled), word for word as every
 #    marked skill says it, so a scheduled case such as review-scheduled-unmarked
 #    is not failed on the marker by construction either. adcopilot-daily's
