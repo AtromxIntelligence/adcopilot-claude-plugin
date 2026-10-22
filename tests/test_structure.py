@@ -1210,11 +1210,37 @@ class Readme(unittest.TestCase):
         self.assertNotIn("scheduled run", will_not)
 
     def test_the_schedule_section_says_what_keeps_a_run_to_reads(self):
-        morning = section(read("README.md"), "### Every morning, without asking") or ""
+        # Since D186 (AdCopilot `scheduled_guard.py`) the server refuses every
+        # write tool on a connection in a scheduled run, AdCopilot's own notes
+        # aside; it knows the run only from its first call. The 0.2.14 review:
+        # "Nothing on AdCopilot's side stops a change" was no longer true.
+        morning = " ".join((section(read("README.md"),
+                                    "### Every morning, without asking") or "").split())
         self.assertNotIn("It changes nothing", morning)
-        self.assertIn("Nothing on AdCopilot's side stops a change", morning)
+        self.assertNotIn("Nothing on AdCopilot's side stops a change", morning)
+        self.assertIn("AdCopilot holds a scheduled run to reads as well: once a "
+                      "run's first call is `get_org_context` with "
+                      "`source: \"claude-scheduled\"`, AdCopilot refuses every "
+                      "tool that changes Google Ads", morning)
+        self.assertIn("a run that skips it or sends another source is not held",
+                      morning)
         self.assertIn("**Automatically approve**", morning)
         self.assertIn("**Blocked**", morning)
+
+    def test_each_release_note_names_its_own_marker(self):
+        # The 0.2.14 review: #24's version bump rewrote the 0.2.13 note's
+        # "moves to `claude-plugin/0.2.13`" to 0.2.14. A release note is
+        # history: the marker it says the files move to is its own version.
+        notes = 0
+        for line in read("README.md").splitlines():
+            m = re.match(r"\*\*(\d+\.\d+\.\d+) \(", line)
+            if not m:
+                continue
+            notes += 1
+            for moved in re.findall(r"moves to `claude-plugin/([^`]+)`", line):
+                with self.subTest(note=m.group(1)):
+                    self.assertEqual(moved, m.group(1))
+        self.assertGreaterEqual(notes, 5)
 
     def test_no_claim_the_recipe_is_already_everywhere(self):
         readme = read("README.md")
@@ -4691,7 +4717,21 @@ class AlwaysAllowStep(unittest.TestCase):
         step1 = " ".join(run[run.find("\n1. "):run.find("\n2. ")].split())
         self.assertIn('`source: "claude-scheduled"` and `task: "%s"`'
                       % CHECKIN_TASK, step1)
-        self.assertIn("even when the instructions do not name it", step1)
+        # The 0.2.14 review: only the morning check's own instructions send
+        # its task. A customer's own scheduled task that lands here and sent
+        # it would be counted as the morning check (`is_morning_check_task`),
+        # which C5 set out to stop.
+        self.assertNotIn("even when the instructions do not name it", step1)
+        self.assertIn('Send that task whenever the instructions open with "%s", '
+                      'even when their first call does not name it' % CHECKIN_TASK,
+                      step1)
+        self.assertIn("any other scheduled task, such as one in the customer's "
+                      "own words, sends the `task` its own instructions give, or "
+                      "none, never the morning check's", step1)
+        # The case's prompt is the older recipe the condition is for.
+        prompt = read("evals/daily-scheduled-run/case.yaml")
+        self.assertIn("    %s, read-only. Call get_org_context first." % CHECKIN_TASK,
+                      prompt)
 
     def test_the_scheduled_case_grades_the_task(self):
         text = read("evals/daily-scheduled-run/case.yaml")
