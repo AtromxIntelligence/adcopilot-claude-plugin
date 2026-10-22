@@ -3447,8 +3447,8 @@ class V241Alignment(unittest.TestCase):
                       "this version is published", note)
         self.assertIn("so that release goes out first", note)
         self.assertNotIn("no server release has to come first", note)
-        # 0.2.14 adds fix-checks-three-checks.
-        self.assertIn("twenty-nine cases across the suite", flat("README.md"))
+        # 0.2.14 adds fix-checks-three-checks (#24) and review-scheduled-unmarked (#22).
+        self.assertIn("thirty cases across the suite", flat("README.md"))
 
     def test_the_question_first_case(self):
         ctx = mock(self.QUESTION, "get_org_context")
