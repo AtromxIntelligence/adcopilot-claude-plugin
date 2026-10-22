@@ -106,11 +106,11 @@ in the same sentence. A window a finding gives only as a length ends on the
 result's `date_range.end` unless it says otherwise. Pass `depth="deep"`
 explicitly. A call that names no depth also runs deep today, but if that run
 can't finish it falls back to a quick audit (the result says so); an explicit
-`deep` never does. A quick audit scores three of the seventy-three checks over
+`deep` never does. A quick audit scores three of the seventy checks over
 the month to date — not an audit, and not what you promised. Deep walks the
 whole registry over the window you ask for, in one read, and says which checks
-it could not evaluate. Give coverage as the count the result gives, "N of 73
-checks gave a result", never as a percentage next to the count, and give reasons
+it could not evaluate. Give coverage as the count the result gives, "from N of
+the M checks that apply", never as a percentage next to the count, and give reasons
 for the rest only in the result's own words.
 
 Use the deterministic lenses where they fit — `full_audit`,

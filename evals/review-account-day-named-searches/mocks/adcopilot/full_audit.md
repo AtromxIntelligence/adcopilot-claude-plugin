@@ -3,7 +3,8 @@ type: fixed
 # The deep audit over the 14 days 2026-09-30..2026-10-13, the account's own
 # yesterday (AdCopilot v2.41.0, D185), in v2.41.0's wording: the tag check
 # names its seven days (7 Oct to 13 Oct), the health line counts the checks
-# that gave a result (58 of 73), and G-AD2 is not graded against the US
+# that apply (v2.44, D221: 56 of the 62 that apply; 58 of 70 gave a result),
+# and G-AD2 is not graded against the US
 # click-through average for an account set up outside the US (#822). G16 is
 # v2.41.0's own finding for these searches (rendered by its evaluator): it
 # fails at 40% of spend, names the costliest searches, and gives its window
@@ -231,12 +232,14 @@ type: fixed
   "notes": [
     "Findings are ordered failures first, then by severity. Severity is the kind of fault, not the amount of money: re-rank by impact before reporting."
   ],
-  "narrative": "**full_audit** — account 4455667788, 2026-09-30 to 2026-10-13 (14 days), amounts in INR. Health score 58/100 (grade D), from the 58 of 73 checks that gave a result. 2 failing, 1 warning, 55 passing (top 3 listed); 15 checks not evaluated.",
+  "narrative": "**full_audit** — account 4455667788, 2026-09-30 to 2026-10-13 (14 days), amounts in INR. Health score 58/100 (grade D), from 56 of the 62 checks that apply to this account. 2 failing, 1 warning, 50 passing (the 6 Quality Score rules as one finding; top 3 listed); 12 checks not evaluated.",
   "health": {
     "score": 58,
     "grade": "D",
     "checks_evaluated": 58,
-    "checks_total": 73
+    "checks_total": 70,
+    "checks_scored": 56,
+    "checks_applicable": 62
   },
   "related_reads": [
     {

@@ -13,7 +13,7 @@ description: >
   both arms part of the deep call. The body's additions are that `full_audit`
   must be asked for `deep` explicitly, over the window being reported (a call
   that names no depth also runs deep today, but falls back to a quick audit,
-  scoring three of seventy-three checks month-to-date, if that run cannot
+  scoring three of seventy checks month-to-date, if that run cannot
   finish); that the number of checks actually scored is said out loud rather
   than letting the unscored ones pass as passes; that a raw `search` returns
   millionths and must never be printed as money; and that the recommendation
@@ -46,10 +46,10 @@ graders:
     focus: trace
     weight: 2
     criteria: |
-      Judge the whole run: the tool calls and the final reply. The audit answered as a deep run and reported `coverage`: 73 checks in the registry, 61 scored, 12 not scored for want of data in the window.
+      Judge the whole run: the tool calls and the final reply. The audit answered as a deep run and reported `coverage`: 70 checks in the registry, 61 scored, 9 not scored for want of data in the window.
 
       PASS only if both hold:
-      1. Coverage is stated. The reply says, in substance, that the audit scored 61 of 73 checks (or that 12 could not be scored because the window held no data for them). Any wording is fine. FAIL if the reply presents the audit as complete, says "all 73 checks passed", or gives a health score with no mention that part of the registry went unscored. A reply that names the number only as "most checks" without the figure is a FAIL; "61 of 73" or "12 it could not score" is a PASS.
+      1. Coverage is stated. The reply says, in substance, that the audit scored 61 of 70 checks (or that 9 could not be scored because the window held no data for them). Any wording is fine. FAIL if the reply presents the audit as complete, says "all 70 checks passed", or gives a health score with no mention that part of the registry went unscored. A reply that names the number only as "most checks" without the figure is a FAIL; "61 of 70" or "9 it could not score" is a PASS.
       2. The recommendation carries both prices. Whatever single change is recommended, the reply says what acting costs or involves AND what leaving it alone costs — the money that keeps going out, in dollars, if nothing is done. A recommendation with only one side of that (just the fix, or just the waste figure with no mention of what the fix costs or takes) is a FAIL. The change must be put as a proposal to accept or decline, not applied: no write tool is called in this run.
 
       Ignore ordering and wording of the findings themselves; another grader covers those.

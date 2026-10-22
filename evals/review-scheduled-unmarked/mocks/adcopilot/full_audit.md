@@ -1,8 +1,8 @@
 ---
 type: fixed
 # A fixed responder cannot tell depth="quick" from depth="deep", so it answers as
-# a deep run does and states its coverage in the body: 61 of the 73 checks were
-# scored, 12 could not be. The skill's job is to have ASKED for deep, and to say
+# a deep run does and states its coverage in the body: 61 of the 70 checks were
+# scored, 9 could not be. The skill's job is to have ASKED for deep, and to say
 # that 61 rather than let the 12 pass as passes.
 # The three findings are returned in the lens's own order, which the tool's
 # description states is failures first then SEVERITY, not impact - and the
@@ -26,9 +26,9 @@ type: fixed
     "grade": "C"
   },
   "coverage": {
-    "checks_in_registry": 73,
+    "checks_in_registry": 70,
     "checks_scored": 61,
-    "checks_not_scored": 12,
+    "checks_not_scored": 9,
     "not_scored_reason": "no data in the window for those checks"
   },
   "totals": {

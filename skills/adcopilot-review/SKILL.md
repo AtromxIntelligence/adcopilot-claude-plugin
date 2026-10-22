@@ -72,10 +72,10 @@ a scheduled run, skip them.
 are reporting.** Pass `depth="deep"` explicitly. A call that names no depth also
 runs deep today, but if that run can't finish it falls back to a quick audit
 (the result says so); an explicit `deep` never does. A quick audit scores three
-of the seventy-three checks over the month to date — not an audit, and not what
-the customer asked for. Deep attempts all seventy-three over your window and
+of the seventy checks over the month to date — not an audit, and not what
+the customer asked for. Deep attempts all seventy over your window and
 says which it could not evaluate. Give coverage as the count the result
-gives, "N of 73 checks gave a result", never as a percentage next to the count,
+gives, "from N of the M checks that apply", never as a percentage next to the count,
 and give reasons for the rest only in the result's own words. An unevaluated
 check is not a pass, and a reason you supply yourself is a guess.
 
