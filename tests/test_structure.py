@@ -4168,6 +4168,16 @@ class FixChecks(unittest.TestCase):
                 self.assertIn(words, text)
         self.assertNotIn("`full_audit`", text)
 
+    def test_a_ready_call_is_proposed_as_it_stands_and_a_draft_asks(self):
+        """AdCopilot v2.44 (A2): a finding carries a ready call
+        (`kind` "tool") or a draft (`kind` "skeleton", with `needs`)."""
+        text = flat(self.SKILL)
+        self.assertIn("One whose `kind` is `tool` is a ready call", text)
+        self.assertIn("propose it as it stands", text)
+        self.assertIn("One whose `kind` is `skeleton` is a draft", text)
+        self.assertIn("`needs` says what only the customer can give", text)
+        self.assertIn("never fill it in yourself", text)
+
     def test_one_decision_a_message(self):
         text = flat(self.SKILL)
         self.assertIn("Show at most 5 rows of any list, costliest first, "
@@ -4701,6 +4711,46 @@ class AlwaysAllowStep(unittest.TestCase):
         # comes from the skill alone.
         m = re.search(r"^  prompt: \|\n((?:    .*\n)+)", text, re.M)
         self.assertNotIn("task", " ".join(m.group(1).split()))
+
+
+class FindingActions(unittest.TestCase):
+    """AdCopilot v2.44 (A2): an audit finding carries its fix in
+    `recommended_actions`, a ready call (`kind` "tool", ids read from the
+    account, an audit's negatives Exact) or a draft (`kind` "skeleton",
+    whose `needs` only the customer can give). The two skills that propose
+    an audit's fixes say both, and the review skill's own PHRASE rule is for
+    negatives it writes itself, so it never rewrites the audit's Exact
+    call."""
+
+    SURFACES = ["skills/adcopilot-review/SKILL.md",
+                "skills/adcopilot-fix-checks/SKILL.md"]
+
+    def test_both_skills_propose_a_ready_call_as_it_stands_and_ask_for_a_draft(self):
+        for rel in self.SURFACES:
+            text = flat(rel)
+            with self.subTest(file=rel):
+                self.assertIn("One whose `kind` is `tool` is a ready call", text)
+                self.assertIn("propose it as it stands", text)
+                self.assertIn("One whose `kind` is `skeleton` is a draft", text)
+                self.assertIn("never fill it in yourself", text)
+
+    def test_a_ready_call_carries_the_condition_its_why_gives(self):
+        """AdCopilot v2.44 (A2 review): a disapproved ad's pause is for an
+        ad the customer won't fix; an ad Google approves on appeal keeps
+        serving, so a pause proposed "as it stands" carries that condition."""
+        for rel in self.SURFACES:
+            text = flat(rel)
+            with self.subTest(file=rel):
+                self.assertIn("with the condition its `why` gives", text)
+                self.assertIn("never one Google approves on appeal", text)
+
+    def test_the_review_skills_phrase_rule_is_for_its_own_negatives(self):
+        text = flat("skills/adcopilot-review/SKILL.md")
+        self.assertIn("an audit's negatives Exact as it built them", text)
+        self.assertIn("Negatives you write yourself go on with "
+                      "`add_negative_keywords` at PHRASE match", text)
+        self.assertNotIn("Negatives go on with `add_negative_keywords` at "
+                         "PHRASE", text)
 
 
 if __name__ == "__main__":
