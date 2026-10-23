@@ -310,6 +310,16 @@ class UnattendedRun(unittest.TestCase):
         self.assertIsNone(SALES.search(run))
 
 
+# The README note the three tests below read (`test_the_release_check_expects_no_note`,
+# `test_the_readme_note_says_both` and
+# `test_the_readme_note_says_only_the_recipe_is_the_morning_check`) is 0.2.14's:
+# the version that shipped #22, the tool titles and the morning check's task.
+# Looked up by the manifest's version they read the note of whatever version
+# is current, so from 0.2.15 they would ask a release that changes none of this
+# to repeat it. A release note is history; they pin this one.
+SCHEDULED_NOTE_VERSION = "0.2.14"
+
+
 class ScheduledSourceMarker(unittest.TestCase):
     """#22, in 0.2.14: which `source` a scheduled run sends, and what it may save.
 
@@ -474,7 +484,7 @@ class ScheduledSourceMarker(unittest.TestCase):
         self.assertIn(products, run)
         self.assertIn("calls no tool that changes anything " + products, step6)
         note = section(read("README.md"), "## AdCopilot version") or ""
-        note = " ".join(note[note.find("**%s (" % manifest_version()):]
+        note = " ".join(note[note.find("**%s (" % SCHEDULED_NOTE_VERSION):]
                         .split("\n\n", 1)[0].split())
         self.assertNotIn(SET_UP_NOTE_ALLOWED, note)
         for part in ("still calls no `save_org_context`",
@@ -608,7 +618,7 @@ class ScheduledSourceMarker(unittest.TestCase):
 
     def test_the_readme_note_says_both(self):
         notes = section(read("README.md"), "## AdCopilot version") or ""
-        start = notes.find("**%s (" % manifest_version())
+        start = notes.find("**%s (" % SCHEDULED_NOTE_VERSION)
         note = " ".join(notes[start:].split("\n\n", 1)[0].split())
         for part in ('`source: "claude-scheduled"`', "never `claude-plugin`",
                      "`save_org_context`", CONTEXT_TOOL_TITLE, SAVE_TOOL_TITLE,
@@ -625,7 +635,7 @@ class ScheduledSourceMarker(unittest.TestCase):
         # a run whose first call also names the morning check's task; the
         # note says what the server does now, not what it did at d9bd20ae.
         notes = section(read("README.md"), "## AdCopilot version") or ""
-        start = notes.find("**%s (" % manifest_version())
+        start = notes.find("**%s (" % SCHEDULED_NOTE_VERSION)
         note = " ".join(notes[start:].split("\n\n", 1)[0].split())
         for part in ("counts only a run whose first call also names that task "
                      "as its morning check",

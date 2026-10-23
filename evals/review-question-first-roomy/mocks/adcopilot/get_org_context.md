@@ -257,7 +257,7 @@ type: fixed
   "tools_revision_note": "Every AdCopilot tool description ends with \"Tools revision: <this value>.\" A description that shows a different revision or none is out of date: get_org_context with tools=[those tool names] returns the current text, to read before relying on those tools.",
   "plugin": {
     "skill": "adcopilot-measure",
-    "version": "0.2.14"
+    "version": "0.2.15"
   },
   "question_map": {
     "note": "The read that answers each kind of question. A lens result's related_reads names the next one from its own numbers; run the ones that bear on the question, at most three. Reads only.",
