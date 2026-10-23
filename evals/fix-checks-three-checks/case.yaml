@@ -1,0 +1,75 @@
+schema_version: "1.1"
+name: fix-checks-three-checks
+description: >
+  The audit page's "Fix all three" question, as AdCopilot v2.43.3 words it,
+  on a running account whose results are counted (the tenant in this case's
+  mocks is fictional; every value is invented; the state is
+  review-follows-related-reads'). It grades what plugin 0.2.14's
+  adcopilot-fix-checks skill is for, from the 2026-10-20 chat where the same
+  question was answered with three menus of numbered options, three extra
+  reads and the schedule offer after the first check, and the day's
+  operations ran out before anything was applied. First, the skill fires on
+  the question's own words. Second, the first reply says what the three
+  fixes cost against what is left today (38 of 40), recommends the order
+  itself, foundation first (enhanced conversions, G43, before the searches
+  and keywords judged by those conversions), and takes one check. Third,
+  no new audit: the reads are the checks' own lenses, never `full_audit`.
+  Fourth, one decision: the reply ends on exactly one question, a yes/no on
+  the recommended step, with no numbered menu and no request to pick the
+  order; enhanced conversions is switched on in Google Ads' own screens, so
+  the fix is given as clicks. Nothing is applied. The case is written and
+  has not been run.
+tags: [fix-checks]
+runs: 3
+execution:
+  prompt: >-
+    My AdCopilot audit of Google Ads account 123-456-7890 flagged three
+    checks to fix first: "Enhanced conversions enabled" (G43), "Close variant
+    pollution" (G18) and "Zero-conversion keywords" (G-WS1). First tell me
+    what today's AdCopilot allowance covers, then fix them one at a time in
+    the order you recommend. One yes/no at a time; change nothing until I say
+    yes.
+  max_turns: 12
+  timeout_seconds: 360
+  allowed_tools: [Skill]
+graders:
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-fix-checks"'
+  - name: marks-plugin-use
+    type: tool_used
+    # The same grader as every case that reads the server: a get_org_context
+    # call without source "claude-plugin/<version>" fails it.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin/\d+\.\d+\.\d+")'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: runs-no-new-audit
+    type: tool_used
+    # The audit already ran; each check is read with its own lens.
+    tool: mcp__plugin_adcopilot_adcopilot__full_audit
+    min: 0
+    max: 0
+  - name: reads-the-tracking-check
+    type: regex
+    target: mock_calls
+    pattern: '"tool"\s*:\s*"[^"]*conversion_setup_audit"'
+  - name: no-change-without-a-yes
+    type: regex
+    target: mock_calls
+    match: not_contains
+    pattern: '"tool"\s*:\s*"[^"]*(?:add_negative_keywords|add_account_negatives|update_campaign|set_campaign_status|update_keyword|save_org_context)"'
+  - name: one-decision-foundation-first
+    type: llm
+    focus: last_message
+    weight: 4
+    criteria: |
+      Judge the final reply only; which tools ran is the call-log graders' job. The customer sent their audit's three checks, enhanced conversions (G43), close variant pollution (G18) and zero-conversion keywords (G-WS1), asked first what today's allowance covers, then for the fixes one at a time in the order the assistant recommends, one yes/no at a time. `get_org_context` reported 2 of 40 operations used today. `conversion_setup_audit` found enhanced conversions off for the account's one primary action, Enquiry form, and named the place to switch it on in Google Ads (Goals, then Settings, then Enhanced conversions, with Google's customer data terms); AdCopilot has no tool that switches it on.
+
+      PASS only if all four hold:
+      1. Before any check, the reply says in a line or two what the three fixes cost in operations and that today covers them (38 left, or 2 of 40 used). FAIL if the allowance is not mentioned, or is only mentioned after the first check.
+      2. The reply recommends the order itself and starts with enhanced conversions, because counting results comes before the fixes judged by them. FAIL if it asks the customer to choose the order, or starts with another check.
+      3. Enhanced conversions is handled as clicks in Google Ads, given as steps for the customer to take (all at once or the first ones), and not as a change AdCopilot says it will make or has made.
+      4. The reply ends on exactly one question, a yes/no or "tell me when it's done" on that step, with no numbered menu of options to choose from and no second question. A schedule or daily-check offer in this reply fails it.

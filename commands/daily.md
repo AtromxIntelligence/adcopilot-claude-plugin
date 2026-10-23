@@ -8,14 +8,18 @@ person asks for. If this conversation was started by a schedule — a Claude
 scheduled task or a Claude Code routine, with nobody there to answer — follow
 the `adcopilot-daily` skill's run instead, and none of what follows.
 
-`get_org_context` first, with `source: "claude-plugin/0.2.13"`. Send `source`
+`get_org_context` first, with `source: "claude-plugin/0.2.14"`. Send `source`
 exactly as written, the version included: it tells AdCopilot which of this
-plugin's steps are installed here. The one exception is where the AdCopilot
+plugin's steps are installed here. One exception is where the AdCopilot
 skills are not installed: Cursor can add this command without them, and then
 `adcopilot-review` is not among your skills. There, send
 `source: "claude-plugin"`, with no version, so AdCopilot hands no step to a
 skill that is not here, and `get_org_context`'s `next_step` and `playbook` carry
-those steps themselves. When the answer's `plugin.skill` names an AdCopilot
+those steps themselves. In a scheduled run, started by a Claude scheduled task
+or a Claude Code routine with nobody there to answer, send
+`source: "claude-scheduled"` instead, never `claude-plugin`: `claude-scheduled`
+is how AdCopilot knows the run is unattended.
+When the answer's `plugin.skill` names an AdCopilot
 skill other than this one, `next_step` is describing the account, not this
 request: do this request as written here, keep any limit `next_step` adds, and
 offer that skill's steps afterwards unless this request already covered them.
@@ -39,10 +43,10 @@ offering the one you did not reach as the next read, never as a limit you hit:
    `end_date` and a `limit`: what changed in the account since yesterday, and
    who changed it.
 
-When a lens or `search` result ends with `related_reads`, run the ones that
-bear on the question, at most three, then answer from all you hold; never
-repeat a read you hold, and offer, do not chase, the `related_reads` those
-reads bring back. They are reads only: a change is still only proposed. In a
+When a lens or `search` result ends with `related_reads`, run at most one
+that bears on the question, then answer from all you hold; never
+repeat a read you hold, and offer, do not chase, the `related_reads` that
+read brings back. They are reads only: a change is still only proposed. In a
 scheduled run, skip them. They count toward this answer's reads, as above.
 
 A finding that says "if X" is not a step until you have checked X. Either make
@@ -60,13 +64,13 @@ nothing until they answer it.
 
 ## The daily habit
 
-This block is repeated verbatim in every AdCopilot skill and command a person runs; change all seven together.
+This block is repeated verbatim in every AdCopilot skill and command a person runs; change all eight together.
 
 First, Cursor. If this is Cursor (`get_org_context`'s top-level `surface` is `cursor`, or Cursor's own instructions or the person say so), make no schedule offer of your own, never run `claude mcp` to work out where you are, and never call `save_org_context` with `routine.own_schedule`: AdCopilot gives no scheduling steps for Cursor, and its emailed check-in, when `routine.daily.status` is `in_app`, is the morning check there. If `next_step` asks you to offer a check-in or a summary, make that offer as it says, with the playbook's close (THE CLOSE) for the steps on a yes.
 
 Everywhere else, make one offer to turn a morning check of this account into a daily habit — at most once in a conversation — and only when both hold: Google Ads is connected and readable with a campaign switched on, and `get_org_context` hands you its recipe, `routine.schedule`. AdCopilot sends `routine.schedule` only when its `overlays.schedule_offer` is set, which is its own decision for this workspace and this AI client: no schedule is reported, the call is not a scheduled run, and the client is one AdCopilot gives scheduling steps for (Claude or Claude Code; never Cursor, ChatGPT or another client). Never make the offer without it, and never work it out from the other fields. What they mean: AdCopilot reports a schedule when `routine.daily.status` is `user_set` (a schedule they set up in their own assistant), when a scheduled run has checked in on two different days (`routine.scheduled_first_seen_at` and `routine.scheduled_last_seen_at` hold dates on different days), or when `routine.own_schedule` is `saved`, `unavailable` or `declined` (recorded once they saved it, once their Claude turned out to have no scheduled tasks, or once they said not now, which holds the offer for a week and then lets it come back), and then it sends no `routine.schedule`. AdCopilot's emailed check-in, `routine.daily.status` `in_app`, is not a schedule. Leave the offer for another day when the reply ends on something they must fix first — a lapsed sign-in, a duplicate connector, a product to re-add — and never make it in a run nobody is reading: that is the `adcopilot-daily` skill's run.
 
-Make it right after the first finding in the reply that the morning check also reads — searches that spent with no sale, a campaign out of budget or off its budget pace, a disapproved ad, a drop against the 7-day average, a change nobody asked for — and tie it to that finding, with the figure you just read and never one you did not: a check that runs by itself every weekday at 8:07 would have caught it on its first morning. The offer is always its own paragraph, with a blank line before and after it: it goes right after the paragraph or list that gives that finding (and any line that sums that finding up), never on the end of one of that finding's sentences and never inside one of its bullets. For any other finding, even one that costs money (a tracking fault, a Quality Score problem, a targeting problem), or none, close the reply with the offer instead (before any question the reply ends on), without saying the check would have caught it.
+Make it in a reply that asks them no yes/no on a fix: the reply that reads back the first fix they approved, where the offer stands in for the next fix's yes/no (name the next fix in one line without asking, and propose it in the reply after), or the close of a reply that proposes no fix at all. Never make it beside a fix that waits for their answer: the yes/no comes first, and the offer waits. When a fix applied in this conversation was for a finding the morning check also reads — searches that spent with no sale, a campaign out of budget or off its budget pace, a disapproved ad, a drop against the 7-day average, a change nobody asked for — tie it to that finding, with the figure you read and never one you did not: a check that runs by itself every weekday at 8:07 would have caught it on its first morning. The offer is always its own paragraph, with a blank line before and after it: it goes right after the read-back (and any line that sums the fixes up), never on the end of one of its sentences and never inside one of its bullets. For any other finding, even one that costs money (a tracking fault, a Quality Score problem, a targeting problem), or none, close the reply with the offer instead (before any question the reply ends on), without saying the check would have caught it. On a workspace with 10 operations a day (`org.ops_today_cap` is 10 or less) the morning check leaves what changed for the chat, so there a change nobody asked for is one of these.
 
 Word it for where they are, by `routine.schedule.offer`: `claude_code` is Claude Code, and `claude` is the Claude app. `both` means AdCopilot could not tell which Claude this is: if they have said, believe them; otherwise the tell is the one `/adcopilot:setup` uses: Claude Code is where `claude mcp list` runs, and `/schedule` makes a routine there; everywhere else — claude.ai, Cowork, the desktop and mobile apps — it is a Claude scheduled task. In these words, with the finding in the braces kept short (a figure and a noun) and nothing else changed: a paragraph of its own, two sentences, never split into more, and no set-up step before a yes (the third line is for the close):
 

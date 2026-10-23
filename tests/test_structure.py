@@ -6,8 +6,9 @@ Run with `python3 -m unittest discover -s tests -v` from the repository root
 
 What it pins, and why each one is here:
 
-- The daily-habit block. Every interactive flow — the three teaching skills
-  and the four commands that have no skill of their own — ends with the same
+- The daily-habit block. Every interactive flow — the three teaching skills,
+  the fix-checks skill and the four commands that have no skill of their
+  own — ends with the same
   offer to make the check a daily habit. It is repeated verbatim, like the
   teaching contract, because a skill cannot include another file in every
   surface the plugin runs on (an eval run has no Read tool at all). A copy
@@ -24,9 +25,18 @@ What it pins, and why each one is here:
   conversation after AdCopilot has recorded that it cannot.
 - The unattended run. `adcopilot-daily` passes `claude-scheduled`, never
   `claude-plugin`, and its instructions say read-only and ask-nothing — the
-  two properties a scheduled run with nobody to answer depends on. With no
-  account named it never falls back to a manager account, which Google
-  refuses metrics for.
+  two properties a scheduled run with nobody to answer depends on, and its
+  first call names AdCopilot's morning check as its `task`. It calls no
+  `save_org_context` either: Claude lists that tool with the write tools, and
+  every set-up made before 0.2.14 keeps those on Needs approval, so a note
+  that waits for approval stops the run. From 0.2.14 the set-up says what
+  AdCopilot's `schedule_recipe.ALWAYS_ALLOW_STEP` says (v2.44.0): the
+  read-only tools and AdCopilot's two notes tools, by the titles Claude shows,
+  on Always allow, every other write tool on Needs approval. Founder answer 6
+  (notes in a run) waits until the people who already schedule the check
+  have been told and that notice has been measured.
+  With no account named it never falls back to a manager account, which
+  Google refuses metrics for.
 - Honesty about what keeps a run to reads (D71's family). Nothing on the
   server makes a scheduled run read-only; on Automatically approve, or in a
   Claude Code routine, the instructions are all that does. Neither the skill
@@ -35,7 +45,8 @@ What it pins, and why each one is here:
   the run carries sales or upgrade wording.
 - The instructions the set-up hands over are AdCopilot's own recipe, word for
   word (`ads_mcp_cloud/schedule_recipe.py`, SCHEDULED_CHECKIN, as of
-  AdCopilot v2.30.2); its first sentence is what marks the run.
+  AdCopilot v2.44.0); the call it opens with, `CHECKIN_FIRST_CALL`, is what
+  marks the run as the morning check.
   The server's emails, docs and dashboard do not all carry it yet, so nothing
   here says they do.
 - The eval graders and the offer agree: the regexes that look for the offer
@@ -70,6 +81,17 @@ What it pins, and why each one is here:
   the turn to a skill that is not installed; /adcopilot:audit gives Cursor's
   refresh for a stale tool list first; and one approval sentence serves every
   client, its Cursor half naming the Allowlist run mode.
+- The scheduled marker (#22, released in 0.2.14, founder answer 3): every file that tells the
+  model to send `source: "claude-plugin/<version>"` also says, in one
+  sentence the same in each, that a scheduled run sends
+  `source: "claude-scheduled"` instead and never `claude-plugin`. Those are
+  the strings AdCopilot reads (`schedule_recipe.SCHEDULED_SOURCE`,
+  `tools_adcopilot.PLUGIN_SOURCE`, `scheduled_guard.is_scheduled_source` at
+  release/v2.42.0, d9bd20ae): a scheduled task whose own words carry no
+  marker, answered by the review skill with the plugin marker, was never
+  seen as a scheduled run. `adcopilot-daily` says both halves:
+  the run sends the scheduled marker, a person's set-up or reply the
+  versioned plugin marker, never the scheduled one.
 """
 
 import json
@@ -87,6 +109,10 @@ HABIT_CARRIERS = [
     "skills/adcopilot-connect/SKILL.md",
     "skills/adcopilot-launch/SKILL.md",
     "skills/adcopilot-measure/SKILL.md",
+    # 0.2.14 (review of AdCopilot #942, item 5): a skill cannot include
+    # another file, and from 0.2.7 the server leaves the offer to the skill
+    # that owns the turn, so fix-checks carries the block itself.
+    "skills/adcopilot-fix-checks/SKILL.md",
     "commands/audit.md",
     "commands/daily.md",
     "commands/weekly.md",
@@ -121,13 +147,19 @@ OFFER_CLOSE_FIRST = ("A read-only check that runs by itself every weekday at 8:0
                      "with \"All clear\" or \"Needs a look\" plus one yes/no fix.")
 
 # AdCopilot's own recipe (server: ads_mcp_cloud/schedule_recipe.py,
-# SCHEDULED_CHECKIN, AdCopilot v2.30.2). `{account}` is filled
-# in by the set-up. Change it there first, then here and in the skill.
+# SCHEDULED_CHECKIN, AdCopilot v2.44.0, read on release/v2.44.1 and on the
+# deployed code). `{account}` is filled in by the set-up. Change it there
+# first, then here and in the skill. Its first call is the server's
+# CHECKIN_FIRST_CALL: the scheduled source and the morning check's own task
+# (CHECKIN_TASK, C5), the marker AdCopilot counts as its morning check.
+CHECKIN_TASK = "AdCopilot morning check"
+CHECKIN_FIRST_CALL = ("Call get_org_context first, with source "
+                      "\"claude-scheduled\" and task \"AdCopilot morning "
+                      "check\".")
 SCHEDULED_CHECKIN = (
-    "AdCopilot morning check, read-only. Call get_org_context first, with "
-    "source \"claude-scheduled\". Do not use any tool that changes my "
-    "account, and do not ask me questions; if something is unknown, say so "
-    "and carry on. For {account}:\n"
+    "AdCopilot morning check, read-only. " + CHECKIN_FIRST_CALL + " Do not "
+    "use any tool that changes my account, and do not ask me questions; if "
+    "something is unknown, say so and carry on. For {account}:\n"
     "1. Yesterday's spend, clicks, conversions and cost per conversion "
     "against my 7-day average.\n"
     "2. This month's budget pacing: on track, over or under, and any campaign "
@@ -140,6 +172,13 @@ SCHEDULED_CHECKIN = (
     "single most valuable fix, written as a yes/no question I can answer when "
     "I open this."
 )
+
+# The same recipe as v2.41.0 rendered it, before C5 gave its first call a
+# `task`: the frozen eval fixtures re-rendered with that release's code
+# (OlderFixturesOnV241) still carry it, and a recipe saved then opens with it.
+SCHEDULED_CHECKIN_V241 = SCHEDULED_CHECKIN.replace(
+    CHECKIN_FIRST_CALL,
+    "Call get_org_context first, with source \"claude-scheduled\".", 1)
 
 # Sales or upgrade wording, which the directory policy keeps out of anything
 # the model is told (plan D7), and the three words the copy rules ban.
@@ -171,8 +210,9 @@ BARE_MARKER = 'source: "claude-plugin"'
 # next_step hands it the steps ("follow the AdCopilot review steps installed
 # in this assistant") and the playbook's branch becomes `[PLUGIN]`; on the bare
 # one plugin_version is None, so plugin_skill is None and the full branch
-# comes back.
-NO_SKILLS = ("The one exception is where the AdCopilot skills are not "
+# comes back. It was "The one exception" until 0.2.14 (#22), when a scheduled
+# run became the other (SCHEDULED_SOURCE_RULE).
+NO_SKILLS = ("One exception is where the AdCopilot skills are not "
              "installed: Cursor can add this command without them, and then "
              "`adcopilot-review` is not among your skills. There, send "
              "`source: \"claude-plugin\"`, with no version, so AdCopilot hands "
@@ -180,6 +220,74 @@ NO_SKILLS = ("The one exception is where the AdCopilot skills are not "
              "`next_step` and `playbook` carry those steps themselves.")
 VERSIONED_COMMANDS = ("commands/audit.md", "commands/daily.md",
                       "commands/negatives.md", "commands/weekly.md")
+
+# #22, in 0.2.14 (founder answer 3): the two `source` values AdCopilot reads, as the
+# server spells them at release/v2.42.0 (d9bd20ae):
+# `schedule_recipe.SCHEDULED_SOURCE` (read by `tools_adcopilot._note_source`
+# and `scheduled_guard.is_scheduled_source`, spacing and case aside) and
+# `tools_adcopilot.PLUGIN_SOURCE`, with "/<version>" after it from 0.2.7
+# (`tools_adcopilot._plugin_marker`).
+SERVER_SCHEDULED_SOURCE = "claude-scheduled"
+SERVER_PLUGIN_SOURCE = "claude-plugin"
+# The sentence every file that sends the versioned marker carries, once, the
+# same in each: a scheduled run sends the scheduled marker instead. Without it
+# a scheduled task whose own words carry no marker (any task but AdCopilot's
+# recipe) reaches the server through the review skill with the plugin marker,
+# and the server never sees a scheduled run.
+SCHEDULED_SOURCE_RULE = ("In a scheduled run, started by a Claude scheduled "
+                         "task or a Claude Code routine with nobody there to "
+                         "answer, send `source: \"claude-scheduled\"` instead, "
+                         "never `claude-plugin`: `claude-scheduled` is how "
+                         "AdCopilot knows the run is unattended.")
+# adcopilot-daily's own pair: the run sends the scheduled marker (its step 1),
+# and a person's set-up or reply sends the versioned plugin marker, never the
+# scheduled one.
+DAILY_WITH_A_PERSON = ("Only the run sends `source: \"claude-scheduled\"`. "
+                       "With a person here, in the set-up or after the run, "
+                       "call `get_org_context` with `source: "
+                       "\"claude-plugin/%s\"`, never `claude-scheduled`, "
+                       "which would tell AdCopilot nobody is there.")
+# The run keeps no note (PR #22, second review). Founder answer 6 let it keep
+# AdCopilot's own notes, but the server annotates save_org_context as a write
+# (`tools_adcopilot._WRITE`, readOnlyHint false), so Claude lists it with the
+# write tools, and every set-up keeps those on Needs approval: the plugin's own
+# steps from 0.2.4 to 0.2.12 and AdCopilot's `schedule_recipe.ALWAYS_ALLOW_STEP`
+# at d9bd20ae. A scheduled run cannot answer that prompt, so a run that keeps a
+# note never finishes. The ban stays until the server's step, docs and mails
+# say Always allow for that tool and existing schedulers have been told.
+# 0.2.14: the set-up now lets that tool through (ALWAYS_ALLOW_STEP below), but
+# every schedule set up before it still asks; the ban lifts only once those
+# people have been told (AdCopilot's notice notice_2026_10_schedule_allow) and
+# the notice has been measured.
+RUN_NO_NOTE = ("and not `save_org_context` either, even where AdCopilot's "
+               "instructions ask for notes as you go: the source marker "
+               "already records the run, and a schedule set up before this "
+               "plugin's 0.2.14 may still keep that tool on **Needs "
+               "approval**, so a note would stop the run at a prompt nobody "
+               "can answer.")
+# The 0.2.13 first draft's two sentences, which would have stalled every run
+# set up before them.
+RUN_NOTES = ("`save_org_context` is allowed for AdCopilot's own notes only")
+SET_UP_NOTE_ALLOWED = ("set `save_org_context` alone to **Always allow**")
+# The set-up's first Claude step as every plugin version from 0.2.4 to 0.2.13
+# worded it: every write and delete tool kept asking, `get_org_context` and
+# `save_org_context` included, so from v2.42.3 (which annotates
+# get_org_context as not read-only) a run set up that way stopped at its first
+# call. Gone from 0.2.14.
+SET_UP_WRITES_ASK = ("The write and delete tools stay on **Needs approval**.")
+# 0.2.14: what AdCopilot's `schedule_recipe.ALWAYS_ALLOW_STEP` says (v2.44.0,
+# its CONTEXT_TOOL_TITLE and SAVE_TOOL_TITLE): the two AdCopilot tools Claude
+# lists under Write/delete tools that a run needs, by the titles Claude shows,
+# on Always allow; every other write tool on Needs approval.
+CONTEXT_TOOL_TITLE = "AdCopilot: what is connected and where you are"
+SAVE_TOOL_TITLE = "AdCopilot: save business notes and progress"
+SET_UP_ALWAYS_ALLOW = (
+    "Set the **Read-only tools** to **Always allow**, because a scheduled run "
+    "cannot answer a prompt. Under **Write/delete tools**, set “%s” and “%s” "
+    "to **Always allow** too: they keep AdCopilot's own notes and never change "
+    "Google Ads, and the run's first call is the first of them. Keep every "
+    "other Write/delete tool on **Needs approval**, so Claude asks before each "
+    "change." % (CONTEXT_TOOL_TITLE, SAVE_TOOL_TITLE))
 
 # The rule for a finding whose own text carries a condition (plugin #10). The
 # same words on every surface that relays a lens's findings.
@@ -275,8 +383,11 @@ FINDING_WINDOW_RULE = ("When a finding names a shorter window, say its dates. "
 # v2.41 alignment: the result states the count itself (#822: "from the 53 of
 # 73 checks that gave a result", `envelope.health_counts`), in words chosen so
 # a quick audit's 70 untried checks do not read as stopped ("could run" would).
-COVERAGE_RULE = ('Give coverage as the count the result gives, "N of 73 checks '
-                 'gave a result", never as a percentage next to the count, and '
+# AdCopilot v2.44 (D221): 70 checks, each listed, and the score is graded over
+# the ones that apply, so the result counts those ("from 53 of the 59 checks
+# that apply to this account", `envelope.applicable_counts`).
+COVERAGE_RULE = ('Give coverage as the count the result gives, "from N of the M '
+                 'checks that apply", never as a percentage next to the count, and '
                  "give reasons for the rest only in the result's own words.")
 
 # 0.2.12: the docs skill answers a question about AdCopilot from the one
@@ -495,11 +606,12 @@ class DailyHabitBlock(unittest.TestCase):
         # offer a paragraph of its own and passed it. The block, the review
         # skill and the README say it is always its own paragraph.
         block = " ".join((self.blocks()[HABIT_CARRIERS[0]] or "").split())
+        # 0.2.14: it follows the read-back of an applied fix, not a finding.
         self.assertIn("The offer is always its own paragraph, with a blank line "
-                      "before and after it: it goes right after the paragraph or "
-                      "list that gives that finding (and any line that sums that "
-                      "finding up), never on the end of one of that finding's "
-                      "sentences and never inside one of its bullets.", block)
+                      "before and after it: it goes right after the read-back "
+                      "(and any line that sums the fixes up), never on the end of "
+                      "one of its sentences and never inside one of its "
+                      "bullets.", block)
         self.assertIn("nothing else changed: a paragraph of its own, two "
                       "sentences, never split into more", block)
         # It sits between where the offer goes and what the close does, so it
@@ -513,8 +625,8 @@ class DailyHabitBlock(unittest.TestCase):
                       "line before and after it, never on the end of a finding's "
                       "sentences and never inside a bullet.", nxt)
         readme = " ".join(read("README.md").split())
-        self.assertIn("The offer comes, as a paragraph of its own, right after "
-                      "the first finding the morning check also reads", readme)
+        self.assertIn("The offer comes, as a paragraph of its own, only in a "
+                      "reply that asks you no yes/no on a fix", readme)
 
     def test_the_finding_in_the_braces_is_kept_short(self):
         # The value line is 32 words before the finding; a long finding would
@@ -595,12 +707,38 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
     def block(self):
         return " ".join((section(read(HABIT_CARRIERS[0]), HABIT_HEADING) or "").split())
 
-    def test_the_offer_comes_right_after_the_first_finding_the_check_reads(self):
+    def test_the_offer_waits_for_a_fix_applied_and_read_back(self):
+        # 0.2.14 (the 2026-10-20 "Fix all three" chat): the offer came after
+        # the first of three checks, beside its yes/no, and the day ran out
+        # before any fix. It is made only in a reply that asks no yes/no on a
+        # fix: after a fix applied and read back with no next fix proposed,
+        # or at the close of a reply that proposes none.
         block = self.block()
-        self.assertIn("Make it right after the first finding in the reply that "
-                      "the morning check also reads", block)
-        self.assertIn("tie it to that finding, with the figure you just read "
+        # Review of AdCopilot #942 (item 4): "only once no next fix is
+        # proposed" was reached only with nothing left to fix, and on Free the
+        # limit comes first. The first fix's read-back makes the offer in
+        # place of the next fix's yes/no, and that yes/no waits a reply.
+        self.assertIn("Make it in a reply that asks them no yes/no on a fix: "
+                      "the reply that reads back the first fix they approved, "
+                      "where the offer stands in for the next fix's yes/no "
+                      "(name the next fix in one line without asking, and "
+                      "propose it in the reply after), or the close of a reply "
+                      "that proposes no fix at all.", block)
+        self.assertNotIn("the reply proposes no next fix", block)
+        # Item 8: a 10-a-day morning check does not read what changed.
+        self.assertIn("without saying the check would have caught it. On a "
+                      "workspace with 10 operations a day "
+                      "(`org.ops_today_cap` is 10 or less) the morning check "
+                      "leaves what changed for the chat, so there a change "
+                      "nobody asked for is one of these.", block)
+        self.assertIn("Never make it beside a fix that waits for their answer: "
+                      "the yes/no comes first, and the offer waits.", block)
+        self.assertIn("When a fix applied in this conversation was for a "
+                      "finding the morning check also reads", block)
+        self.assertIn("tie it to that finding, with the figure you read "
                       "and never one you did not", block)
+        # The 0.2.11 moment, right after the first finding, is gone.
+        self.assertNotIn("Make it right after the first finding", block)
         # The old rule promised the check would catch ANY finding with a cost.
         self.assertNotIn("puts a cost or a loss on", block)
         # The old rules put it at the end of every reply.
@@ -613,7 +751,7 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
             with self.subTest(finding=finding):
                 self.assertIn(finding, block)
                 self.assertIn(line, " ".join(SCHEDULED_CHECKIN.split()))
-        named = block.split("the morning check also reads \u2014 ")[1].split(" \u2014 and tie it")[0]
+        named = block.split("the morning check also reads \u2014 ")[1].split(" \u2014 tie it")[0]
         self.assertEqual([p.strip() for p in named.split(",")],
                          [f for f, _l in self.CHECK_READS])
 
@@ -677,8 +815,18 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
 
     def test_the_readme_says_the_same_trigger_and_the_release_order(self):
         readme = " ".join(read("README.md").split())
-        self.assertIn("right after the first finding the morning check also "
-                      "reads", readme)
+        # 0.2.14: the moment is after a fix applied and read back.
+        morning = " ".join((section(read("README.md"),
+                                    "### Every morning, without asking") or "").split())
+        # Review of AdCopilot #942 (item 4): the first fix's read-back.
+        self.assertIn("only in a reply that asks you no yes/no on a fix: the "
+                      "reply that reads back the first fix you approved, where "
+                      "it stands in for the next fix's yes/no (the next fix is "
+                      "named, and proposed in the reply after), or at the close "
+                      "of a reply that proposes none. When that fix was for a "
+                      "finding the morning check also reads", morning)
+        self.assertNotIn("no next fix is proposed", morning)
+        self.assertNotIn("right after the first finding", morning)
         self.assertIn("With any other finding, or none, the offer closes the "
                       "reply instead, without that claim.", readme)
         self.assertNotIn("puts a cost or a loss on", readme)
@@ -723,8 +871,17 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
     def test_the_review_skill_words_it_the_same_way(self):
         nxt = " ".join((section(read("skills/adcopilot-review/SKILL.md"),
                                 "## What is next") or "").split())
-        self.assertIn("right after the first finding in the reply that the "
-                      "morning check also reads", nxt)
+        self.assertIn("Its moment is a reply that asks them no yes/no on a fix: "
+                      "the reply that reads back the first fix they approved, "
+                      "where it stands in for the next fix's yes/no (name the "
+                      "next fix in one line without asking, and propose it in "
+                      "the reply after), or the close of a reply that proposes "
+                      "none. Never beside a fix that waits for their answer. "
+                      "When a fix applied in this conversation was for a "
+                      "finding the morning check also reads", nxt)
+        self.assertIn("on a workspace with 10 operations a day the morning "
+                      "check leaves what changed for the chat, so not that one "
+                      "there", nxt)
         self.assertIn("for any other finding, even one that costs money (a "
                       "tracking fault, a Quality Score problem, a targeting "
                       "problem), or none, the close, before any question the "
@@ -758,9 +915,13 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
         daily = " ".join(read("skills/adcopilot-daily/SKILL.md").split())
         # The run's own section names no plan to buy (`SALES`), so it says
         # "otherwise" where the set-up and the README name who counts 1.
-        self.assertIn("so the five reads count 7 and a run comes to about 8 to "
-                      "10 of Free's 10, some days all of them; otherwise every "
-                      "read counts 1.", daily)
+        # 0.2.14: on a 10-a-day workspace the run makes three of the five.
+        self.assertIn("so the five reads would count 7 and a run about 8 to 10 "
+                      "of Free's 10, some days all of them, which is why such "
+                      "a day makes four (below); otherwise every read counts "
+                      "1.", daily)
+        self.assertIn("where `org.ops_weighted` is true the four count 6 of "
+                      "the 10.", daily)
         # A trial held to Free's 10 a day (paused for its card, or waiting
         # for its first charge) is weighted while its `plan` still reads
         # `pro`, so the skill keys the cost on the server's own answer,
@@ -770,16 +931,20 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
         self.assertIn("Where `get_org_context`'s `org.ops_weighted` is true "
                       "(Free, and a trial held to Free's 10 a day, whose "
                       "`plan` still reads `pro`), say it in operations "
-                      "instead: an analysis counts 2 there, so a run uses "
-                      "about 8 to 10 of Free's 10 operations, and some days "
-                      "all of them.", daily)
+                      "instead: an analysis counts 2 there, so a run makes "
+                      "its first four reads only, about 6 of Free's 10 "
+                      "operations, and leaves the rest of the day for the fix "
+                      "it ends on.", daily)
         self.assertNotIn("`plan` is `free`", daily)
         readme = " ".join(read("README.md").split())
         self.assertIn("On Free, and on a trial held to Free's 10 a day, an "
                       "analysis such as budget pacing counts 2 operations and "
-                      "a single read 1, so a run alone comes to about 8 to 10 "
-                      "of Free's 10, some days all of them; on a paid plan or "
-                      "a running trial every read counts 1.", readme)
+                      "a single read 1, so all five reads would come to about "
+                      "8 to 10 of Free's 10, some days all of them; there the "
+                      "run makes its first four reads only, about 6, leaving "
+                      "what changed for the chat, so the fix it ends on still "
+                      "fits the same day. On a paid plan "
+                      "or a running trial every read counts 1.", readme)
         audit = " ".join(read("commands/audit.md").split())
         # Fourth review of AdCopilot #919: the command's own calls are a
         # fixed figure, and the related reads the same file tells the model
@@ -843,7 +1008,10 @@ class UnattendedRun(unittest.TestCase):
         run = section(self.skill(), "## The run") or ""
         self.assertRegex(run, r"Read only\.")
         self.assertRegex(run, r"Ask nothing\.")
-        self.assertIn("save_org_context", run)  # named as a tool the run does not call
+        # save_org_context is named as a tool the run does not call (PR #22,
+        # second review: a note would wait at an approval prompt).
+        self.assertIn("save_org_context", run)
+        self.assertEqual(" ".join(run.split()).count(RUN_NO_NOTE), 1)
         self.assertRegex(run, r"Never offer to schedule")
 
     def test_the_lenses(self):
@@ -980,8 +1148,9 @@ class Commands(unittest.TestCase):
         `adcopilot-launch` makes the call), and a test that cannot tell a
         delegation from a read would fail on prose.
 
-        `adcopilot-daily` is the one exception: its run is unattended, so it
-        passes `source: "claude-scheduled"` instead.
+        `adcopilot-daily` carries both: its run is unattended, so it passes
+        `source: "claude-scheduled"`, and from 0.2.14 (#22) its set-up and the reply
+        after a run, with a person here, pass the versioned marker.
         """
         for name in ("audit", "daily", "weekly", "negatives"):
             with self.subTest(command=name):
@@ -1000,12 +1169,13 @@ class Commands(unittest.TestCase):
                 continue
             checked += 1
             with self.subTest(surface=rel):
-                marker = ('source: "claude-scheduled"'
-                          if "adcopilot-daily" in rel
-                          else plugin_marker())
-                self.assertIn(
-                    marker, text,
-                    "%s calls get_org_context without %s" % (rel, marker))
+                markers = ([plugin_marker()] + (['source: "claude-scheduled"']
+                                                if "adcopilot-daily" in rel
+                                                else []))
+                for marker in markers:
+                    self.assertIn(
+                        marker, text,
+                        "%s calls get_org_context without %s" % (rel, marker))
         self.assertGreaterEqual(checked, 7, "expected every reading skill and "
                                             "agent to be checked, saw %d" % checked)
 
@@ -1040,11 +1210,37 @@ class Readme(unittest.TestCase):
         self.assertNotIn("scheduled run", will_not)
 
     def test_the_schedule_section_says_what_keeps_a_run_to_reads(self):
-        morning = section(read("README.md"), "### Every morning, without asking") or ""
+        # Since D186 (AdCopilot `scheduled_guard.py`) the server refuses every
+        # write tool on a connection in a scheduled run, AdCopilot's own notes
+        # aside; it knows the run only from its first call. The 0.2.14 review:
+        # "Nothing on AdCopilot's side stops a change" was no longer true.
+        morning = " ".join((section(read("README.md"),
+                                    "### Every morning, without asking") or "").split())
         self.assertNotIn("It changes nothing", morning)
-        self.assertIn("Nothing on AdCopilot's side stops a change", morning)
+        self.assertNotIn("Nothing on AdCopilot's side stops a change", morning)
+        self.assertIn("AdCopilot holds a scheduled run to reads as well: once a "
+                      "run's first call is `get_org_context` with "
+                      "`source: \"claude-scheduled\"`, AdCopilot refuses every "
+                      "tool that changes Google Ads", morning)
+        self.assertIn("a run that skips it or sends another source is not held",
+                      morning)
         self.assertIn("**Automatically approve**", morning)
         self.assertIn("**Blocked**", morning)
+
+    def test_each_release_note_names_its_own_marker(self):
+        # The 0.2.14 review: #24's version bump rewrote the 0.2.13 note's
+        # "moves to `claude-plugin/0.2.13`" to 0.2.14. A release note is
+        # history: the marker it says the files move to is its own version.
+        notes = 0
+        for line in read("README.md").splitlines():
+            m = re.match(r"\*\*(\d+\.\d+\.\d+) \(", line)
+            if not m:
+                continue
+            notes += 1
+            for moved in re.findall(r"moves to `claude-plugin/([^`]+)`", line):
+                with self.subTest(note=m.group(1)):
+                    self.assertEqual(moved, m.group(1))
+        self.assertGreaterEqual(notes, 5)
 
     def test_no_claim_the_recipe_is_already_everywhere(self):
         readme = read("README.md")
@@ -1295,6 +1491,10 @@ class PluginVersionMarker(unittest.TestCase):
                         m.group(1), manifest_version(),
                         "%s marks plugin use as %s but the manifest is %s — move "
                         "every copy with the bump" % (rel, m.group(0), manifest_version()))
+        # 14 in 0.2.14: one in each marked file (#22's second review). Connect's
+        # and launch's later steps say "the `source` the first rule gives",
+        # "the same `source`" and "the `source` given under Arriving mid-arc",
+        # so a scheduled run meets the literal only beside its exception.
         self.assertGreaterEqual(seen, 14, "expected the 14 marker sites, saw %d" % seen)
 
     def test_no_bare_marker_is_left(self):
@@ -1348,7 +1548,10 @@ class PluginVersionMarker(unittest.TestCase):
                     self.assertEqual(flat_text.count(DOCS_ROUTING), 1)
                 else:
                     self.assertEqual(flat_text.count(guard), 1)
-        self.assertEqual(marked, 12)
+        # 13 from 0.2.13: adcopilot-daily's set-up and its reply after a run
+        # send the versioned marker too (#22); 14 from 0.2.14:
+        # adcopilot-fix-checks (#24).
+        self.assertEqual(marked, 14)
 
     def test_the_marker_graders_need_the_version(self):
         """Each case's marks-plugin-use grader counts the calls it fails on, so
@@ -1395,6 +1598,44 @@ class PluginVersionMarker(unittest.TestCase):
         self.assertIn('source: \\"claude-plugin/$VERSION\\"', script)
         self.assertIn(".claude-plugin/plugin.json", script)
         self.assertIn("*/adcopilot-daily/SKILL.md) ;;", script)
+
+    def test_the_ablation_stub_says_what_a_scheduled_run_sends(self):
+        # PR #22, second review: the stub kept the plugin marker but dropped
+        # the scheduled-run sentence that is now part of the same marker text,
+        # so review-scheduled-unmarked failed its baseline by construction and
+        # the review skill's delta measured the forced marker. The script's
+        # own stub loop runs here on a copy of the skills.
+        import shutil
+        import tempfile
+        bash = shutil.which("bash")
+        if bash is None:
+            self.skipTest("no bash")
+        script = read("evals/ablation/tools-only.sh")
+        loop = re.search(r'(?ms)^for skill in "\$COPY"/skills/\*/SKILL\.md; do$.*?^done$',
+                         script)
+        self.assertIsNotNone(loop, "the stub loop is not where it was")
+        with tempfile.TemporaryDirectory() as work:
+            shutil.copytree(os.path.join(ROOT, "skills"), os.path.join(work, "skills"))
+            done = subprocess.run(
+                [bash, "-c", "set -euo pipefail\n" + loop.group(0)],
+                env=dict(os.environ, COPY=work, VERSION=manifest_version()),
+                capture_output=True, text=True)
+            self.assertEqual(done.returncode, 0, done.stderr)
+            stubs = {name: open(os.path.join(work, "skills", name, "SKILL.md"),
+                                encoding="utf-8").read()
+                     for name in os.listdir(os.path.join(work, "skills"))}
+        for name, stub in sorted(stubs.items()):
+            body = " ".join(stub.split("\n---\n", 1)[1].split())
+            with self.subTest(skill=name):
+                if name == "adcopilot-daily":
+                    self.assertNotIn("source", body)
+                    continue
+                self.assertIn(plugin_marker(), body)
+                self.assertEqual(body.count(SCHEDULED_SOURCE_RULE), 1)
+                self.assertGreater(body.find(SCHEDULED_SOURCE_RULE),
+                                   body.find(plugin_marker()))
+        self.assertNotIn("expected to fail there",
+                         read("evals/review-scheduled-unmarked/case.yaml"))
 
 
 class WhatTheServerDefersTo(unittest.TestCase):
@@ -1488,6 +1729,8 @@ class ConditionalFindings(unittest.TestCase):
         "skills/adcopilot-daily/SKILL.md",
         "skills/adcopilot-launch/SKILL.md",
         "skills/adcopilot-measure/SKILL.md",
+        # 0.2.14: the fixes for an audit's checks, each read with its lens.
+        "skills/adcopilot-fix-checks/SKILL.md",
     ]
     # Files that name a lens and relay none of its findings, with why.
     EXCUSED = {
@@ -1951,6 +2194,24 @@ class Manifest(unittest.TestCase):
             parts(manifest), parts(newest),
             "the manifest (%s) is behind the newest tag (v%s) — bump "
             ".claude-plugin/plugin.json before tagging" % (manifest, newest))
+
+    def test_no_compiled_python_is_tracked(self):
+        """0.2.13's first push committed tests/__pycache__/*.pyc, compiled by
+        the builder's own test run: a plugin install copies the repository,
+        so it would have shipped to every user, and the file recorded the
+        local scratch path it was compiled in. Nothing compiled is tracked,
+        and .gitignore keeps the next one out."""
+        listed = subprocess.run(["git", "ls-files", "-z"], cwd=ROOT,
+                                capture_output=True, text=True)
+        if listed.returncode != 0:
+            self.skipTest("not a git checkout")
+        tracked = [p for p in listed.stdout.split("\0")
+                   if "__pycache__/" in p or p.endswith((".pyc", ".pyo"))]
+        self.assertEqual(tracked, [])
+        ignore = read(".gitignore").splitlines()
+        for rule in ("__pycache__/", "*.pyc"):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, ignore)
 
 
 class AuditorToolList(unittest.TestCase):
@@ -2522,9 +2783,10 @@ class ReleaseNoteAndMarker(unittest.TestCase):
                         seen += 1
                         with self.subTest(file=rel):
                             self.assertEqual(m.group(1), manifest_version())
-        # 15 at 0.2.12: three in adcopilot-connect, two in adcopilot-launch,
-        # one in each other marked file.
-        self.assertGreaterEqual(seen, 15)
+        # 14 at 0.2.14: one in each marked file, adcopilot-daily and
+        # adcopilot-fix-checks among them
+        # (connect had three and launch two until #22's second review).
+        self.assertGreaterEqual(seen, 14)
 
 
 # The server's own hand-off text for a running, counted account (AdCopilot
@@ -3211,7 +3473,8 @@ class V241Alignment(unittest.TestCase):
                       "this version is published", note)
         self.assertIn("so that release goes out first", note)
         self.assertNotIn("no server release has to come first", note)
-        self.assertIn("twenty-eight cases across the suite", flat("README.md"))
+        # 0.2.14 adds fix-checks-three-checks (#24) and review-scheduled-unmarked (#22).
+        self.assertIn("thirty cases across the suite", flat("README.md"))
 
     def test_the_question_first_case(self):
         ctx = mock(self.QUESTION, "get_org_context")
@@ -3282,7 +3545,7 @@ class V241Alignment(unittest.TestCase):
                        if "segments.date" in row})
         self.assertEqual(days[-1], "2026-10-13")
         audit = mock(self.DATES, "full_audit")
-        self.assertIn("from the 58 of 73 checks that gave a result", audit["narrative"])
+        self.assertIn("from 56 of the 62 checks that apply to this account", audit["narrative"])
         self.assertIn("in the 7 days from 7 Oct to 13 Oct",
                       next(f["detail"] for f in audit["findings"] if f["check_id"] == "G-CT3"))
         self.assertTrue(any(c.get("reason_code") == "NO_MARKET_BENCHMARK"
@@ -3438,8 +3701,11 @@ class V241Alignment(unittest.TestCase):
             self.assertNotRegex(refresh, re.compile(other))
         cov, cflags = grader(self.DATES, "coverage-is-a-count-not-a-percentage")
         self.assertRegex("Coverage was 73% of its 73 checks.", re.compile(cov, cflags))
+        self.assertRegex("Coverage was 90% of its 70 checks.", re.compile(cov, cflags))
         self.assertNotRegex("The audit's score comes from the 58 of 73 checks "
                             "that gave a result.", re.compile(cov, cflags))
+        self.assertNotRegex("The audit's score comes from 56 of the 62 checks "
+                            "that apply to this account.", re.compile(cov, cflags))
 
 
 # The Cursor round of 0.2.12. AdCopilot is listed on cursor.directory, whose
@@ -3798,7 +4064,7 @@ class OlderFixturesOnV241(unittest.TestCase):
                 if offer:
                     self.assertEqual(ctx["routine"]["schedule"]["offer"], offer)
                     self.assertEqual(ctx["routine"]["schedule"]["instructions"],
-                                     SCHEDULED_CHECKIN.format(
+                                     SCHEDULED_CHECKIN_V241.format(
                                          account="Google Ads account 123-456-7890"))
                 else:
                     self.assertNotIn("schedule", ctx["routine"])
@@ -3848,6 +4114,182 @@ class OlderFixturesOnV241(unittest.TestCase):
                     self.assertIsNone(re.search(pattern, record, flags))
 
 
+
+class FixChecks(unittest.TestCase):
+    """0.2.14: the fixes for an AdCopilot audit's checks, from the 2026-10-20
+    "Fix all three in Claude" chat. The question the audit page sends (AdCopilot
+    v2.43.3, `audit_asks.top_prompt` and `check_prompt`) must fire the skill;
+    the skill says the cost first, recommends the order foundation first,
+    reads each check with its own lens and runs no new audit, asks one yes/no
+    at a time with at most five rows, reads back every change, warns before
+    the call that uses the last of the day, and makes the habit offer only
+    after a fix is applied and read back. Around it: the review and
+    /adcopilot:negatives ask one yes/no (AskUserQuestion in Claude Code), the
+    model may start /adcopilot:negatives, every surface runs at most one
+    related read, and a 10-a-day morning check makes four reads. Review of
+    AdCopilot #942: a change costs one call per keyword it pauses (or per
+    campaign or list it adds negatives to) plus a read-back, the habit block
+    is carried whole, /adcopilot:negatives is applied, not started, and the
+    example asks only for rows that were shown."""
+
+    SKILL = "skills/adcopilot-fix-checks/SKILL.md"
+    # The server's own questions (AdCopilot v2.43.3), as the audit page and
+    # the check-in emails send them.
+    TOP3 = ('My AdCopilot audit of Google Ads account 123-456-7890 flagged '
+            'three checks to fix first: "Enhanced conversions enabled" (G43), '
+            '"Close variant pollution" (G18) and "Zero-conversion keywords" '
+            "(G-WS1). First tell me what today's AdCopilot allowance covers, "
+            "then fix them one at a time in the order you recommend. One yes/no "
+            "at a time; change nothing until I say yes.")
+    ONE_YES_NO = ('("Shall I block these 5? Reply yes, or name any to keep.")')
+    FIVE_ROWS = 'then "and N more; ask to see them"'
+
+    def test_the_description_names_the_audit_questions(self):
+        fm = frontmatter(read(self.SKILL))
+        self.assertRegex(fm, r"(?m)^name: adcopilot-fix-checks$")
+        desc = re.search(r"^description: (.+)$", fm, re.M).group(1)
+        for words in ("My AdCopilot audit of Google Ads account", "flagged",
+                      '"failed"', '"warned on"', "(G18)", "(G43)", "(G-WS1)"):
+            with self.subTest(words=words):
+                self.assertIn(words, desc)
+        self.assertIn("flagged three checks to fix first", self.TOP3)
+        self.assertIsNone(SALES.search(desc))
+
+    def test_cost_first_and_the_order_recommended(self):
+        text = flat(self.SKILL)
+        self.assertIn("Before the first read, say in one line what the fixes "
+                      "cost and what is left", text)
+        self.assertIn("`org.ops_today_cap` and `org.ops_today_used`", text)
+        self.assertIn("Foundation first", text)
+        self.assertIn("never ask the customer to pick it", text)
+        # Review of AdCopilot #942 (item 2): `update_keyword` changes one
+        # keyword a call, so a pause of four is four calls and a read-back.
+        self.assertIn("The change is one call per keyword it pauses "
+                      "(`update_keyword` changes one keyword a call), or per "
+                      "campaign or list it adds never-show-for words to (one "
+                      "call takes them all).", text)
+        self.assertIn("Keep what the fix they approve costs: one call per "
+                      "keyword it pauses, or per campaign or list it adds "
+                      "never-show-for words to, plus one read-back.", text)
+        self.assertIn("propose the costliest part that fits", text)
+        self.assertNotIn("Keep two operations", text)
+        self.assertNotIn("about 3 operations where every call counts 1", text)
+        self.assertIn("Before a call that would use the last of today's "
+                      "operations, say what it covers and ask first", text)
+
+    def test_each_family_has_its_flow(self):
+        text = flat(self.SKILL)
+        for words in ("Read `analyze_search_terms`",
+                      "Apply them the way the `/adcopilot:negatives` command "
+                      "does, with the read you already hold; do not start that "
+                      "command",
+                      "Read `analyze_waste`",
+                      "`update_keyword` with `status` PAUSED",
+                      "Pause, never remove.",
+                      "Read `conversion_setup_audit`",
+                      "the `adcopilot-measure` skill's steps",
+                      "give as clicks, one step at a time, waiting for each",
+                      "Run no new audit for it."):
+            with self.subTest(words=words):
+                self.assertIn(words, text)
+        self.assertNotIn("`full_audit`", text)
+
+    def test_a_ready_call_is_proposed_as_it_stands_and_a_draft_asks(self):
+        """AdCopilot v2.44 (A2): a finding carries a ready call
+        (`kind` "tool") or a draft (`kind` "skeleton", with `needs`)."""
+        text = flat(self.SKILL)
+        self.assertIn("One whose `kind` is `tool` is a ready call", text)
+        self.assertIn("propose it as it stands", text)
+        self.assertIn("One whose `kind` is `skeleton` is a draft", text)
+        self.assertIn("`needs` says what only the customer can give", text)
+        self.assertIn("never fill it in yourself", text)
+
+    def test_one_decision_a_message(self):
+        text = flat(self.SKILL)
+        self.assertIn("Show at most 5 rows of any list, costliest first, "
+                      + self.FIVE_ROWS, text)
+        self.assertIn("End each message with exactly one question: a yes/no on "
+                      "the fix you recommend " + self.ONE_YES_NO + "; a yes "
+                      "covers only the rows you showed.", text)
+        self.assertIn("No numbered menu, no second question", text)
+        self.assertIn("AskUserQuestion", text)
+
+    def test_every_change_is_read_back_and_the_offer_waits_for_it(self):
+        text = flat(self.SKILL)
+        self.assertIn("Apply it. Then read back only what its own result does "
+                      "not show", text)
+        self.assertIn("say how to undo it", text)
+        self.assertIn("Once the first fix is applied and read back, and "
+                      "`get_org_context` handed you its recipe, "
+                      "`routine.schedule`, make the daily-habit offer in that "
+                      "reply, as \"The daily habit\" below says", text)
+        self.assertIn("never in the same message as a yes/no", text)
+        self.assertIn(self.SKILL, HABIT_CARRIERS)
+        self.assertNotIn("the way the `adcopilot-review` skill words it", text)
+
+    def test_the_review_and_negatives_ask_one_yes_no(self):
+        review = flat("skills/adcopilot-review/SKILL.md")
+        self.assertIn("never a numbered menu, and never a request to pick the "
+                      "order; recommend it.", review)
+        self.assertIn("Show at most 5 rows of any list, costliest first, "
+                      + self.FIVE_ROWS, review)
+        self.assertIn("AskUserQuestion", review)
+        self.assertIn("On such a day, before a call that would use the last of "
+                      "today's operations, say what it covers and ask first.",
+                      review)
+        negatives = flat("commands/negatives.md")
+        self.assertIn("The one question: a yes/no on the themes you recommend "
+                      "blocking", negatives)
+        self.assertIn("AskUserQuestion", negatives)
+        self.assertIn("at most 5 rows", negatives)
+
+    def test_the_model_may_start_negatives(self):
+        fm = frontmatter(read("commands/negatives.md"))
+        self.assertNotIn("disable-model-invocation", fm)
+        self.assertIn("a question about how the ads are doing is the review's",
+                      fm)
+        # Review of AdCopilot #942 (item 14): an audit check is fix-checks',
+        # which applies the write steps with the 30-day read it holds.
+        self.assertIn("checks from an AdCopilot audit are the fix-checks "
+                      "skill's", fm)
+        self.assertNotIn("audit check about search terms is being fixed", fm)
+
+    def test_every_surface_runs_at_most_one_related_read(self):
+        stale = re.compile(r"bears? on the [\w' ]{1,40}?, at most three")
+        carriers = 0
+        for rel in model_read_files():
+            text = flat(rel)
+            with self.subTest(file=rel):
+                self.assertIsNone(stale.search(text))
+            if "related_reads" in text and "at most one that bears on" in text:
+                carriers += 1
+        self.assertGreaterEqual(carriers, 8)
+
+    def test_a_ten_a_day_morning_check_makes_four_reads(self):
+        # Review of AdCopilot #942 (item 8): three reads skipped the
+        # disapproved ads the offer says the check would have caught; four
+        # keep them (6 of 10 weighted) and leave only what changed.
+        run = " ".join((section(read("skills/adcopilot-daily/SKILL.md"),
+                                "## The run") or "").split())
+        self.assertIn("On a workspace with 10 operations a day "
+                      "(`org.ops_today_cap` is 10 or less), make the first four "
+                      "reads only", run)
+        self.assertIn("that what changed was left for the chat", run)
+        self.assertIn("Five reads, in this order", read("skills/adcopilot-daily/SKILL.md"))
+
+    def test_the_case_grades_the_skill(self):
+        case = read("evals/fix-checks-three-checks/case.yaml")
+        self.assertIn("tags: [fix-checks]", case)
+        self.assertIn('"fix-checks": "adcopilot-fix-checks"',
+                      read("evals/ablation/delta.py"))
+        self.assertIn("adcopilot-fix-checks", grader_block(case, "skill-fired"))
+        self.assertIn("min: 0", grader_block(case, "runs-no-new-audit"))
+        ctx = mock("fix-checks-three-checks", "get_org_context")
+        self.assertEqual(ctx["plugin"]["version"], manifest_version())
+        self.assertIn("the fix-checks steps for audit checks", ctx["next_step"])
+        self.assertIsNone(SALES.search(self.TOP3))
+
+
 class NoCompiledCaches(unittest.TestCase):
     """A compiled cache is a build product of a local run, not plugin text:
     a `.pyc` names the path it was compiled from, so committing one publishes
@@ -3869,6 +4311,486 @@ class NoCompiledCaches(unittest.TestCase):
                   if "__pycache__/" in path
                   or path.endswith((".pyc", ".pyo", ".pyd"))]
         self.assertEqual(cached, [])
+
+
+class ScheduledSourceMarker(unittest.TestCase):
+    """#22, in 0.2.14: which `source` a scheduled run sends, and what it may save.
+
+    Founder answer 3: every file that tells the model which `source` to pass
+    to `get_org_context` says that a scheduled run passes "claude-scheduled",
+    never "claude-plugin", and otherwise "claude-plugin/<version>". Until
+    0.2.12 only adcopilot-daily's run said so; a scheduled task whose own
+    words carry no marker, answered by the review skill, sent the plugin
+    marker, and the server (`tools_adcopilot._note_source`, and from
+    release/v2.42.0 `scheduled_guard.note_front_door`) never saw a scheduled
+    run. Founder answer 6 would let the run use `save_org_context` for
+    AdCopilot's own notes, and v2.42.0's guard leaves that tool alone
+    (`scheduled_guard.guarded`), but Claude asks before it on every set-up
+    made so far, so the run still keeps no note (PR #22, second review)."""
+
+    DAILY = "skills/adcopilot-daily/SKILL.md"
+    REVIEW = "skills/adcopilot-review/SKILL.md"
+    KEEP = ("Send `source` exactly as written, the version included: it tells "
+            "AdCopilot which of this plugin's steps are installed here.")
+    CASE = "daily-scheduled-run"
+
+    def marked(self):
+        return [rel for rel in model_read_files()
+                if plugin_marker() in read(rel)]
+
+    def test_the_values_are_the_ones_the_server_reads(self):
+        self.assertIn('`source: "%s"`' % SERVER_SCHEDULED_SOURCE,
+                      SCHEDULED_SOURCE_RULE)
+        self.assertIn("never `%s`" % SERVER_PLUGIN_SOURCE, SCHEDULED_SOURCE_RULE)
+        self.assertNotIn(BARE_MARKER, SCHEDULED_SOURCE_RULE)
+        self.assertEqual(plugin_marker(), 'source: "%s/%s"'
+                         % (SERVER_PLUGIN_SOURCE, manifest_version()))
+        # AdCopilot's recipe opens with the same value.
+        self.assertIn('source "%s"' % SERVER_SCHEDULED_SOURCE, SCHEDULED_CHECKIN)
+
+    def test_every_file_that_sends_the_plugin_marker_says_what_a_run_sends(self):
+        checked = 0
+        for rel in self.marked():
+            if rel == self.DAILY:
+                continue
+            checked += 1
+            text = flat(rel)
+            with self.subTest(file=rel):
+                self.assertEqual(text.count(SCHEDULED_SOURCE_RULE), 1)
+                # Beside the marker it overrides: after the keep sentence, and
+                # in the four commands after the no-skills exception too.
+                self.assertGreater(text.find(SCHEDULED_SOURCE_RULE),
+                                   text.find(self.KEEP))
+                if rel in VERSIONED_COMMANDS:
+                    self.assertGreater(text.find(SCHEDULED_SOURCE_RULE),
+                                       text.find(NO_SKILLS))
+        # 13 in 0.2.14: adcopilot-fix-checks (#24) is marked too.
+        self.assertEqual(checked, 13)
+
+    def test_the_plugin_marker_is_written_once_beside_its_exception(self):
+        # PR #22, second review: connect's steps 2 and 3 and launch's step 1
+        # restated `source: "claude-plugin/<version>"` with no exception, so a
+        # scheduled run working through the steps met the plain marker again.
+        # Each marked file writes it once, in the paragraph that says what a
+        # scheduled run sends instead (adcopilot-daily: what a person's
+        # set-up or reply sends), and every later call refers back to it.
+        marked = self.marked()
+        self.assertEqual(len(marked), 14)
+        for rel in marked:
+            text = read(rel)
+            with self.subTest(file=rel):
+                self.assertEqual(text.count(plugin_marker()), 1)
+                para = [p for p in re.split(r"\n\s*\n", text)
+                        if plugin_marker() in p][0]
+                para = " ".join(para.split())
+                if rel == self.DAILY:
+                    self.assertIn(" ".join((DAILY_WITH_A_PERSON
+                                            % manifest_version()).split()), para)
+                else:
+                    self.assertIn(SCHEDULED_SOURCE_RULE, para)
+        refer = {"skills/adcopilot-connect/SKILL.md": (
+                     "Call `get_org_context` with the `source` the first rule gives.",
+                     "calling `get_org_context` again, with the same `source`."),
+                 "skills/adcopilot-launch/SKILL.md": (
+                     'Call `get_org_context` with the `source` given under '
+                     '"Arriving mid-arc".',)}
+        for rel, lines in refer.items():
+            for line in lines:
+                with self.subTest(file=rel, line=line):
+                    self.assertEqual(flat(rel).count(line), 1)
+
+    def test_the_review_skill_says_it_with_its_first_call(self):
+        top = read(self.REVIEW).split("## Spend the reads you are given", 1)[0]
+        self.assertEqual(" ".join(top.split()).count(SCHEDULED_SOURCE_RULE), 1)
+
+    def test_the_scheduled_marker_is_written_nowhere_else(self):
+        # Outside the rule, only adcopilot-daily names the scheduled value: a
+        # person's conversation that sent it would be read as a run nobody is
+        # there for.
+        for rel in model_read_files():
+            if rel == self.DAILY:
+                continue
+            with self.subTest(file=rel):
+                rest = flat(rel).replace(SCHEDULED_SOURCE_RULE, "")
+                self.assertNotIn(SERVER_SCHEDULED_SOURCE, rest)
+
+    def test_daily_says_both_halves(self):
+        text = read(self.DAILY)
+        intro = " ".join(text.split("\n## The run\n", 1)[0].split())
+        self.assertEqual(intro.count(" ".join(
+            (DAILY_WITH_A_PERSON % manifest_version()).split())), 1)
+        run = section(text, "## The run") or ""
+        self.assertIn('`source: "claude-scheduled"`', run)
+        self.assertIn("never `claude-plugin`", run)
+        self.assertNotIn('source: "claude-plugin', run)
+        # Its own words, not the other files' sentence.
+        self.assertEqual(flat(self.DAILY).count(SCHEDULED_SOURCE_RULE), 0)
+
+    def test_the_run_keeps_no_note(self):
+        # PR #22, second review: Claude asks before save_org_context on every
+        # set-up made so far (the plugin's own steps up to 0.2.12 and
+        # AdCopilot's ALWAYS_ALLOW_STEP), so a run that keeps a note waits at
+        # a prompt nobody answers. The run keeps its ban, with the reason, and
+        # the first draft's allowance is gone.
+        run = " ".join((section(read(self.DAILY), "## The run") or "").split())
+        self.assertEqual(run.count(RUN_NO_NOTE), 1)
+        self.assertIn("Call no tool that changes anything", run)
+        self.assertNotIn(RUN_NOTES, run)
+        self.assertNotIn("`session_note`", run)
+
+    def test_the_set_up_lets_the_runs_two_adcopilot_tools_through(self):
+        # 0.2.14: since v2.42.3 Claude lists get_org_context, every run's
+        # first call, under Write/delete tools, so a set-up that kept every
+        # write tool asking stalled the run at that call. The step now says
+        # what AdCopilot's ALWAYS_ALLOW_STEP says: read-only tools and the
+        # two AdCopilot tools, by the titles Claude shows, on Always allow;
+        # every other write tool still asks. The run keeps its ban on notes
+        # all the same (test_the_run_keeps_no_note): schedules set up before
+        # this version still ask before save_org_context.
+        setup = section(read(self.DAILY), "## The set-up") or ""
+        claude = setup[setup.find("**Claude — claude.ai, Cowork, the desktop app:**"):]
+        step1 = " ".join(claude[claude.find("\n1. "):claude.find("\n2. ")].split())
+        self.assertIn(SET_UP_ALWAYS_ALLOW, step1)
+        self.assertIn("**Tool permissions**", step1)
+        self.assertNotIn(SET_UP_WRITES_ASK, step1)
+        self.assertNotIn(SET_UP_NOTE_ALLOWED, step1)
+        # Never a tool identifier: Claude shows the title, not the name.
+        self.assertNotIn("`get_org_context`", step1)
+        self.assertNotIn("`save_org_context`", step1)
+        self.assertEqual(" ".join(read(self.DAILY).split()).count("**Always allow**"), 2)
+        run = " ".join((section(read(self.DAILY), "## The run") or "").split())
+        self.assertEqual(run.count(RUN_NO_NOTE), 1)
+
+    def test_the_release_check_expects_no_note(self):
+        releasing = " ".join((section(read("README.md"), "## Releasing") or "").split())
+        step6 = releasing[releasing.find("6. The scheduled run"):
+                          releasing.find("7. `claude plugin validate")]
+        self.assertIn("and no `save_org_context` either (a schedule set up "
+                      "before 0.2.14 keeps that tool asking first, so a note "
+                      "would stop it)", step6)
+        self.assertNotIn("**Always allow**", step6)
+        # The run forbids a change in every product it can reach, so the
+        # release check does too: under "in Google Ads" alone, a run that
+        # created an Analytics event or a Tag Manager tag would pass step 6.
+        products = "in Google Ads, Analytics, Tag Manager or Search Console"
+        run = " ".join((section(read(self.DAILY), "## The run") or "").split())
+        self.assertIn(products, run)
+        self.assertIn("calls no tool that changes anything " + products, step6)
+        note = section(read("README.md"), "## AdCopilot version") or ""
+        note = " ".join(note[note.find("**%s (" % manifest_version()):]
+                        .split("\n\n", 1)[0].split())
+        self.assertNotIn(SET_UP_NOTE_ALLOWED, note)
+        for part in ("still calls no `save_org_context`",
+                     "a run that kept a note would stop there and never finish",
+                     "once AdCopilot has told the people who already schedule "
+                     "the check to set the two tools to **Always allow**, and "
+                     "that notice has been measured"):
+            with self.subTest(part=part):
+                self.assertIn(part, note)
+
+    def test_the_scheduled_case_fails_any_save(self):
+        # A note included: on the set-ups that exist, it stops the run.
+        text = read("evals/%s/case.yaml" % self.CASE)
+        saves = [b for b in re.split(r"\n  - name: ", text)[1:]
+                 if re.search(r"^\s+tool: \S*__save_org_context\s*$", b, re.M)]
+        self.assertEqual(len(saves), 1, "one grader on save_org_context")
+        block = grader_block(text, "never-writes-to-adcopilot")
+        for line in ("type: tool_used", "min: 0", "max: 0"):
+            with self.subTest(line=line):
+                self.assertRegex(block, r"(?m)^\s+%s\s*$" % re.escape(line))
+        # Counted on every call, whatever it carries.
+        self.assertNotIn("input_match", block)
+        self.assertNotIn("notes-only-to-adcopilot", text)
+        self.assertNotIn("kept a note in AdCopilot", text)
+        self.assertIn("or saved anything", text)
+
+    UNMARKED = "review-scheduled-unmarked"
+
+    def test_a_case_runs_the_review_skill_in_a_task_without_the_marker(self):
+        # The PR #22 review: the case #22 exists for, a scheduled task in
+        # the customer's own words answered by adcopilot-review, had no eval;
+        # only daily-scheduled-run, where adcopilot-daily answers, graded the
+        # marker. This case's prompt is not AdCopilot's recipe and names no
+        # source, so the marker can come only from the skill.
+        self.assertTrue(os.path.isfile(os.path.join(
+            ROOT, "evals", self.UNMARKED, "case.yaml")), "no %s case" % self.UNMARKED)
+        text = read("evals/%s/case.yaml" % self.UNMARKED)
+        self.assertIn("tags: [review]\n", text)
+        self.assertIn("adcopilot-review", grader_block(text, "skill-fired"))
+        m = re.search(r"^  prompt: \|\n((?:    .*\n)+)", text, re.M)
+        self.assertIsNotNone(m)
+        prompt = " ".join(m.group(1).split())
+        self.assertIn("scheduled task", prompt)
+        self.assertFalse(prompt.startswith("AdCopilot morning check"))
+        for word in ("claude-scheduled", "claude-plugin", "source",
+                     "get_org_context", "morning check"):
+            with self.subTest(absent=word):
+                self.assertNotIn(word, prompt)
+        # The marker grader is daily-scheduled-run's, line for line.
+        def rule(case):
+            block = grader_block(read("evals/%s/case.yaml" % case),
+                                 "marks-the-scheduled-run")
+            return [l.strip() for l in block.splitlines()
+                    if not l.strip().startswith("#")]
+        self.assertEqual(rule(self.UNMARKED), rule(self.CASE))
+        block = grader_block(text, "marks-the-scheduled-run")
+        pattern = re.compile(re.search(r"^\s+input_match: '((?:[^']|'')*)'\s*$",
+                                       block, re.M).group(1).replace("''", "'"))
+        counted = ['{}', '{"source":"claude-plugin/%s"}' % manifest_version(),
+                   '{"source": "claude-plugin"}', '{"source":"chatgpt"}', 'not json']
+        passed = ['{"source":"claude-scheduled"}',
+                  '{"tools":["full_audit"],"source": "claude-scheduled"}']
+        for call in counted:
+            with self.subTest(call=call):
+                self.assertRegex(call, pattern)
+        for call in passed:
+            with self.subTest(call=call):
+                self.assertNotRegex(call, pattern)
+        # A run that never reads the server would pass the grader above on
+        # zero calls; this one fails it.
+        server, _ = grader(self.UNMARKED, "read-the-server-first")
+        self.assertRegex('"tool": "mcp__plugin_adcopilot_adcopilot__get_org_context", '
+                         '"input": "{}"', server)
+        self.assertNotRegex('"tool": "mcp__plugin_adcopilot_adcopilot__full_audit", '
+                            '"input": "{\\"source\\": \\"get_org_context\\"}"', server)
+        # Nothing in Google Ads changes; a note is not graded here.
+        writes, _ = grader(self.UNMARKED, "never-changes-google-ads")
+        self.assertIn("match: not_contains",
+                      grader_block(text, "never-changes-google-ads"))
+        for tool in ("add_negative_keywords", "update_campaign",
+                     "set_campaign_status", "gtm_create_tag",
+                     "ga4_create_conversion_event"):
+            with self.subTest(write=tool):
+                self.assertRegex('"tool": "mcp__plugin_adcopilot_adcopilot__%s"' % tool,
+                                 writes)
+        for tool in ("get_org_context", "full_audit", "analyze_waste",
+                     "analyze_search_terms", "budget_pacing", "search",
+                     "conversion_setup_audit", "save_org_context"):
+            with self.subTest(read=tool):
+                self.assertNotRegex('"tool": "mcp__plugin_adcopilot_adcopilot__%s"' % tool,
+                                    writes)
+
+    def test_the_unmarked_case_is_served_the_scheduled_answer(self):
+        # The answer v2.41.0 gives a call marked claude-scheduled: no plugin
+        # block, so no skill named and the playbook's full branch; the same
+        # data as review-follows-related-reads but the two sightings the call
+        # stamps before the answer is read.
+        ctx = mock(self.UNMARKED, "get_org_context")
+        source = mock("review-follows-related-reads", "get_org_context")
+        self.assertNotIn("plugin", ctx)
+        self.assertNotIn("[PLUGIN]", ctx["playbook"])
+        self.assertIn("[%s]" % ctx["situation"], ctx["playbook"])
+        self.assertNotIn("installed in this assistant", ctx["next_step"])
+        self.assertIsNone(ctx["overlays"]["schedule_offer"])
+        self.assertNotIn("schedule", ctx["routine"])
+        stamp = ctx["routine"]["scheduled_last_seen_at"]
+        self.assertRegex(stamp, r"^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$")
+        self.assertEqual(ctx["routine"]["scheduled_first_seen_at"], stamp)
+        differ = sorted(k for k in set(ctx) | set(source)
+                        if ctx.get(k) != source.get(k))
+        self.assertEqual(differ, ["next_step", "playbook", "plugin", "routine"])
+        rest = dict(ctx["routine"], scheduled_first_seen_at=None,
+                    scheduled_last_seen_at=None)
+        was = dict(source["routine"], scheduled_first_seen_at=None,
+                   scheduled_last_seen_at=None)
+        self.assertEqual(rest, was)
+        head = read("evals/%s/mocks/adcopilot/get_org_context.md" % self.UNMARKED)
+        head = " ".join(re.match(r"^---\n(.*?)\n---\n", head, re.S).group(1)
+                        .replace("#", " ").split())
+        self.assertIn("Re-rendered with AdCopilot release/v2.41.0's own code "
+                      "(967d743b", head)
+        # The other mocks are the source case's, byte for byte.
+        mocks = os.path.join(ROOT, "evals", self.UNMARKED, "mocks", "adcopilot")
+        for name in sorted(os.listdir(mocks)):
+            if name == "get_org_context.md":
+                continue
+            with self.subTest(mock=name):
+                self.assertEqual(
+                    read("evals/%s/mocks/adcopilot/%s" % (self.UNMARKED, name)),
+                    read("evals/review-follows-related-reads/mocks/adcopilot/%s" % name))
+
+    def test_the_readme_note_says_both(self):
+        notes = section(read("README.md"), "## AdCopilot version") or ""
+        start = notes.find("**%s (" % manifest_version())
+        note = " ".join(notes[start:].split("\n\n", 1)[0].split())
+        for part in ('`source: "claude-scheduled"`', "never `claude-plugin`",
+                     "`save_org_context`", CONTEXT_TOOL_TITLE, SAVE_TOOL_TITLE,
+                     CHECKIN_FIRST_CALL,
+                     "AdCopilot v2.44.0, deployed 2026-10-22"):
+            with self.subTest(part=part):
+                self.assertIn(part, note)
+
+    def test_the_readme_note_says_only_the_recipe_is_the_morning_check(self):
+        # PR #22's second review: AdCopilot read any run marked
+        # claude-scheduled as its morning check, so a customer's own weekly
+        # task stopped the morning-check offer. C5 (AdCopilot v2.43,
+        # `schedule_recipe.CHECKIN_TASK`, `is_morning_check_task`) counts only
+        # a run whose first call also names the morning check's task; the
+        # note says what the server does now, not what it did at d9bd20ae.
+        notes = section(read("README.md"), "## AdCopilot version") or ""
+        start = notes.find("**%s (" % manifest_version())
+        note = " ".join(notes[start:].split("\n\n", 1)[0].split())
+        for part in ("counts only a run whose first call also names that task "
+                     "as its morning check",
+                     "a customer's own scheduled task is a scheduled run, not "
+                     "the morning check",
+                     "even when an older saved copy of the recipe does not "
+                     "name it"):
+            with self.subTest(part=part):
+                self.assertIn(part, note)
+        self.assertNotIn("a customer's own scheduled task counts as one too", note)
+
+
+
+class AlwaysAllowStep(unittest.TestCase):
+    """0.2.14: every copy of the step that lets a scheduled run finish names
+    both AdCopilot tools Claude lists under Write/delete tools.
+
+    v2.42.3 annotates `get_org_context` as not read-only, so Claude lists it,
+    titled "AdCopilot: what is connected and where you are", under
+    Write/delete tools beside "AdCopilot: save business notes and progress".
+    A copy of the set-up step that puts only the read-only tools on Always
+    allow leaves the run's first call on Needs approval, and the run stops
+    there with nobody to answer: 23 scheduling workspaces last ran between
+    2026-10-16 and the v2.42.3 deploy, and 19 of them were not seen again.
+    AdCopilot's own step (`schedule_recipe.ALWAYS_ALLOW_STEP`, v2.44.0) names
+    both titles; every copy here must too, and the run's first call names the
+    morning check's task (`CHECKIN_FIRST_CALL`)."""
+
+    DAILY = "skills/adcopilot-daily/SKILL.md"
+    # Words only a copy of the permissions step carries.
+    STEP = re.compile(r"Always allow|Tool permissions|tool permissions")
+
+    def copies(self):
+        """(file, paragraph) for every paragraph or list item, in the files
+        the model reads and in the README, that gives the permissions step."""
+        found = []
+        for rel in model_read_files() + ["README.md"]:
+            for para in re.split(r"\n\s*\n|\n(?=\d+\. |- )", read(rel)):
+                if self.STEP.search(para):
+                    found.append((rel, " ".join(para.split())))
+        return found
+
+    def test_every_copy_names_both_tools(self):
+        copies = self.copies()
+        files = sorted({rel for rel, _ in copies})
+        # The set-up step in the daily skill, and the README's account of it.
+        self.assertIn(self.DAILY, files)
+        self.assertIn("README.md", files)
+        for rel, para in copies:
+            with self.subTest(file=rel, para=para[:80]):
+                self.assertIn(CONTEXT_TOOL_TITLE, para)
+                self.assertIn(SAVE_TOOL_TITLE, para)
+                self.assertIn("Needs approval", para)
+
+    def test_the_old_step_is_gone_everywhere(self):
+        for rel in model_read_files() + ["README.md"]:
+            text = flat(rel)
+            with self.subTest(file=rel):
+                self.assertNotIn(SET_UP_WRITES_ASK, text)
+                self.assertNotIn("set the read-only tools to **Always allow**", text)
+        manifest = " ".join(read(".claude-plugin/plugin.json").split())
+        self.assertNotIn("Always allow", manifest)
+
+    def test_the_titles_are_the_servers(self):
+        # schedule_recipe.CONTEXT_TOOL_TITLE and SAVE_TOOL_TITLE at v2.44.0,
+        # quoted as AdCopilot's step quotes them.
+        self.assertEqual(CONTEXT_TOOL_TITLE,
+                         "AdCopilot: what is connected and where you are")
+        self.assertEqual(SAVE_TOOL_TITLE,
+                         "AdCopilot: save business notes and progress")
+        self.assertIn("“%s” and “%s”" % (CONTEXT_TOOL_TITLE, SAVE_TOOL_TITLE),
+                      SET_UP_ALWAYS_ALLOW)
+        self.assertEqual(flat(self.DAILY).count(SET_UP_ALWAYS_ALLOW), 1)
+
+    def test_the_run_names_the_morning_check_task(self):
+        self.assertEqual(CHECKIN_FIRST_CALL,
+                         'Call get_org_context first, with source '
+                         '"claude-scheduled" and task "AdCopilot morning check".')
+        self.assertIn('task "%s"' % CHECKIN_TASK, CHECKIN_FIRST_CALL)
+        self.assertEqual(SCHEDULED_CHECKIN.count(CHECKIN_FIRST_CALL), 1)
+        self.assertTrue(SCHEDULED_CHECKIN.startswith(
+            CHECKIN_TASK + ", read-only. " + CHECKIN_FIRST_CALL + " "))
+        setup = section(read(self.DAILY), "## The set-up") or ""
+        self.assertEqual(fenced(setup).count(CHECKIN_FIRST_CALL), 1)
+        run = section(read(self.DAILY), "## The run") or ""
+        step1 = " ".join(run[run.find("\n1. "):run.find("\n2. ")].split())
+        self.assertIn('`source: "claude-scheduled"` and `task: "%s"`'
+                      % CHECKIN_TASK, step1)
+        # The 0.2.14 review: only the morning check's own instructions send
+        # its task. A customer's own scheduled task that lands here and sent
+        # it would be counted as the morning check (`is_morning_check_task`),
+        # which C5 set out to stop.
+        self.assertNotIn("even when the instructions do not name it", step1)
+        self.assertIn('Send that task whenever the instructions open with "%s", '
+                      'even when their first call does not name it' % CHECKIN_TASK,
+                      step1)
+        self.assertIn("any other scheduled task, such as one in the customer's "
+                      "own words, sends the `task` its own instructions give, or "
+                      "none, never the morning check's", step1)
+        # The case's prompt is the older recipe the condition is for.
+        prompt = read("evals/daily-scheduled-run/case.yaml")
+        self.assertIn("    %s, read-only. Call get_org_context first." % CHECKIN_TASK,
+                      prompt)
+
+    def test_the_scheduled_case_grades_the_task(self):
+        text = read("evals/daily-scheduled-run/case.yaml")
+        block = grader_block(text, "names-the-morning-check")
+        self.assertIn("arm: with-only", block)
+        pattern = re.compile(re.search(r"^\s+input_match: '((?:[^']|'')*)'\s*$",
+                                       block, re.M).group(1).replace("''", "'"))
+        for call in ('{"source":"claude-scheduled"}', '{}', 'not json',
+                     '{"source":"claude-scheduled","task":"Weekly report"}'):
+            with self.subTest(counted=call):
+                self.assertRegex(call, pattern)
+        for call in ('{"source":"claude-scheduled","task":"AdCopilot morning check"}',
+                     '{"task": "AdCopilot morning check", "source": "claude-scheduled"}'):
+            with self.subTest(passed=call):
+                self.assertNotRegex(call, pattern)
+        # The prompt is an older saved recipe: it names no task, so the task
+        # comes from the skill alone.
+        m = re.search(r"^  prompt: \|\n((?:    .*\n)+)", text, re.M)
+        self.assertNotIn("task", " ".join(m.group(1).split()))
+
+
+class FindingActions(unittest.TestCase):
+    """AdCopilot v2.44 (A2): an audit finding carries its fix in
+    `recommended_actions`, a ready call (`kind` "tool", ids read from the
+    account, an audit's negatives Exact) or a draft (`kind` "skeleton",
+    whose `needs` only the customer can give). The two skills that propose
+    an audit's fixes say both, and the review skill's own PHRASE rule is for
+    negatives it writes itself, so it never rewrites the audit's Exact
+    call."""
+
+    SURFACES = ["skills/adcopilot-review/SKILL.md",
+                "skills/adcopilot-fix-checks/SKILL.md"]
+
+    def test_both_skills_propose_a_ready_call_as_it_stands_and_ask_for_a_draft(self):
+        for rel in self.SURFACES:
+            text = flat(rel)
+            with self.subTest(file=rel):
+                self.assertIn("One whose `kind` is `tool` is a ready call", text)
+                self.assertIn("propose it as it stands", text)
+                self.assertIn("One whose `kind` is `skeleton` is a draft", text)
+                self.assertIn("never fill it in yourself", text)
+
+    def test_a_ready_call_carries_the_condition_its_why_gives(self):
+        """AdCopilot v2.44 (A2 review): a disapproved ad's pause is for an
+        ad the customer won't fix; an ad Google approves on appeal keeps
+        serving, so a pause proposed "as it stands" carries that condition."""
+        for rel in self.SURFACES:
+            text = flat(rel)
+            with self.subTest(file=rel):
+                self.assertIn("with the condition its `why` gives", text)
+                self.assertIn("never one Google approves on appeal", text)
+
+    def test_the_review_skills_phrase_rule_is_for_its_own_negatives(self):
+        text = flat("skills/adcopilot-review/SKILL.md")
+        self.assertIn("an audit's negatives Exact as it built them", text)
+        self.assertIn("Negatives you write yourself go on with "
+                      "`add_negative_keywords` at PHRASE match", text)
+        self.assertNotIn("Negatives go on with `add_negative_keywords` at "
+                         "PHRASE", text)
 
 
 if __name__ == "__main__":

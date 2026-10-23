@@ -12,12 +12,14 @@ Two jobs. Work out which one this is before anything else:
 
 A person who opens a finished run and answers the question it ended on is in neither: that is "After the run", at the end.
 
+Only the run sends `source: "claude-scheduled"`. With a person here, in the set-up or after the run, call `get_org_context` with `source: "claude-plugin/0.2.14"`, never `claude-scheduled`, which would tell AdCopilot nobody is there. Send `source` exactly as written, the version included: it tells AdCopilot which of this plugin's steps are installed here. When the answer's `plugin.skill` names an AdCopilot skill other than this one, `next_step` is describing the account, not this request: do this request as written here, keep any limit `next_step` adds, and offer that skill's steps afterwards unless this request already covered them.
+
 ## The run
 
 Nobody reads this until it has finished, so a question is a run that stops half-way.
 
-1. `get_org_context` first, with `source: "claude-scheduled"` — never `claude-plugin` in a run, even with this plugin here. That is how AdCopilot knows the schedule works, and why the offer to set one up stops.
-2. Read only. Call no tool that changes anything — nothing that creates, adds, updates, sets, pauses, links, attaches, enables or submits, in Google Ads, Analytics, Tag Manager or Search Console — and not `save_org_context` either: the source marker already records the run. A finding that names the exact call that fixes it is reported, never run.
+1. `get_org_context` first, with `source: "claude-scheduled"` and `task: "AdCopilot morning check"` — never `claude-plugin` in a run, even with this plugin here. Send that task whenever the instructions open with "AdCopilot morning check", even when their first call does not name it, as an older saved copy of the recipe does not; any other scheduled task, such as one in the customer's own words, sends the `task` its own instructions give, or none, never the morning check's. That is how AdCopilot knows the schedule works and which run is its morning check, and why the offer to set one up stops.
+2. Read only. Call no tool that changes anything — nothing that creates, adds, updates, sets, pauses, links, attaches, enables or submits, in Google Ads, Analytics, Tag Manager or Search Console — and not `save_org_context` either, even where AdCopilot's instructions ask for notes as you go: the source marker already records the run, and a schedule set up before this plugin's 0.2.14 may still keep that tool on **Needs approval**, so a note would stop the run at a prompt nobody can answer. A finding that names the exact call that fixes it is reported, never run.
 3. Ask nothing. Never stop for an answer and never end on a request for one. If something is unknown — which account, a read refused, a product to re-add, the day's operations used up — say so in one line and carry on with the rest.
 4. Never offer to schedule anything. This is the schedule.
 5. Skip `related_reads`. A lens result in this run may end with them; the five reads below are the run, each is counted, and nobody is there to choose among more. Do not run one, and do not mention that it was there.
@@ -33,7 +35,9 @@ Five reads, in this order — when the instructions list their own, theirs win:
 4. **Ads Google stopped** — `search` on `ad_group_ad` with `ad_group_ad.policy_summary.approval_status`: any ad disapproved or limited, with Google's stated reason.
 5. **What changed** — `search` on `change_event` with `start_date`, `end_date` and a `limit`: changes in the last 24 hours, and who made them.
 
-A run is about six or seven reads, each counted toward the workspace's daily operations, which `get_org_context` reports. Where its `org.ops_weighted` is true (a workspace on Free's 10 a day), an analysis counts 2 operations (`budget_pacing` and `analyze_search_terms` here) and a `search` 1, so the five reads count 7 and a run comes to about 8 to 10 of Free's 10, some days all of them; otherwise every read counts 1. If they run out, say which reads were not reached.
+A run is about six or seven reads, each counted toward the workspace's daily operations, which `get_org_context` reports. Where its `org.ops_weighted` is true (a workspace on Free's 10 a day), an analysis counts 2 operations (`budget_pacing` and `analyze_search_terms` here) and a `search` 1, so the five reads would count 7 and a run about 8 to 10 of Free's 10, some days all of them, which is why such a day makes four (below); otherwise every read counts 1. If they run out, say which reads were not reached.
+
+On a workspace with 10 operations a day (`org.ops_today_cap` is 10 or less), make the first four reads only, even when the instructions list five, so the day keeps room for the fix the report ends on and its read-back; where `org.ops_weighted` is true the four count 6 of the 10. Say in one line, after the four, that what changed was left for the chat, so today's operations hold the fix.
 
 The report:
 
@@ -45,10 +49,10 @@ The report:
 
 Cursor first. If this is Cursor (`get_org_context`'s top-level `surface` is `cursor`, or Cursor's own instructions or the person say so), AdCopilot gives no scheduling steps there and `get_org_context` carries no `routine.schedule`: say that AdCopilot's emailed daily check-in, when `routine.daily.status` is `in_app`, is the morning check in Cursor, and record nothing. Never call `save_org_context` with `routine.own_schedule` from Cursor: AdCopilot keeps it for the whole workspace, so it would stop the offer in their Claude too. Everything below is for Claude.
 
-First, the instructions they will save. They are AdCopilot's own recipe, word for word, and their first sentence is what marks each run:
+First, the instructions they will save. They are AdCopilot's own recipe, word for word, and the call they open with is what marks each run as AdCopilot's morning check:
 
 ```text
-AdCopilot morning check, read-only. Call get_org_context first, with source "claude-scheduled". Do not use any tool that changes my account, and do not ask me questions; if something is unknown, say so and carry on. For {account}:
+AdCopilot morning check, read-only. Call get_org_context first, with source "claude-scheduled" and task "AdCopilot morning check". Do not use any tool that changes my account, and do not ask me questions; if something is unknown, say so and carry on. For {account}:
 1. Yesterday's spend, clicks, conversions and cost per conversion against my 7-day average.
 2. This month's budget pacing: on track, over or under, and any campaign limited by budget.
 3. The 5 search terms from the last 7 days that cost the most with no conversions, with their cost.
@@ -59,15 +63,15 @@ Start with one line: "All clear" or "Needs a look". End with the single most val
 
 Fill in `{account}` from `get_org_context`: "Google Ads account " and the ID of the account they want checked, written 123-456-7890 — the one AdCopilot's check-in reads unless they say otherwise, and never a manager account (`manager` true), which has no figures of its own; or, when you cannot tell which, "the Google Ads account I have switched on in AdCopilot". The ID goes in the instructions only, because a run with nobody to ask has to know which account; say the account by its name everywhere else.
 
-Say what it costs before they save it: about six or seven reads a run, each counted toward the workspace's daily operations, and a Monday that also runs the weekly summary can use the whole day's. Where `get_org_context`'s `org.ops_weighted` is true (Free, and a trial held to Free's 10 a day, whose `plan` still reads `pro`), say it in operations instead: an analysis counts 2 there, so a run uses about 8 to 10 of Free's 10 operations, and some days all of them. It runs at 8:07, not 8:00, because runs set exactly on the hour can start late. Then the steps for where they are, one at a time, waiting for each to be done. The screens' labels are as of October 2026; if one reads differently, go by what it says.
+Say what it costs before they save it: about six or seven reads a run, each counted toward the workspace's daily operations, and a Monday that also runs the weekly summary can use the whole day's. Where `get_org_context`'s `org.ops_weighted` is true (Free, and a trial held to Free's 10 a day, whose `plan` still reads `pro`), say it in operations instead: an analysis counts 2 there, so a run makes its first four reads only, about 6 of Free's 10 operations, and leaves the rest of the day for the fix it ends on. It runs at 8:07, not 8:00, because runs set exactly on the hour can start late. Then the steps for where they are, one at a time, waiting for each to be done. The screens' labels are as of October 2026; if one reads differently, go by what it says.
 
 **Claude — claude.ai, Cowork, the desktop app:**
 
-1. Let the reads run with nobody there: Customize, then Connectors (or the AdCopilot plugin's own Connectors tab), then AdCopilot, then its tool permissions — set the read-only tools to **Always allow**. The write and delete tools stay on **Needs approval**.
+1. Let the run finish with nobody there: Customize, then Connectors (or the AdCopilot plugin's own Connectors tab), then AdCopilot, then **Tool permissions**. Set the **Read-only tools** to **Always allow**, because a scheduled run cannot answer a prompt. Under **Write/delete tools**, set “AdCopilot: what is connected and where you are” and “AdCopilot: save business notes and progress” to **Always allow** too: they keep AdCopilot's own notes and never change Google Ads, and the run's first call is the first of them. Keep every other Write/delete tool on **Needs approval**, so Claude asks before each change.
 2. Make the task. Either, in a new chat: "Schedule a task for every weekday at 8:07 AM my time with these instructions:" followed by the instructions, then confirm. Or, in the sidebar, **Scheduled**, then **Set up manually**: name it "AdCopilot morning check", paste the instructions, approval mode **Manually approve**, frequency weekdays at 08:07, **Save**.
 3. **Run now** once, and check that it finished without stopping to ask.
 
-On Claude Team or Enterprise, if every read in the run waits for approval, the task can be switched to **Automatically approve**. Say plainly what that does before they switch: it stops asking before each tool, changes included, so the read-only instructions are what keep the run to reads — keep them exactly as written. Setting AdCopilot's **Write/delete tools** to **Blocked** stops a change outright, but then no chat can make one either; that is their call.
+On Claude Team or Enterprise, if every read in the run waits for approval, the task can be switched to **Automatically approve**. Say plainly what that does before they switch: it stops asking before each tool, changes included, so the read-only instructions are what keep the run to reads — keep them exactly as written. Setting AdCopilot's other **Write/delete tools** to **Blocked**, every one but the two AdCopilot tools above, stops a change outright, but then no chat can make one either; that is their call.
 
 Claude's Free plan has no scheduled tasks; say so plainly — there, AdCopilot's emailed daily check-in, when it is on, is the morning check — and call `save_org_context` with `routine.own_schedule` `unavailable`, so neither AdCopilot nor this plugin offers it again.
 

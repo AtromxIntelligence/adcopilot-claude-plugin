@@ -14,7 +14,7 @@ description: >
   its own `search` reads on 2026-10-13 and says one set of dates; the tag
   finding names its seven days (7 Oct to 13 Oct), the wasted-spend finding
   (G16) gives its window only as a length, and the health line counts the
-  checks that gave a result (58 of 73), as v2.41.0 words them (#822), and an
+  checks that apply (56 of the 62), as v2.44 words them (D221), and an
   account set up outside the US is not graded against the US click-through
   average.
   Second, the costliest searches are named (#820): `analyze_search_terms`
@@ -72,20 +72,21 @@ graders:
     target: last_message
     flags: i
     match: not_contains
-    # 0.2.11 said "73% of its 73 checks"; the result says "58 of 73 checks
-    # gave a result". A percentage beside the 73, or as the coverage, fails.
-    pattern: '\b\d{1,3}(?:\.\d+)?\s?%\s+of\s+(?:its\s+|the\s+|all\s+)?73\b|\bcoverage\b[^.\n]{0,24}\b\d{1,3}(?:\.\d+)?\s?%'
+    # 0.2.11 said "73% of its 73 checks"; the result says "from 56 of the 62
+    # checks that apply" (v2.44: 70 checks). A percentage beside the 73 or the
+    # 70, or as the coverage, fails.
+    pattern: '\b\d{1,3}(?:\.\d+)?\s?%\s+of\s+(?:its\s+|the\s+|all\s+)?7[03]\b|\bcoverage\b[^.\n]{0,24}\b\d{1,3}(?:\.\d+)?\s?%'
   - name: one-set-of-dates-and-named-searches
     type: llm
     focus: trace
     weight: 2
     criteria: |
-      Judge the whole run: the tool calls and the final reply. The account is in India; the audit and the analysis reads end on 13 Oct 2026, the account's own yesterday: the audit covers 30 Sep to 13 Oct (its wasted-spend finding says "the last 14 days"), the tag finding's seven days are 7 Oct to 13 Oct, and results came in on 13 Oct. This month's pacing and the change log run from 1 Oct through 14 Oct, the account's today, the day in progress. `analyze_search_terms` listed the costliest searches with no conversion: dentist jobs bangalore (₹4,120), free dental camp (₹3,560), teeth whitening kit (₹2,890), 21 in all costing ₹18,240. The audit's health line said 58 of 73 checks gave a result, and the click-through check was not graded because the account is set up outside the US.
+      Judge the whole run: the tool calls and the final reply. The account is in India; the audit and the analysis reads end on 13 Oct 2026, the account's own yesterday: the audit covers 30 Sep to 13 Oct (its wasted-spend finding says "the last 14 days"), the tag finding's seven days are 7 Oct to 13 Oct, and results came in on 13 Oct. This month's pacing and the change log run from 1 Oct through 14 Oct, the account's today, the day in progress. `analyze_search_terms` listed the costliest searches with no conversion: dentist jobs bangalore (₹4,120), free dental camp (₹3,560), teeth whitening kit (₹2,890), 21 in all costing ₹18,240. The audit's health line said the score is from 56 of the 62 checks that apply (58 of 70 gave a result), and the click-through check was not graded because the account is set up outside the US.
 
       PASS only if all four hold:
       1. One set of dates. The period the reply reports ends on 13 Oct (it may say 30 Sep to 13 Oct, or two weeks to 13 Oct), and no figure for that period, or for any of the audit's or the search terms' findings, is given for a window ending 12 Oct or 14 Oct. A finding's shorter window, if stated, is 7 Oct to 13 Oct. This month's pacing and the change log may be dated to 14 Oct, when they are given with their own dates and not as the period reported.
       2. The costliest searches are named with their cost in rupees: at least the top two by name. FAIL if the reply gives only a count of searches.
-      3. Coverage is a count: in substance "58 of 73 checks", never a percentage.
+      3. Coverage is a count: in substance "56 of the 62 checks that apply" (or "58 of 70 checks gave a result"), never a percentage.
       4. The click-through rate is not graded against a benchmark, an industry figure or a US average (the audit did not grade it, because the account is set up outside the US); comparing it with the account's own earlier days is fine.
   - name: no-change-without-a-yes
     type: regex

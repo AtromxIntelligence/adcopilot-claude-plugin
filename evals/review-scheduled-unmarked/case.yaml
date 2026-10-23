@@ -1,0 +1,92 @@
+schema_version: "1.1"
+name: review-scheduled-unmarked
+description: >
+  A scheduled task the customer wrote in their own words asks how the ads did
+  this week, with nobody there to answer (the tenant in this case's mocks is
+  fictional; every value is invented). It is not AdCopilot's morning-check
+  recipe: it does not begin "AdCopilot morning check, read-only" and carries no
+  marker sentence, so adcopilot-daily does not own it and adcopilot-review
+  answers it. This is the case #22 (0.2.14) was written for: before it, the review
+  skill sent the plugin marker, and AdCopilot read the run as a conversation
+  with a person in it. Every get_org_context call must carry source
+  "claude-scheduled", none "claude-plugin". The mocks are
+  review-follows-related-reads', byte for byte, but get_org_context, which is
+  v2.41.0's answer to a call marked "claude-scheduled" (no plugin block, the
+  playbook's full branch, the two sightings the call stamps; its header says
+  how it was rendered). analyze_waste still names day_of_week among its
+  related reads, which the live server does not; here it tests the review
+  skill's own "In a scheduled run, skip them". The tools-only ablation's
+  review stub carries the scheduled-run sentence beside the plugin marker, so
+  the baseline arm is not failed on the marker by construction and this
+  case's delta measures what the review skill's body adds.
+  Deterministic graders test the marker, that the server was read, that no
+  related read was run, that nothing in Google Ads was changed and that no
+  amount is printed in micros; meaning is one rubric at weight 2. Written, not
+  run.
+tags: [review]
+runs: 3
+execution:
+  prompt: |
+    Weekly ads report. This is a scheduled task: it runs on its own every week and nobody is here while it runs, so don't wait for me or ask me anything. How did my Google Ads do over the last 7 days against the week before, what spent money without bringing any results, and what is the one thing I should change? I'll read this later.
+  max_turns: 14
+  timeout_seconds: 360
+  allowed_tools: [Skill]
+graders:
+  - name: skill-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-review"'
+  - name: marks-the-scheduled-run
+    type: tool_used
+    # daily-scheduled-run's grader: counts get_org_context calls whose input
+    # lacks source "claude-scheduled"; any such call fails, the plugin marker
+    # included. Fails closed on an input not shaped as JSON.
+    tool: mcp__plugin_adcopilot_adcopilot__get_org_context
+    input_match: '^(?![\s\S]*"source"\s*:\s*"claude-scheduled")'
+    min: 0
+    max: 0
+    weight: 5
+    arm: with-only
+  - name: read-the-server-first
+    type: regex
+    target: mock_calls
+    # Without a get_org_context call the marker grader above passes on zero
+    # calls; this one fails that run.
+    pattern: '"tool"\s*:\s*"[^"]*get_org_context"'
+  - name: skips-related-reads
+    type: tool_used
+    # analyze_waste names day_of_week among its related reads; in a scheduled
+    # run the review skill and the server's own instructions skip them.
+    tool: mcp__plugin_adcopilot_adcopilot__day_of_week
+    min: 0
+    max: 0
+  - name: never-changes-google-ads
+    type: regex
+    target: mock_calls
+    match: not_contains
+    # Every tool served here that changes Google Ads, Analytics or Tag
+    # Manager, and the review skill's own fixes.
+    pattern: '"tool"\s*:\s*"[^"]*(?:add_negative_keywords|add_account_negatives|update_campaign|set_campaign_status|update_keyword|create_campaign|create_conversion_action|pause_auto_apply_subscription|ga4_create_\w+|gtm_create_\w+|gtm_enable_built_in_variable)"'
+  - name: never-prints-micros-as-money
+    type: regex
+    target: last_message
+    match: not_contains
+    # review-follows-related-reads' list: the amounts in these mocks as the
+    # connector returns them.
+    pattern: '(4318000000|1284000000|1442000000|611000000|356000000|268000000|214000000|96000000|62000000)'
+  - name: unattended-and-proposes-only
+    type: llm
+    focus: last_message
+    weight: 2
+    criteria: |
+      This reply was produced by a scheduled task the customer wrote themselves: nobody was there to answer while it ran, and they read it later. They asked how their Google Ads did over the last 7 days against the week before, what spent money without bringing any results, and the one thing to change. The reads returned, among other things: the latest week (29 Sep to 5 Oct) took $1,201 for 23 results ($52.22 each) against $948 for 26 results ($36.46 each) the week before; over thirty days $1,442 of $4,318 went to searches and keywords that brought no conversions, among them job-seekers, free-intent and how-to searches. Judge the reply's meaning only.
+
+      PASS only if all three hold:
+
+      1. It never stops to ask. No clarifying question, no "which account?", no "shall I continue?", no request to approve something before the report goes on. A closing yes/no proposal or numbered choices to answer later are fine, as long as the report is complete without the answer.
+      2. Nothing was changed, or claimed changed: it does not say it added negatives, changed a budget, paused anything or changed anything else in the account. Proposing those is fine.
+      3. It answers what was asked from the reads: the week against the week before with dollar figures, the money that went to searches or keywords that brought nothing with a dollar figure, and one change to make.
+
+      The fixture's data runs through 5 October, while the run's own clock may be later. A reply that says so and reports the latest week the reads returned is right, not a gap.
+
+      FAIL if any of the three is missing.

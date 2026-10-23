@@ -81,10 +81,13 @@ Those two links are the answer; give both. Then:
 Read Meta from Meta's tools and Google from AdCopilot's. The two connectors do
 not talk to each other.
 
-**The Google side.** Call `get_org_context` with `source: "claude-plugin/0.2.13"`
+**The Google side.** Call `get_org_context` with `source: "claude-plugin/0.2.14"`
 first, before any other AdCopilot tool, whenever Google figures are part of the
 answer. Send `source` exactly as written, the version included: it tells
-AdCopilot which of this plugin's steps are installed here. When the answer's
+AdCopilot which of this plugin's steps are installed here. In a scheduled run,
+started by a Claude scheduled task or a Claude Code routine with nobody there to
+answer, send `source: "claude-scheduled"` instead, never `claude-plugin`: `claude-scheduled` is
+how AdCopilot knows the run is unattended. When the answer's
 `plugin.skill` names an AdCopilot skill other than this one, `next_step` is
 describing the account, not this request: do this request as written here, keep
 any limit `next_step` adds, and offer that skill's steps afterwards unless this
