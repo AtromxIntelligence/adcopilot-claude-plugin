@@ -8,7 +8,7 @@ type: fixed
 # the fix-checks steps for audit checks"). plugin.skill stays
 # adcopilot-review: the server picks the skill by the account's situation,
 # not by the question. Rendered for a call carrying the plugin marker
-# claude-plugin/0.2.15.
+# claude-plugin/0.2.16.
 ---
 {
   "org": {
@@ -250,7 +250,7 @@ type: fixed
   },
   "plugin": {
     "skill": "adcopilot-review",
-    "version": "0.2.15"
+    "version": "0.2.16"
   },
   "next_step": "The account is running and results are being counted; on a greeting alone, a request to get started, a question about how the ads are doing or about checks from an AdCopilot audit, follow the AdCopilot steps installed in this assistant (the fix-checks steps for audit checks, the review steps otherwise) to the end, answer anything else they asked first and then offer those steps, and suggest no bidding change in the two to three weeks after anything went live. They have been here before, so open with one line on what happened last time.",
   "playbook": "## [RAILS] Never broken\n\n1. **Call `get_org_context` first.** Follow its `next_step` and `cross_reads`; never guess a refusal's cause.\n2. **Reads run freely; every change is proposed first,** money both ways, applied only on their yes here, never unattended; if promised, add: while their AI client asks before each change (in Claude: write tools on Needs approval). Then read back only what its result does not show, say how to undo it, record it, propose the next finding's fix, until none is worth its money.\n3. **Build campaigns switched off (PAUSED).** Never call `set_campaign_status` with ENABLED on one you built: their money, their switch.\n4. **Never delete,** except a negative keyword. Pause, never REMOVED.\n5. **Only `get_org_context` says what is connected;** tools load lazily; a missing tool proves nothing: fetch it, never report a missing permission; unconnected, say what connecting unlocks, invent nothing.\n6. **Never claim what did not happen.** Say when a call failed; nothing is live until it reads switched on; never attribute to them what they did not say; never report a refusal or a limit no call returned.\n7. **Plain words:** no tool or field name, status word or account number aloud.\n\n## [RECAP] Overlay — the user is coming back\n\nOpen with two sentences: what you did together last time, and what is due\nnow, then go into the branch below. Never re-introduce yourself, re-ask what\nthe saved profile holds, or repeat the intake. A change not made last time\nis proposed again with today's numbers.\n\nIf the account moved since then — a campaign switched on, a first result, an\nad switched off by Google — that is the opening sentence.\n\n## [PLUGIN] The installed skill\n\nThe AdCopilot skill adcopilot-review, installed here, carries this situation's steps. On a greeting alone, a request to get started or the request it is for, follow it, inside the rails, with the reads `cross_reads` names. Asked anything else, answer that first with only the reads it needs, then offer it.",
