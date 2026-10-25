@@ -20,15 +20,25 @@ When the answer's `plugin.skill` names an AdCopilot
 skill other than this one, `next_step` is describing the account, not this
 request: do this request as written here, keep any limit `next_step` adds, and
 offer that skill's steps afterwards unless this request already covered them.
-Then `analyze_search_terms` with `days: 7`. It groups the searches that took
-clicks and converted nothing into themes — people looking for jobs, for
-something free, for information, for a competitor, and the words this workspace
-already said it never wants to show for — and names a ready call for each theme.
-It also lists the costliest of them, any theme or none, with no ready call
-("Costliest search terms with no conversion"): name the top ones, and leave one
-that fits no theme to the customer, as it can be what they sell. When it says
-nothing was recorded anywhere in the account, say they cost the most and are not
-proven waste.
+Then `analyze_search_terms` with `days: 7` and `min_clicks: 1`, so a junk
+search that was clicked once is seen too (its own floor is three clicks). It
+groups the searches that took clicks and converted nothing into themes — people
+looking for jobs, for something free, for information, for a competitor, and the
+words this workspace already said it never wants to show for — and names a ready
+call for each theme. It also lists the costliest of them, any theme or none,
+with no ready call ("Costliest search terms with no conversion"): name the top
+ones, and leave one that fits no theme to the customer, as it can be what they
+sell. When it says nothing was recorded anywhere in the account, say they cost
+the most and are not proven waste.
+
+Its last note, "Checked for", names every theme it ran with how many searches
+fell in it. Say it in one line, so a theme with none reads as looked at, not
+skipped; where it says competitors or the never-show list are "not set", tell
+them they can add those on the Business profile in the AdCopilot dashboard. The
+job-seeker theme catches the words people type looking for work: jobs, careers,
+salary, hiring, vacancies, internships, apprenticeships, recruitment, freshers
+and naukri. It leaves out "employment", "employer" and "employee", which a
+customer may sell, so a search with one of those is theirs to call.
 
 When a lens or `search` result ends with `related_reads`, run at most one
 that bears on the question, then answer from all you hold; never
