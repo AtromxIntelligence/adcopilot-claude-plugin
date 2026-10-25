@@ -225,6 +225,26 @@ class DailyHabitBlock(unittest.TestCase):
         self.assertIn("The offer comes, as a paragraph of its own, only in a "
                       "reply that asks you no yes/no on a fix", readme)
 
+    def test_a_declined_first_fix_still_gets_the_offer_at_the_close(self):
+        # 0.2.17 (AdCopilot's trial-return plan, #1): a first session whose
+        # first fix for a finding the morning check reads was declined or
+        # left for later ended with no next appointment. The same sentence
+        # in every carrier and in the review skill's own paragraph, after
+        # the paragraph rule and before the other-finding close.
+        clause = ("If they decline the first fix for a finding the morning "
+                  "check also reads, or put it off, make the offer at the "
+                  "close of that reply instead, tied to that finding the same "
+                  "way (before any question the reply ends on).")
+        block = " ".join((self.blocks()[HABIT_CARRIERS[0]] or "").split())
+        self.assertIn(clause, block)
+        self.assertLess(block.index("never inside one of its bullets."),
+                        block.index(clause))
+        self.assertLess(block.index(clause), block.index("For any other finding"))
+        review = " ".join((section(read("skills/adcopilot-review/SKILL.md"),
+                                   "## What is next") or "").split())
+        self.assertIn(clause, review)
+        self.assertIsNone(SALES.search(clause))
+
     def test_the_finding_in_the_braces_is_kept_short(self):
         # The value line is 32 words before the finding; a long finding would
         # make the offer the long paragraph the judges fail.

@@ -36,7 +36,7 @@ both ways and let the main conversation carry it to them.
 
 ## Start
 
-Call `get_org_context` (with `source: "claude-plugin/0.2.16"`) first and obey
+Call `get_org_context` (with `source: "claude-plugin/0.2.17"`) first and obey
 its `playbook` and `cross_reads`. `cross_reads.ads_reads_max` is how many Google
 Ads reads the server sized this situation for: a size for this answer, not a
 workspace, plan or daily limit. Only when `cross_reads.reads_left_today` is

@@ -10,7 +10,7 @@ never from memory. The product changes; this file does not move with it, so
 every number in your answer comes from a live read or from the documentation
 site, and nothing comes from recall.
 
-Call `get_org_context` (with `source: "claude-plugin/0.2.16"`) first. Send
+Call `get_org_context` (with `source: "claude-plugin/0.2.17"`) first. Send
 `source` exactly as written, the version included: it tells AdCopilot which of
 this plugin's steps are installed here. In a scheduled run, started by a Claude
 scheduled task or a Claude Code routine with nobody there to answer, send
