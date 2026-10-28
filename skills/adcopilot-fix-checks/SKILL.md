@@ -130,11 +130,13 @@ fix is checked, and never in the same message as a yes/no.
 
 ## When the day runs out
 
-A call refused at the daily limit did not run. Give what you already found
-first, in a few lines, then, every time, the one line the refusal gives: the
-plan, its daily operations, its price exactly as written, the offer when it
-names one, and its link when it gives one, with the reset. Retry nothing: the
-fix waits for the reset.
+A call refused at the daily limit did not run; a result that says the daily
+limit is now reached ran, and used the day's last operation. Either way, give
+what you already found first, in a few lines, then, every time, the one line
+the refusal or that result gives, word for word: the plan, its daily
+operations, its price exactly as written, the offer when it names one, the
+owner when it names one, and its link when it gives one, with the reset. Retry
+nothing: the fix waits for the reset.
 
 ## The daily habit
 

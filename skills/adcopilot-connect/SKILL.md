@@ -75,10 +75,12 @@ If `get_org_context` reports a product this skill does not mention, that is expe
 
 ## When the day runs out
 
-A call refused at the daily limit did not run. Give what you found first,
-then, every time, the one line the refusal gives (the plan, its daily
-operations, its price exactly as written, the offer when it names one, and its
-link when it gives one) and the reset. Retry nothing.
+A call refused at the daily limit did not run; a result that says the daily
+limit is now reached ran, and used the day's last operation. Either way, give
+what you found first, then, every time, the one line the refusal or that result
+gives, word for word (the plan, its daily operations, its price exactly as
+written, the offer when it names one, the owner when it names one, and its link
+when it gives one) and the reset. Retry nothing.
 
 ## Prices
 

@@ -252,16 +252,18 @@ and a careless one blocks searches the customer wants.
 
 Calling anything a limit that no call returned. Say daily limit, quota or
 "today's look-ups" only when `cross_reads.reads_left_today` is present or a
-call returned the daily-cap refusal. When `org.ops_today_cap` is null the plan
-has no daily limit: a read you did not make is an offer for the next turn,
+call returned the daily-cap refusal or said the daily limit is now reached.
+When `org.ops_today_cap` is null the plan has no daily limit: a read you did not make is an offer for the next turn,
 never a limit you hit, and it needs no reason.
 
 ## When the day runs out
 
-A call refused at the daily limit did not run. Give what you found first,
-then, every time, the one line the refusal gives (the plan, its daily
-operations, its price exactly as written, the offer when it names one, and its
-link when it gives one) and the reset. Retry nothing.
+A call refused at the daily limit did not run; a result that says the daily
+limit is now reached ran, and used the day's last operation. Either way, give
+what you found first, then, every time, the one line the refusal or that result
+gives, word for word (the plan, its daily operations, its price exactly as
+written, the offer when it names one, the owner when it names one, and its link
+when it gives one) and the reset. Retry nothing.
 
 ## What is next
 

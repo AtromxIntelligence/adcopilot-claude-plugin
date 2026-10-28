@@ -888,7 +888,8 @@ class ReadCeiling(unittest.TestCase):
         self.assertIn("Calling anything a limit that no call returned. Say daily "
                       "limit, quota or \"today's look-ups\" only when "
                       "`cross_reads.reads_left_today` is present or a call "
-                      "returned the daily-cap refusal. When `org.ops_today_cap` "
+                      "returned the daily-cap refusal or said the daily limit "
+                      "is now reached. When `org.ops_today_cap` "
                       "is null the plan has no daily limit", breaks)
 
 
@@ -1105,10 +1106,11 @@ class FixChecks(unittest.TestCase):
         self.assertNotIn("Go ahead?", text)
         self.assertNotIn("inside today's allowance", text)
         self.assertNotIn("inside what today allows", text)
-        self.assertIn("then, every time, the one line the refusal gives: the "
-                      "plan, its daily operations, its price exactly as "
-                      "written, the offer when it names one, and its link "
-                      "when it gives one, with the reset.", text)
+        self.assertIn("then, every time, the one line the refusal or that "
+                      "result gives, word for word: the plan, its daily "
+                      "operations, its price exactly as written, the offer "
+                      "when it names one, the owner when it names one, and "
+                      "its link when it gives one, with the reset.", text)
 
     def test_each_family_has_its_flow(self):
         text = flat(self.SKILL)
@@ -1224,14 +1226,22 @@ class FixChecks(unittest.TestCase):
                 block = " ".join((section(read(rel),
                                           "## When the day runs out")
                                   or "").split())
-                self.assertIn("every time, the one line the refusal gives",
-                              block)
+                self.assertIn("every time, the one line the refusal or "
+                              "that result gives, word for word", block)
                 self.assertIn("Retry nothing", block)
+                # The 100% note rides on the call that used the day's last
+                # operation, a call that ran, and asks for the same line.
+                self.assertIn("A call refused at the daily limit did not run; "
+                              "a result that says the daily limit is now "
+                              "reached ran, and used the day's last "
+                              "operation. Either way,", block)
                 # A member's refusal names the owner and carries no link
                 # (D254: no checkout link is minted for a member's wall),
                 # so the link is passed on only when the refusal gives one.
                 self.assertIn("its link when it gives one", block)
                 self.assertNotRegex(block, r"its link[,)]")
+                if "(the plan" in block or ": the plan" in block:
+                    self.assertIn("the owner when it names one", block)
 
     def test_the_case_grades_the_skill(self):
         case = read("evals/fix-checks-three-checks/case.yaml")

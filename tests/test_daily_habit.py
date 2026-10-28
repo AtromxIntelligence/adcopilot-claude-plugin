@@ -441,6 +441,10 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
                       "of a reply that proposes none. When that fix was for a "
                       "finding the morning check also reads", morning)
         self.assertNotIn("no next fix is proposed", morning)
+        # AdCopilot D254: the morning check makes its five reads on every
+        # plan, so no plan's check leaves what changed for the chat.
+        self.assertNotIn("leaves what changed for the chat", morning)
+        self.assertNotIn("except on Free's 10 a day", morning)
         self.assertNotIn("right after the first finding", morning)
         self.assertIn("With any other finding, or none, the offer closes the "
                       "reply instead, without that claim.", readme)
@@ -573,6 +577,11 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
                       "left today, say what the refusal says, the lighter "
                       "reads it names included, and the plan line it gives, "
                       "word for word", audit)
+        # AdCopilot D254: the command never sizes a read itself; it runs
+        # budget pacing and lets a refusal say whether it fits.
+        self.assertNotIn("if it fits", audit)
+        self.assertIn("then run `budget_pacing`; if it is refused too, pass "
+                      "on that refusal's line instead.", audit)
         weekly = " ".join(read("commands/weekly.md").split())
         self.assertNotIn("5 or 6 of Free's 10", weekly)
         self.assertIn("Each read counts toward the workspace's daily "

@@ -179,9 +179,11 @@ Meta's pages do not.
 
 ## When the day runs out
 
-A call refused at the daily limit did not run. Give what you found first,
-then, every time, the one line the refusal gives, word for word, with its link
-when it gives one, and the reset. Retry nothing.
+A call refused at the daily limit did not run; a result that says the daily
+limit is now reached ran, and used the day's last operation. Either way, give
+what you found first, then, every time, the one line the refusal or that result
+gives, word for word, with its link when it gives one, and the reset. Retry
+nothing.
 
 ## What is next
 

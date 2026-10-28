@@ -7,7 +7,8 @@ No skill: `full_audit` and `budget_pacing` explain themselves. `get_org_context`
 first, then `full_audit` at `depth: deep`, then `budget_pacing`. When a call is
 refused because it counts more than is left today, say what the refusal says,
 the lighter reads it names included, and the plan line it gives, word for word,
-and run `budget_pacing` if it fits. Separate real
+then run `budget_pacing`; if it is refused too, pass on that refusal's line
+instead. Separate real
 findings from newness: a new account scores badly for reasons that are only its
 age — keywords with no impressions yet, a Quality Score of 0 because Google has
 not rated the keyword yet, a bidding strategy still learning.
