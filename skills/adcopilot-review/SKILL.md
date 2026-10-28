@@ -45,8 +45,13 @@ list to be economical — if a read would have changed what you say, make it.
 Only when `cross_reads.reads_left_today` is present is the day itself short.
 Then `ads_reads_max` has already been sized to leave room for the fix: spend
 those reads, then propose. The change they say yes to, and its read-back, are
-what the rest of the day is for. On such a day, before a call that would use
-the last of today's operations, say what it covers and ask first.
+what the rest of the day is for.
+
+Without `cross_reads.reads_left_today`, nothing about the day is short: never
+count it down yourself from `org.ops_today_used` and `org.ops_today_cap`,
+never hold back a read or a fix to save operations, and never ask first
+because few are left. The limit is a call refused, and "When the day runs
+out" below says what to do then.
 
 What you cannot read, say you cannot read. Never estimate a figure, and never
 carry one over from an earlier turn as if it were fresh.
@@ -251,6 +256,13 @@ call returned the daily-cap refusal. When `org.ops_today_cap` is null the plan
 has no daily limit: a read you did not make is an offer for the next turn,
 never a limit you hit, and it needs no reason.
 
+## When the day runs out
+
+A call refused at the daily limit did not run. Give what you found first,
+then, every time, the one line the refusal gives (the plan, its daily
+operations, its price exactly as written, the offer when it names one, and its
+link when it gives one) and the reset. Retry nothing.
+
 ## What is next
 
 Before any yes, offer, in this order: the first fix as a change you will make
@@ -283,9 +295,7 @@ propose it in the reply after), or the close of a reply that proposes none.
 Never beside a fix that waits for their answer. When a fix applied in this
 conversation was for a finding the morning check also reads (searches that
 spent with no sale, a campaign out of budget or off its budget pace, a
-disapproved ad, a drop against the 7-day average, a change nobody asked for;
-on a workspace with 10 operations a day the morning check leaves what changed
-for the chat, so not that one there), it is tied to that finding as that block
+disapproved ad, a drop against the 7-day average, a change nobody asked for), it is tied to that finding as that block
 words it (it would have caught this on
 its first morning; it only reads; "All clear" or "Needs a look" plus one yes/no
 fix); for any other finding, even one that costs money (a tracking fault, a

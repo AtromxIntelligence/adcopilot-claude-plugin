@@ -342,12 +342,10 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
                       "propose it in the reply after), or the close of a reply "
                       "that proposes no fix at all.", block)
         self.assertNotIn("the reply proposes no next fix", block)
-        # Item 8: a 10-a-day morning check does not read what changed.
-        self.assertIn("without saying the check would have caught it. On a "
-                      "workspace with 10 operations a day "
-                      "(`org.ops_today_cap` is 10 or less) the morning check "
-                      "leaves what changed for the chat, so there a change "
-                      "nobody asked for is one of these.", block)
+        # AdCopilot D254 (founder 2026-10-28): the morning check makes all
+        # five reads on Free too, so no finding is left for the chat.
+        self.assertIn("without saying the check would have caught it.", block)
+        self.assertNotIn("leaves what changed for the chat", block)
         self.assertIn("Never make it beside a fix that waits for their answer: "
                       "the yes/no comes first, and the offer waits.", block)
         self.assertIn("When a fix applied in this conversation was for a "
@@ -496,9 +494,7 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
                       "none. Never beside a fix that waits for their answer. "
                       "When a fix applied in this conversation was for a "
                       "finding the morning check also reads", nxt)
-        self.assertIn("on a workspace with 10 operations a day the morning "
-                      "check leaves what changed for the chat, so not that one "
-                      "there", nxt)
+        self.assertNotIn("leaves what changed for the chat", nxt)   # D254
         self.assertIn("for any other finding, even one that costs money (a "
                       "tracking fault, a Quality Score problem, a targeting "
                       "problem), or none, the close, before any question the "
@@ -515,15 +511,17 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
         daily = " ".join(read("skills/adcopilot-daily/SKILL.md").split())
         self.assertIn("A run is about six or seven reads, each counted toward "
                       "the workspace's daily operations", daily)
+        # AdCopilot D254: what a run counts, and nothing about whether the
+        # day can hold it.
         self.assertIn("Say what it costs before they save it: about six or seven "
                       "reads a run, each counted toward the workspace's daily "
-                      "operations, and a Monday that also runs the weekly "
-                      "summary can use the whole day's.", daily)
+                      "operations.", daily)
+        self.assertNotIn("can use the whole day's", daily)
         readme = " ".join(read("README.md").split())
         self.assertIn("A run reads about six or seven times, and each read "
-                      "counts toward your workspace's daily operations; on a "
-                      "Monday, the daily check and the weekly summary together "
-                      "can use all of a Free workspace's 10.", readme)
+                      "counts toward your workspace's daily operations.",
+                      readme)
+        self.assertNotIn("can use all of a Free workspace's 10", readme)
 
     def test_free_counts_in_weighted_operations(self):
         # AdCopilot v2.43.1 (D164, "Back for Free"): on Free a full audit or
@@ -532,13 +530,17 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
         daily = " ".join(read("skills/adcopilot-daily/SKILL.md").split())
         # The run's own section names no plan to buy (`SALES`), so it says
         # "otherwise" where the set-up and the README name who counts 1.
-        # 0.2.14: on a 10-a-day workspace the run makes three of the five.
-        self.assertIn("so the five reads would count 7 and a run about 8 to 10 "
-                      "of Free's 10, some days all of them, which is why such "
-                      "a day makes four (below); otherwise every read counts "
-                      "1.", daily)
-        self.assertIn("where `org.ops_weighted` is true the four count 6 of "
-                      "the 10.", daily)
+        # AdCopilot D254 (founder 2026-10-28): every read on Free too; a run
+        # that meets the limit passes the refusal's plan line on.
+        # AdCopilot D254: what a run counts, never set against the day's
+        # total (the server's run cost dropped "can use them all").
+        self.assertIn("so the five reads would count 7 and a run about 8 to 10; "
+                      "otherwise every read counts 1. If they "
+                      "run out, say which reads were not reached, then the "
+                      "plan line the refusal gives, word for word.", daily)
+        self.assertNotIn("of Free's 10", daily)
+        self.assertNotIn("make the first four reads only", daily)
+        self.assertNotIn("the four count 6 of the 10", daily)
         # A trial held to Free's 10 a day (paused for its card, or waiting
         # for its first charge) is weighted while its `plan` still reads
         # `pro`, so the skill keys the cost on the server's own answer,
@@ -548,47 +550,35 @@ class DailyHabitAtTheFirstValue(unittest.TestCase):
         self.assertIn("Where `get_org_context`'s `org.ops_weighted` is true "
                       "(Free, and a trial held to Free's 10 a day, whose "
                       "`plan` still reads `pro`), say it in operations "
-                      "instead: an analysis counts 2 there, so a run makes "
-                      "its first four reads only, about 6 of Free's 10 "
-                      "operations, and leaves the rest of the day for the fix "
-                      "it ends on.", daily)
+                      "instead: an analysis counts 2 there, so a run is about "
+                      "8 to 10 operations.", daily)
         self.assertNotIn("`plan` is `free`", daily)
         readme = " ".join(read("README.md").split())
         self.assertIn("On Free, and on a trial held to Free's 10 a day, an "
                       "analysis such as budget pacing counts 2 operations and "
-                      "a single read 1, so all five reads would come to about "
-                      "8 to 10 of Free's 10, some days all of them; there the "
-                      "run makes its first four reads only, about 6, leaving "
-                      "what changed for the chat, so the fix it ends on still "
-                      "fits the same day. On a paid plan "
-                      "or a running trial every read counts 1.", readme)
+                      "a single read 1, so a run comes to about 8 to 10 "
+                      "operations. On a paid plan or a running trial "
+                      "every read counts 1.", readme)
+        # The version notes keep what 0.2.14 shipped; everything above them
+        # is what 0.2.17 says now.
+        notes = " ".join((section(read("README.md"), "## AdCopilot version")
+                          or "").split())
+        self.assertIn("first four reads only", notes)
+        self.assertNotIn("first four reads only", readme.replace(notes, ""))
         audit = " ".join(read("commands/audit.md").split())
-        # Fourth review of AdCopilot #919: the command's own calls are a
-        # fixed figure, and the related reads the same file tells the model
-        # to run (at most three, a lens 2 or a single read 1) come on top, so
-        # the cost says so rather than a total the reads can pass.
-        self.assertIn("on Free, and on a trial held to Free's 10 a day, a full "
-                      "audit counts 4 operations and budget pacing 2, so these "
-                      "two calls use 6 of Free's 10 a day, and each related "
-                      "read you run (below) adds 1 or 2 more; on a paid plan "
-                      "or a running trial each call counts 1.", audit)
-        self.assertNotIn("so this command uses 6 of Free's 10 a day", audit)
+        # AdCopilot D254 (founder 2026-10-28): no arithmetic of the day to
+        # economise against; a refusal's own words and plan line instead.
+        self.assertNotIn("6 of Free's 10", audit)
+        self.assertIn("When a call is refused because it counts more than is "
+                      "left today, say what the refusal says, the lighter "
+                      "reads it names included, and the plan line it gives, "
+                      "word for word", audit)
         weekly = " ".join(read("commands/weekly.md").split())
-        self.assertIn("On Free, and on a trial held to Free's 10 a day, "
-                      "`budget_pacing` counts 2 and each other read 1, so the "
-                      "four reads use about 5 or 6 of Free's 10 a day, and "
-                      "each related read you run (below) adds 1 or 2 more; on "
-                      "a paid plan or a running trial every read counts 1.",
-                      weekly)
-        self.assertNotIn("so the summary uses about 5 or 6", weekly)
-        self.assertIn("`/adcopilot:audit`'s (6 of Free's 10 for its two "
-                      "calls) and `/adcopilot:weekly`'s (about 5 or 6 for its "
-                      "four reads), each with 1 or 2 more for every related "
-                      "read run, now say so", readme)
-        for text in (audit, weekly):
-            # the related reads are below the cost, and named there
-            self.assertLess(text.index("adds 1 or 2 more"),
-                            text.index("`related_reads`"))
+        self.assertNotIn("5 or 6 of Free's 10", weekly)
+        self.assertIn("Each read counts toward the workspace's daily "
+                      "operations. When a call is refused at the daily limit, "
+                      "say what it found first, then the plan line the "
+                      "refusal gives, word for word, with the reset.", weekly)
         for rel, text in (("skills/adcopilot-daily/SKILL.md", daily),
                           ("README.md", readme), ("commands/audit.md", audit),
                           ("commands/weekly.md", weekly)):

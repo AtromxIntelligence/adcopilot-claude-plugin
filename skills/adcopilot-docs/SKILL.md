@@ -22,8 +22,9 @@ and start no other AdCopilot skill. The answer's `next_step`, `playbook` (its
 sections on the installed skill and on a returning customer included),
 `cross_reads` and `question_map` describe the account, not this question: do
 not follow them on this turn, not even their offer of a skill's steps. Keep
-from them only a limit `next_step` names (look-ups left today, a teammate's
-login) and the facts below. If the customer says yes to the read you offer,
+from them only a limit `next_step` names (look-ups left today, or none left
+and the close it gives for that, its link included; a teammate's login) and
+the facts below. If the customer says yes to the read you offer,
 that is a new request, and the skill that answers it runs then. The answer
 carries the facts most of these questions want:
 
@@ -69,8 +70,9 @@ allowance. A `null` cap means no daily limit on that plan.
 **When a workspace runs out, say what it just bought before saying what it
 costs.** The honest version is short: name what the reads established — the
 spend, the waste found, the change proposed — then say the allowance is used up
-for today, when it resets, and that a paid plan raises it. Send them to
-`org.upgrade_url` — but only to someone who can act on it. Where the server
+for today, when it resets, and, every time, the one line the refusal gave,
+word for word. With no call refused yet, send them to `org.upgrade_url` — but
+only to someone who can act on it. Where the server
 says the workspace is reached through a teammate's login, or tells a member to
 ask their owner, pass that on instead of sending them to a billing page they
 cannot use. Never dress the limit up as an error, and never imply the
@@ -151,8 +153,7 @@ something a read of their own account would answer — what AdCopilot can do for
 them, whether a product is worth connecting, why a tool seemed missing — end
 the reply with exactly one question, offering one read: what it would show them
 about their account, tied to the 30-day fact that makes it worth doing. Not a
-fix, not a change, and not a second offer. When `ops_today_cap` is set and the
-hints say few look-ups are left today, say that the read uses one of them.
+fix, not a change, and not a second offer.
 
 Skip it after a question about look-ups and running out, about the workspace's
 allowance or billing, or about privacy or safety: there the answer is the whole
