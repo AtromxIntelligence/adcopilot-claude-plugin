@@ -8,7 +8,7 @@ description: Answer questions about the customer's organic search presence throu
 The customer wants to know how Google search sees their site. Answer it through
 the AdCopilot connector at `https://mcp.adcopilot.cloud/mcp`.
 
-Call `get_org_context` with `source: "claude-plugin/0.2.16"` first, before any
+Call `get_org_context` with `source: "claude-plugin/0.2.17"` first, before any
 other tool — the marker is how the server records that this workspace uses the
 plugin, and without it the customer keeps being told to install what they
 already have. Send `source` exactly as written, the version included: it tells
@@ -30,7 +30,10 @@ Console is the answer and the reads below are the work.
 `cross_reads.ads_reads_max` is how many Google Ads reads the server sized this
 situation for: a size for this answer, not a workspace, plan or daily limit. It
 does not cap the Search Console reads below. Only when
-`cross_reads.reads_left_today` is present is the day itself short. Follow
+`cross_reads.reads_left_today` is present is the day itself short. Without
+it, nothing about the day is short: never count it down yourself from
+`org.ops_today_used` and `org.ops_today_cap`, and never hold back a read or a
+fix to save operations. Follow
 `next_step` and the `playbook` as usual, and read `cross_reads` for what it is:
 guidance for the other direction.
 
@@ -211,6 +214,15 @@ not indexed on the strength of the sitemap's dead column. Offering to request
 indexing as though it worked. Promising a site has no penalty when you cannot
 see penalties. Every one of these reads as a confident answer and sends the
 customer the wrong way.
+
+## When the day runs out
+
+A call refused at the daily limit did not run; a result that says the daily
+limit is now reached ran, and used the day's last operation. Either way, give
+what you found first, then, every time, the one line the refusal or that result
+gives, word for word (the plan, its daily operations, its price exactly as
+written, the offer when it names one, the owner when it names one, and its link
+when it gives one) and the reset. Retry nothing.
 
 ## What is next
 

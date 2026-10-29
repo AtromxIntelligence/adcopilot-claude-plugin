@@ -81,7 +81,7 @@ Those two links are the answer; give both. Then:
 Read Meta from Meta's tools and Google from AdCopilot's. The two connectors do
 not talk to each other.
 
-**The Google side.** Call `get_org_context` with `source: "claude-plugin/0.2.16"`
+**The Google side.** Call `get_org_context` with `source: "claude-plugin/0.2.17"`
 first, before any other AdCopilot tool, whenever Google figures are part of the
 answer. Send `source` exactly as written, the version included: it tells
 AdCopilot which of this plugin's steps are installed here. In a scheduled run,
@@ -95,7 +95,10 @@ request already covered them. Then read Google the way the `adcopilot-review`
 skill does. `cross_reads.ads_reads_max` is how many Google Ads reads the server
 sized this situation for: a size for this answer, not a workspace or daily
 limit. Only when `cross_reads.reads_left_today` is present is the day itself
-short. If this answer's reads are spent before a read you wanted, offer it as
+short. Without it, nothing about the day is short: never count it down
+yourself from `org.ops_today_used` and `org.ops_today_cap`, and never hold
+back a read to save operations. If this answer's reads are spent before a
+read you wanted, offer it as
 the next one, never as a limit you hit. A question that is only about Meta
 needs no AdCopilot call.
 
@@ -173,6 +176,14 @@ calls it an open beta. Saying a customer's account is or is not enabled, or
 reading the rules page under Settings as that answer, when Meta has said neither
 about their account. Stating a country, a role or a requirement as Meta's, when
 Meta's pages do not.
+
+## When the day runs out
+
+A call refused at the daily limit did not run; a result that says the daily
+limit is now reached ran, and used the day's last operation. Either way, give
+what you found first, then, every time, the one line the refusal or that result
+gives, word for word, with its link when it gives one, and the reset. Retry
+nothing.
 
 ## What is next
 

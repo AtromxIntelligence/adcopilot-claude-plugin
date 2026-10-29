@@ -266,7 +266,10 @@ class WhatTheServerDefersTo(unittest.TestCase):
                                 "## What is next") or "").split())
         self.assertIn("Skip it after a question about look-ups", nxt)
         self.assertIn("privacy or safety", nxt)
-        self.assertIn("uses one of them", nxt)
+        # AdCopilot D254 (founder 2026-10-28): an offered read is never
+        # priced against what is left today.
+        self.assertNotIn("uses one of them", nxt)
+        self.assertNotIn("few look-ups are left", nxt)
 
 
 class ConditionalFindings(unittest.TestCase):
@@ -885,7 +888,8 @@ class ReadCeiling(unittest.TestCase):
         self.assertIn("Calling anything a limit that no call returned. Say daily "
                       "limit, quota or \"today's look-ups\" only when "
                       "`cross_reads.reads_left_today` is present or a call "
-                      "returned the daily-cap refusal. When `org.ops_today_cap` "
+                      "returned the daily-cap refusal or said the daily limit "
+                      "is now reached. When `org.ops_today_cap` "
                       "is null the plan has no daily limit", breaks)
 
 
@@ -1046,6 +1050,14 @@ class FixChecks(unittest.TestCase):
             "(G-WS1). First tell me what today's AdCopilot allowance covers, "
             "then fix them one at a time in the order you recommend. One yes/no "
             "at a time; change nothing until I say yes.")
+    # AdCopilot D254: on Free's operations the server's question asks for no
+    # allowance first.
+    TOP3_FREE = ('My AdCopilot audit of Google Ads account 123-456-7890 '
+                 'flagged three checks to fix first: "Enhanced conversions '
+                 'enabled" (G43), "Close variant pollution" (G18) and '
+                 '"Zero-conversion keywords" (G-WS1). Fix them one at a time '
+                 'in the order you recommend. One yes/no at a time; change '
+                 'nothing until I say yes.')
     ONE_YES_NO = ('("Shall I block these 5? Reply yes, or name any to keep.")')
     FIVE_ROWS = 'then "and N more; ask to see them"'
 
@@ -1060,27 +1072,45 @@ class FixChecks(unittest.TestCase):
         self.assertIn("flagged three checks to fix first", self.TOP3)
         self.assertIsNone(SALES.search(desc))
 
-    def test_cost_first_and_the_order_recommended(self):
+    def test_the_order_recommended_and_no_budget_first(self):
+        """AdCopilot D254 (founder 2026-10-28): no cost line before the
+        first read, no sizing of the fixes to the day, no ask-first before
+        the last operations. The checks are
+        fixed in order until they are done or a call is refused, and the
+        refusal's plan line is passed on every time."""
         text = flat(self.SKILL)
-        self.assertIn("Before the first read, say in one line what the fixes "
-                      "cost and what is left", text)
-        self.assertIn("`org.ops_today_cap` and `org.ops_today_used`", text)
+        self.assertNotIn("Before the first read, say in one line what the "
+                         "fixes cost and what is left", text)
+        # A paid plan's question still asks first what today's allowance
+        # covers (AdCopilot's ALLOWANCE_FIRST; D254 drops it on Free's
+        # operations, TOP3_FREE): the skill answers it, and that answer
+        # never leaves a check out.
+        self.assertIn("If their question asks first what today's allowance "
+                      "covers, answer that in one line before the first read",
+                      text)
+        self.assertIn("That line answers their question; it never leaves a "
+                      "check out.", text)
+        self.assertIn("allowance covers", self.TOP3)
+        self.assertNotIn("allowance", self.TOP3_FREE)
+        self.assertNotIn("so the first two fit", text)
+        self.assertNotIn("say which fit today", text)
+        self.assertIn("never count it down yourself, never hold back a fix to "
+                      "save operations, and never ask first because few are "
+                      "left.", text)
         self.assertIn("Foundation first", text)
         self.assertIn("never ask the customer to pick it", text)
-        # Review of AdCopilot #942 (item 2): `update_keyword` changes one
-        # keyword a call, so a pause of four is four calls and a read-back.
-        self.assertIn("The change is one call per keyword it pauses "
-                      "(`update_keyword` changes one keyword a call), or per "
-                      "campaign or list it adds never-show-for words to (one "
-                      "call takes them all).", text)
-        self.assertIn("Keep what the fix they approve costs: one call per "
-                      "keyword it pauses, or per campaign or list it adds "
-                      "never-show-for words to, plus one read-back.", text)
-        self.assertIn("propose the costliest part that fits", text)
-        self.assertNotIn("Keep two operations", text)
-        self.assertNotIn("about 3 operations where every call counts 1", text)
-        self.assertIn("Before a call that would use the last of today's "
-                      "operations, say what it covers and ask first", text)
+        self.assertIn("Fix them in that order, one at a time, until they are "
+                      "done or a call is refused.", text)
+        self.assertNotIn("propose the costliest part that fits", text)
+        self.assertNotIn("say what it covers and ask first", text)
+        self.assertNotIn("Go ahead?", text)
+        self.assertNotIn("inside today's allowance", text)
+        self.assertNotIn("inside what today allows", text)
+        self.assertIn("then, every time, the one line the refusal or that "
+                      "result gives, word for word: the plan, its daily "
+                      "operations, its price exactly as written, the offer "
+                      "when it names one, the owner when it names one, and "
+                      "its link when it gives one, with the reset.", text)
 
     def test_each_family_has_its_flow(self):
         text = flat(self.SKILL)
@@ -1139,9 +1169,7 @@ class FixChecks(unittest.TestCase):
         self.assertIn("Show at most 5 rows of any list, costliest first, "
                       + self.FIVE_ROWS, review)
         self.assertIn("AskUserQuestion", review)
-        self.assertIn("On such a day, before a call that would use the last of "
-                      "today's operations, say what it covers and ask first.",
-                      review)
+        self.assertNotIn("say what it covers and ask first", review)   # D254
         negatives = flat("commands/negatives.md")
         self.assertIn("The one question: a yes/no on the themes you recommend "
                       "blocking", negatives)
@@ -1170,17 +1198,50 @@ class FixChecks(unittest.TestCase):
                 carriers += 1
         self.assertGreaterEqual(carriers, 8)
 
-    def test_a_ten_a_day_morning_check_makes_four_reads(self):
-        # Review of AdCopilot #942 (item 8): three reads skipped the
-        # disapproved ads the offer says the check would have caught; four
-        # keep them (6 of 10 weighted) and leave only what changed.
+    def test_every_morning_check_makes_its_five_reads(self):
+        # AdCopilot D254 (founder 2026-10-28): the four-read rule on a
+        # 10-a-day workspace is gone; a run makes its five reads, and one
+        # that meets the limit says which were not reached and passes the
+        # refusal's plan line on.
         run = " ".join((section(read("skills/adcopilot-daily/SKILL.md"),
                                 "## The run") or "").split())
-        self.assertIn("On a workspace with 10 operations a day "
-                      "(`org.ops_today_cap` is 10 or less), make the first four "
-                      "reads only", run)
-        self.assertIn("that what changed was left for the chat", run)
+        self.assertNotIn("make the first four reads only", run)
+        self.assertNotIn("left for the chat", run)
+        self.assertIn("then the plan line the refusal gives, word for word",
+                      run)
         self.assertIn("Five reads, in this order", read("skills/adcopilot-daily/SKILL.md"))
+
+    def test_every_flow_passes_the_plan_line_on_when_the_day_runs_out(self):
+        # AdCopilot D254: "When the day runs out" in every skill a person
+        # runs, and in the auditor.
+        for rel in ("skills/adcopilot-review/SKILL.md",
+                    "skills/adcopilot-launch/SKILL.md",
+                    "skills/adcopilot-measure/SKILL.md",
+                    "skills/adcopilot-seo/SKILL.md",
+                    "skills/adcopilot-connect/SKILL.md",
+                    "skills/adcopilot-meta/SKILL.md",
+                    "skills/adcopilot-fix-checks/SKILL.md",
+                    "agents/adcopilot-auditor.md"):
+            with self.subTest(file=rel):
+                block = " ".join((section(read(rel),
+                                          "## When the day runs out")
+                                  or "").split())
+                self.assertIn("every time, the one line the refusal or "
+                              "that result gives, word for word", block)
+                self.assertIn("Retry nothing", block)
+                # The 100% note rides on the call that used the day's last
+                # operation, a call that ran, and asks for the same line.
+                self.assertIn("A call refused at the daily limit did not run; "
+                              "a result that says the daily limit is now "
+                              "reached ran, and used the day's last "
+                              "operation. Either way,", block)
+                # A member's refusal names the owner and carries no link
+                # (D254: no checkout link is minted for a member's wall),
+                # so the link is passed on only when the refusal gives one.
+                self.assertIn("its link when it gives one", block)
+                self.assertNotRegex(block, r"its link[,)]")
+                if "(the plan" in block or ": the plan" in block:
+                    self.assertIn("the owner when it names one", block)
 
     def test_the_case_grades_the_skill(self):
         case = read("evals/fix-checks-three-checks/case.yaml")

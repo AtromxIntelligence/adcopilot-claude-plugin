@@ -395,8 +395,11 @@ class V241Alignment(unittest.TestCase):
                 self.assertNotIn("read cap", flat(rel))
         desc = re.search(r"^description: (.+)$",
                          frontmatter(read("commands/daily.md")), re.M).group(1)
-        self.assertIn("as far as the reads AdCopilot sizes for one answer allow",
-                      desc)
+        # AdCopilot D254 (founder 2026-10-28): the check-in is listed in its
+        # order, with nothing about how far the reads go.
+        self.assertNotIn("as far as the reads", desc)
+        self.assertTrue(desc.endswith("and what changed since yesterday, in "
+                                      "that order."), desc)
 
     def test_no_developer_token_of_their_own_is_offered(self):
         own = re.compile(r"developer token|bring[- ]your[- ]own|own (?:API )?token|"

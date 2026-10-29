@@ -1,6 +1,6 @@
 {
   "name": "adcopilot",
-  "version": "0.2.16",
+  "version": "0.2.17",
   "description": "The AI agent that runs your Google Ads (PPC): audit wasted spend, mine search terms and add negative keywords, research keywords with Keyword Planner data, build Search and Performance Max campaigns, check Merchant Center products in Shopping campaigns, and fix conversion tracking, with Google Analytics (GA4), Google Search Console (SEO) and Google Tag Manager live in the same chat. AdCopilot proposes each change first. For a hard stop, set your AI client to ask before AdCopilot's write tools: Needs approval in Claude; in Cursor, use the Allowlist run mode and keep them off the allowlist (Cursor's cloud agents never ask). AdCopilot never deletes anything but a negative keyword.",
   "author": {
     "name": "Atromx Intelligence",

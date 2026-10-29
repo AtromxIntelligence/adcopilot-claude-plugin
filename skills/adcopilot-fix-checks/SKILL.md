@@ -1,17 +1,17 @@
 ---
 name: adcopilot-fix-checks
-description: Fix the checks an AdCopilot audit flagged, one at a time, inside today's allowance, with one yes/no at a time and each change read back. Use when the message is a question from AdCopilot's audit page or emails, such as "My AdCopilot audit of Google Ads account 123-456-7890 flagged three checks to fix first", "failed" or "warned on" a check, naming each check with its ID in brackets ((G18), (G43), (G-WS1)), or when the customer asks to fix, explain or go through the checks an AdCopilot audit found.
+description: Fix the checks an AdCopilot audit flagged, one at a time, with one yes/no at a time and each change read back. Use when the message is a question from AdCopilot's audit page or emails, such as "My AdCopilot audit of Google Ads account 123-456-7890 flagged three checks to fix first", "failed" or "warned on" a check, naming each check with its ID in brackets ((G18), (G43), (G-WS1)), or when the customer asks to fix, explain or go through the checks an AdCopilot audit found.
 ---
 
 # AdCopilot fix-checks
 
 The customer pressed a button on their AdCopilot audit and sent its question:
 one or more checks, each by its name and its ID, for one Google Ads account.
-The audit already ran. Your job is the fixes: one check at a time, inside what
-today allows, with one yes/no at a time and a read-back after every change.
+The audit already ran. Your job is the fixes: one check at a time, with one
+yes/no at a time and a read-back after every change.
 Run no new audit for it.
 
-Call `get_org_context` with `source: "claude-plugin/0.2.16"` first, before any
+Call `get_org_context` with `source: "claude-plugin/0.2.17"` first, before any
 other tool. Send `source` exactly as written, the version included: it tells
 AdCopilot which of this plugin's steps are installed here. In a scheduled run,
 started by a Claude scheduled task or a Claude Code routine with nobody there to
@@ -26,34 +26,23 @@ The account is the one the question names (written 123-456-7890). Use it only
 if `get_org_context` reports it among the accounts switched on here; if it is
 not, say so in one line and stop.
 
-## First, what today covers
+## First, the order
 
-Before the first read, say in one line what the fixes cost and what is left,
-from `get_org_context`'s `org.ops_today_cap` and `org.ops_today_used`: "These
-3 checks take about 13 operations, more if many keywords need pausing; you have
-10 left today, so the first two fit." Count each check as its read, plus its
-change, plus one read-back. The read is 1 operation, or 2 for an analysis where
-`org.ops_weighted` is true (each result says what it used). The change is one
-call per keyword it pauses (`update_keyword` changes one keyword a call), or
-per campaign or list it adds never-show-for words to (one call takes them
-all). When `org.ops_today_cap` is null there is no daily limit: say all of them
-fit, and nothing else about an allowance.
+Foundation first: a check about counting results (conversion tracking, G42 to
+G49 and G-CT1 to G-CT3) before anything judged by those results, then what
+stops money going out (searches and keywords that spend with nothing to show),
+then the rest. Recommend the order yourself and say it in one line; never ask
+the customer to pick it. Fix them in that order, one at a time, until they are
+done or a call is refused.
 
-Then the order. Foundation first: a check about counting results (conversion
-tracking, G42 to G49 and G-CT1 to G-CT3) before anything judged by those
-results, then what stops money going out (searches and keywords that spend with
-nothing to show), then the rest. Recommend the order yourself and say it in the
-same line; never ask the customer to pick it. Keep what the fix they approve
-costs: one call per keyword it pauses, or per campaign or list it adds
-never-show-for words to, plus one read-back. When the day leaves fewer, propose
-the costliest part that fits (the keywords that spent the most) and say the
-rest wait for the reset. When the day cannot cover every check, say which fit
-today and start with those.
-
-Before a call that would use the last of today's operations, say what it covers
-and ask first, in one line: "This next look uses 2 of your last 2 operations
-today. It covers the zero-conversion keywords; after it nothing more can be
-applied until the count resets. Go ahead?"
+If their question asks first what today's allowance covers, answer that in
+one line before the first read: roughly what the fixes take (each check is
+its read, its change and one read-back) and `org.ops_today_used` of
+`org.ops_today_cap`, or, when the cap is null, that there is no daily limit.
+That line answers their question; it never leaves a check out. Without
+`cross_reads.reads_left_today`, nothing about the day is short: never count
+it down yourself, never hold back a fix to save operations, and never ask
+first because few are left.
 
 ## Each check, by its family
 
@@ -141,9 +130,13 @@ fix is checked, and never in the same message as a yes/no.
 
 ## When the day runs out
 
-A call refused at the daily limit did not run. Give what you already found
-first, in a few lines, then the one line the refusal asks for, with any price
-exactly as it is written there. Retry nothing: the fix waits for the reset.
+A call refused at the daily limit did not run; a result that says the daily
+limit is now reached ran, and used the day's last operation. Either way, give
+what you already found first, in a few lines, then, every time, the one line
+the refusal or that result gives, word for word: the plan, its daily
+operations, its price exactly as written, the offer when it names one, the
+owner when it names one, and its link when it gives one, with the reset. Retry
+nothing: the fix waits for the reset.
 
 ## The daily habit
 
@@ -153,7 +146,7 @@ First, Cursor. If this is Cursor (`get_org_context`'s top-level `surface` is `cu
 
 Everywhere else, make one offer to turn a morning check of this account into a daily habit — at most once in a conversation — and only when both hold: Google Ads is connected and readable with a campaign switched on, and `get_org_context` hands you its recipe, `routine.schedule`. AdCopilot sends `routine.schedule` only when its `overlays.schedule_offer` is set, which is its own decision for this workspace and this AI client: no schedule is reported, the call is not a scheduled run, and the client is one AdCopilot gives scheduling steps for (Claude or Claude Code; never Cursor, ChatGPT or another client). Never make the offer without it, and never work it out from the other fields. What they mean: AdCopilot reports a schedule when `routine.daily.status` is `user_set` (a schedule they set up in their own assistant), when a scheduled run has checked in on two different days (`routine.scheduled_first_seen_at` and `routine.scheduled_last_seen_at` hold dates on different days), or when `routine.own_schedule` is `saved`, `unavailable` or `declined` (recorded once they saved it, once their Claude turned out to have no scheduled tasks, or once they said not now, which holds the offer for a week and then lets it come back), and then it sends no `routine.schedule`. AdCopilot's emailed check-in, `routine.daily.status` `in_app`, is not a schedule. Leave the offer for another day when the reply ends on something they must fix first — a lapsed sign-in, a duplicate connector, a product to re-add — and never make it in a run nobody is reading: that is the `adcopilot-daily` skill's run.
 
-Make it in a reply that asks them no yes/no on a fix: the reply that reads back the first fix they approved, where the offer stands in for the next fix's yes/no (name the next fix in one line without asking, and propose it in the reply after), or the close of a reply that proposes no fix at all. Never make it beside a fix that waits for their answer: the yes/no comes first, and the offer waits. When a fix applied in this conversation was for a finding the morning check also reads — searches that spent with no sale, a campaign out of budget or off its budget pace, a disapproved ad, a drop against the 7-day average, a change nobody asked for — tie it to that finding, with the figure you read and never one you did not: a check that runs by itself every weekday at 8:07 would have caught it on its first morning. The offer is always its own paragraph, with a blank line before and after it: it goes right after the read-back (and any line that sums the fixes up), never on the end of one of its sentences and never inside one of its bullets. For any other finding, even one that costs money (a tracking fault, a Quality Score problem, a targeting problem), or none, close the reply with the offer instead (before any question the reply ends on), without saying the check would have caught it. On a workspace with 10 operations a day (`org.ops_today_cap` is 10 or less) the morning check leaves what changed for the chat, so there a change nobody asked for is one of these.
+Make it in a reply that asks them no yes/no on a fix: the reply that reads back the first fix they approved, where the offer stands in for the next fix's yes/no (name the next fix in one line without asking, and propose it in the reply after), or the close of a reply that proposes no fix at all. Never make it beside a fix that waits for their answer: the yes/no comes first, and the offer waits. When a fix applied in this conversation was for a finding the morning check also reads — searches that spent with no sale, a campaign out of budget or off its budget pace, a disapproved ad, a drop against the 7-day average, a change nobody asked for — tie it to that finding, with the figure you read and never one you did not: a check that runs by itself every weekday at 8:07 would have caught it on its first morning. The offer is always its own paragraph, with a blank line before and after it: it goes right after the read-back (and any line that sums the fixes up), never on the end of one of its sentences and never inside one of its bullets. If they decline the first fix for a finding the morning check also reads, or put it off, make the offer at the close of that reply instead, tied to that finding the same way (before any question the reply ends on). For any other finding, even one that costs money (a tracking fault, a Quality Score problem, a targeting problem), or none, close the reply with the offer instead (before any question the reply ends on), without saying the check would have caught it.
 
 Word it for where they are, by `routine.schedule.offer`: `claude_code` is Claude Code, and `claude` is the Claude app. `both` means AdCopilot could not tell which Claude this is: if they have said, believe them; otherwise the tell is the one `/adcopilot:setup` uses: Claude Code is where `claude mcp list` runs, and `/schedule` makes a routine there; everywhere else — claude.ai, Cowork, the desktop and mobile apps — it is a Claude scheduled task. In these words, with the finding in the braces kept short (a figure and a noun) and nothing else changed: a paragraph of its own, two sentences, never split into more, and no set-up step before a yes (the third line is for the close):
 

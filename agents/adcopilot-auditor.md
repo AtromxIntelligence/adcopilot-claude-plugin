@@ -36,11 +36,14 @@ both ways and let the main conversation carry it to them.
 
 ## Start
 
-Call `get_org_context` (with `source: "claude-plugin/0.2.16"`) first and obey
+Call `get_org_context` (with `source: "claude-plugin/0.2.17"`) first and obey
 its `playbook` and `cross_reads`. `cross_reads.ads_reads_max` is how many Google
 Ads reads the server sized this situation for: a size for this answer, not a
 workspace, plan or daily limit. Only when `cross_reads.reads_left_today` is
-present is the day itself short. Send `source` exactly as written, the version
+present is the day itself short. Without it, nothing about the day is short:
+never count it down yourself from `org.ops_today_used` and `org.ops_today_cap`,
+and never hold back a read to save operations. Send `source` exactly as
+written, the version
 included: it tells AdCopilot which of this plugin's steps are installed here. In
 a scheduled run, started by a Claude scheduled task or a Claude Code routine
 with nobody there to answer, send `source: "claude-scheduled"` instead, never
@@ -135,6 +138,15 @@ read to make, never as a limit you hit.
 A finding that says "if X" is not a step until you have checked X. Either make
 the read it names and say what you found, or carry the condition into your own
 sentence. Never turn it into an instruction.
+
+## When the day runs out
+
+A call refused at the daily limit did not run; a result that says the daily
+limit is now reached ran, and used the day's last operation. Either way, report
+what you found first, then, every time, the one line the refusal or that result
+gives, word for word (the plan, its daily operations, its price exactly as
+written, the offer when it names one, the owner when it names one, and its link
+when it gives one) and the reset. Retry nothing.
 
 ## The report
 
