@@ -149,11 +149,18 @@ SET_UP_NOTE_ALLOWED = ("set `save_org_context` alone to **Always allow**")
 SET_UP_WRITES_ASK = ("The write and delete tools stay on **Needs approval**.")
 
 
-# 0.2.14: what AdCopilot's `schedule_recipe.ALWAYS_ALLOW_STEP` says (v2.44.0,
-# its CONTEXT_TOOL_TITLE and SAVE_TOOL_TITLE): the two AdCopilot tools Claude
+# 0.2.14: what AdCopilot's `schedule_recipe.ALWAYS_ALLOW_STEP` says (its
+# CONTEXT_TOOL_TITLE and SAVE_TOOL_TITLE): the two AdCopilot tools Claude
 # lists under Write/delete tools that a run needs, by the titles Claude shows,
 # on Always allow; every other write tool on Needs approval.
-CONTEXT_TOOL_TITLE = "AdCopilot: what is connected and where you are"
+# 0.2.18: v2.46.11 retitled the first of them for Claude. Every live copy of
+# the step names it as AdCopilot's step does from then on, and a person whose
+# Claude still lists the old title is on an AdCopilot older than v2.46.11.
+CONTEXT_TOOL_TITLE = "AdCopilot: workspace context (records visit)"
+
+# The title up to AdCopilot v2.46.10. It stays in the one place that is
+# history: the README's 0.2.14 version note, which says what 0.2.14 said.
+CONTEXT_TOOL_TITLE_0214 = "AdCopilot: what is connected and where you are"
 
 
 SAVE_TOOL_TITLE = "AdCopilot: save business notes and progress"
@@ -621,7 +628,8 @@ class ScheduledSourceMarker(unittest.TestCase):
         start = notes.find("**%s (" % SCHEDULED_NOTE_VERSION)
         note = " ".join(notes[start:].split("\n\n", 1)[0].split())
         for part in ('`source: "claude-scheduled"`', "never `claude-plugin`",
-                     "`save_org_context`", CONTEXT_TOOL_TITLE, SAVE_TOOL_TITLE,
+                     "`save_org_context`", CONTEXT_TOOL_TITLE_0214,
+                     SAVE_TOOL_TITLE,
                      CHECKIN_FIRST_CALL,
                      "AdCopilot v2.44.0, deployed 2026-10-22"):
             with self.subTest(part=part):
@@ -652,9 +660,11 @@ class AlwaysAllowStep(unittest.TestCase):
     """0.2.14: every copy of the step that lets a scheduled run finish names
     both AdCopilot tools Claude lists under Write/delete tools.
 
-    v2.42.3 annotates `get_org_context` as not read-only, so Claude lists it,
-    titled "AdCopilot: what is connected and where you are", under
-    Write/delete tools beside "AdCopilot: save business notes and progress".
+    v2.42.3 annotates `get_org_context` as not read-only, so Claude lists it
+    under Write/delete tools beside "AdCopilot: save business notes and
+    progress", titled "AdCopilot: what is connected and where you are" up to
+    v2.46.10 and "AdCopilot: workspace context (records visit)" from v2.46.11
+    (0.2.18).
     A copy of the set-up step that puts only the read-only tools on Always
     allow leaves the run's first call on Needs approval, and the run stops
     there with nobody to answer: 23 scheduling workspaces last ran between
@@ -672,7 +682,14 @@ class AlwaysAllowStep(unittest.TestCase):
         the model reads and in the README, that gives the permissions step."""
         found = []
         for rel in model_read_files() + ["README.md"]:
-            for para in re.split(r"\n\s*\n|\n(?=\d+\. |- )", read(rel)):
+            text = read(rel)
+            if rel == "README.md":
+                # The version notes are history: each says what its own
+                # version said, so the 0.2.14 note keeps the title of that
+                # day (`test_the_readme_note_says_both` pins it there).
+                text = text.replace(
+                    section(text, "## AdCopilot version") or "", "")
+            for para in re.split(r"\n\s*\n|\n(?=\d+\. |- )", text):
                 if self.STEP.search(para):
                     found.append((rel, " ".join(para.split())))
         return found
@@ -699,15 +716,50 @@ class AlwaysAllowStep(unittest.TestCase):
         self.assertNotIn("Always allow", manifest)
 
     def test_the_titles_are_the_servers(self):
-        # schedule_recipe.CONTEXT_TOOL_TITLE and SAVE_TOOL_TITLE at v2.44.0,
-        # quoted as AdCopilot's step quotes them.
+        # schedule_recipe.CONTEXT_TOOL_TITLE and SAVE_TOOL_TITLE at v2.46.11
+        # (the first was retitled there; tools_adcopilot.CONTEXT_TITLE is the
+        # same string), quoted as AdCopilot's step quotes them.
         self.assertEqual(CONTEXT_TOOL_TITLE,
-                         "AdCopilot: what is connected and where you are")
+                         "AdCopilot: workspace context (records visit)")
         self.assertEqual(SAVE_TOOL_TITLE,
                          "AdCopilot: save business notes and progress")
         self.assertIn("“%s” and “%s”" % (CONTEXT_TOOL_TITLE, SAVE_TOOL_TITLE),
                       SET_UP_ALWAYS_ALLOW)
         self.assertEqual(flat(self.DAILY).count(SET_UP_ALWAYS_ALLOW), 1)
+
+    def test_the_old_title_is_gone_from_every_live_copy(self):
+        # 0.2.18: v2.46.11 retitled `get_org_context` for Claude. A copy that
+        # still tells someone to set "what is connected and where you are" on
+        # Always allow names a row their Claude no longer lists. Only the
+        # README's version notes, which are history, keep it.
+        for rel in model_read_files() + ["README.md"]:
+            text = read(rel)
+            if rel == "README.md":
+                text = text.replace(
+                    section(text, "## AdCopilot version") or "", "")
+            with self.subTest(file=rel):
+                self.assertNotIn(CONTEXT_TOOL_TITLE_0214, " ".join(text.split()))
+        manifest = " ".join(read(".claude-plugin/plugin.json").split())
+        self.assertNotIn(CONTEXT_TOOL_TITLE_0214, manifest)
+        # The one place that keeps it is the 0.2.14 note, as written then.
+        notes = section(read("README.md"), "## AdCopilot version") or ""
+        start = notes.find("**%s (" % SCHEDULED_NOTE_VERSION)
+        note = " ".join(notes[start:].split("\n\n", 1)[0].split())
+        self.assertIn("titled “%s”" % CONTEXT_TOOL_TITLE_0214, note)
+
+    def test_the_readme_note_for_0218_names_both_titles(self):
+        # The note is looked up by its own version, as the 0.2.14 one is: a
+        # release note is history and a later release does not repeat it.
+        notes = section(read("README.md"), "## AdCopilot version") or ""
+        start = notes.find("**0.2.18 (")
+        self.assertGreaterEqual(start, 0, "no README note for 0.2.18")
+        note = " ".join(notes[start:].split("\n\n", 1)[0].split())
+        for part in ("“%s”" % CONTEXT_TOOL_TITLE,
+                     "“%s”" % CONTEXT_TOOL_TITLE_0214,
+                     "AdCopilot v2.46.11",
+                     "must be run before this version is tagged"):
+            with self.subTest(part=part):
+                self.assertIn(part, note)
 
     def test_the_run_names_the_morning_check_task(self):
         self.assertEqual(CHECKIN_FIRST_CALL,
