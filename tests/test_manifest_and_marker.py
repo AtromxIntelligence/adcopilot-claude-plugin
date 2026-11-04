@@ -213,8 +213,9 @@ class Readme(unittest.TestCase):
                       "cannot save the new one sends the spent one again.",
                       releasing)
         self.assertIn("**If you need a separate profile,** use one that "
-                      "persists, as Claude Code's documentation on profiles "
-                      "describes.", releasing)
+                      "persists, as Claude Code's authentication documentation "
+                      "describes for staying signed in to more than one "
+                      "account.", releasing)
         for gone in ("CLAUDE_CONFIG_DIR", "claude-adcopilot-release"):
             with self.subTest(gone=gone):
                 self.assertNotIn(gone, read("README.md"))

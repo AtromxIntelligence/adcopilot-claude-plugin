@@ -91,7 +91,8 @@ jobs:
       # claude-scheduled, the instructions it hands over equal to AdCopilot's
       # recipe, the eval graders matching the offer they look for, no sales
       # wording where the model reads it, every listed command present, and
-      # no file reading a variable of the machine it runs on or holding a long
+      # no file reading a variable of the machine it runs on (bar the ablation
+      # script's own ABLATION_* settings and scratch directory) or holding a long
       # run of base64 (the directory's credential and readable-source rules).
       # Stdlib only; the runner's python3 is enough.
       - name: Structural tests
