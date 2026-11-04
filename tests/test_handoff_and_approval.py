@@ -667,8 +667,13 @@ APPROVAL_SENTENCE = ("AdCopilot proposes each change first. For a hard stop, "
                      "agents never ask).")
 
 
-CURSOR_CONFIG = ("eyJ0eXBlIjoiaHR0cCIsInVybCI6Imh0dHBzOi8vbWNwLmFkY29waWxvdC5jbG91"
-                 "ZC9tY3AifQ%3D%3D")
+# AdCopilot's own Cursor install page (web-docs `connect/cursor`, live), which
+# carries the one-click button. 0.2.18 links it in place of the install link
+# whose configuration was base64: the plugin directory's checklist wants
+# readable source, and a scan cannot read that.
+CURSOR_PAGE = "https://adcopilot.cloud/docs/connect/cursor"
+
+CONNECTOR_URL = "https://mcp.adcopilot.cloud/mcp"
 
 
 CURSOR_TELL = ("`get_org_context`'s top-level `surface` is `cursor`, or Cursor's "
@@ -765,7 +770,8 @@ class CursorPath(unittest.TestCase):
                       "may be named `server` rather than `adcopilot`; it is the "
                       "same connector",
                       "**Let Cursor use your AdCopilot?**",
-                      "config=" + CURSOR_CONFIG,
+                      "they add it from AdCopilot's Cursor page, `"
+                      + CURSOR_PAGE + "`, or by its URL, `" + CONNECTOR_URL + "`",
                       "Nothing in the next three paragraphs applies in Cursor."):
             with self.subTest(words=words):
                 self.assertIn(words, text)
@@ -778,7 +784,8 @@ class CursorPath(unittest.TestCase):
         for words in ("never run `claude mcp` here",
                       "may be named `server` rather than `adcopilot`",
                       "**Let Cursor use your AdCopilot?**",
-                      "config=" + CURSOR_CONFIG):
+                      "they add it from AdCopilot's Cursor page, `"
+                      + CURSOR_PAGE + "`, or by its URL, `" + CONNECTOR_URL + "`"):
             with self.subTest(words=words):
                 self.assertIn(words, step)
         # The plugin's Connectors tab is the web branch's, not Cursor's.
@@ -898,10 +905,6 @@ class CursorPath(unittest.TestCase):
         cursor = " ".join((section(read("README.md"), "### Cursor") or "").split())
         self.assertTrue(cursor)
         self.assertIn(cursor[:200], install)
-        self.assertIn("(https://cursor.com/en/install-mcp?name=adcopilot&config="
-                      + CURSOR_CONFIG + ")", cursor)
-        self.assertIn("`cursor://anysphere.cursor-deeplink/mcp/install?name="
-                      "adcopilot&config=" + CURSOR_CONFIG + "`", cursor)
         self.assertNotIn("name=server", cursor)
         for words in ("**Let Cursor use your AdCopilot?**",
                       "can name the connector `server` instead of `adcopilot`",
@@ -914,11 +917,34 @@ class CursorPath(unittest.TestCase):
             with self.subTest(words=words):
                 self.assertIn(words, cursor)
 
-    def test_the_config_is_the_connectors_own(self):
-        import base64
-        from urllib.parse import unquote
-        self.assertEqual(json.loads(base64.b64decode(unquote(CURSOR_CONFIG))),
-                         json.loads(read(".mcp.json"))["mcpServers"]["adcopilot"])
+    def test_the_readme_links_adcopilots_own_cursor_page(self):
+        """0.2.18: a plain link to a page AdCopilot owns, in place of a Cursor
+        install link carrying the connector's configuration as base64. The page
+        is the one AdCopilot's docs publish for Cursor, and it is where the
+        one-click button lives. The same page is what `/adcopilot:setup` and
+        `adcopilot-connect` give a person in Cursor."""
+        cursor = section(read("README.md"), "### Cursor") or ""
+        self.assertTrue(cursor)
+        self.assertEqual(cursor.count("](" + CURSOR_PAGE + ")"), 1, cursor)
+        for rel in ("README.md", "commands/setup.md",
+                    "skills/adcopilot-connect/SKILL.md"):
+            text = read(rel)
+            with self.subTest(file=rel):
+                self.assertIn(CURSOR_PAGE, text)
+                for gone in ("install-mcp", "cursor-deeplink", "&config="):
+                    self.assertNotIn(gone, text)
+
+    def test_the_manual_cursor_config_names_the_connectors_own_url(self):
+        """The `mcp.json` lines the README gives Cursor name the same URL the
+        plugin's own `.mcp.json` registers, and no other server."""
+        cursor = section(read("README.md"), "### Cursor") or ""
+        blocks = re.findall(r"```json\n(.*?)```", cursor, re.S)
+        self.assertEqual(len(blocks), 1, "the Cursor section has one JSON block")
+        manual = json.loads(blocks[0])
+        self.assertEqual(list(manual["mcpServers"]), ["adcopilot"])
+        own = json.loads(read(".mcp.json"))["mcpServers"]["adcopilot"]
+        self.assertEqual(manual["mcpServers"]["adcopilot"]["url"], own["url"])
+        self.assertEqual(own["url"], CONNECTOR_URL)
 
     def test_googles_disclosure_is_under_install_word_for_word(self):
         install = section(read("README.md"), "## Install") or ""
