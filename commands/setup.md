@@ -16,8 +16,8 @@ command lists Claude Code's connectors, not Cursor's, so what it shows, and any
 connector is in Cursor's MCP settings, where one added from cursor.directory may
 be named `server` rather than `adcopilot`; it is the same connector. There is no
 plugin Connectors tab there and no shadowing to fix. If it is not in the list,
-they add it with AdCopilot's Cursor link,
-`https://cursor.com/en/install-mcp?name=adcopilot&config=eyJ0eXBlIjoiaHR0cCIsInVybCI6Imh0dHBzOi8vbWNwLmFkY29waWxvdC5jbG91ZC9tY3AifQ%3D%3D`,
+they add it from AdCopilot's Cursor page,
+`https://adcopilot.cloud/docs/connect/cursor`,
 or by its URL, `https://mcp.adcopilot.cloud/mcp`. To sign in, Cursor opens
 AdCopilot's page, **Let Cursor use your AdCopilot?**, in the browser, and
 **Approve** finishes it; there is no key to paste. If **Approve** did nothing,

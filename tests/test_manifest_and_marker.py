@@ -194,18 +194,33 @@ class Readme(unittest.TestCase):
         self.assertIn("emailed daily check-in, when it is on,", morning)
 
     def test_the_release_profile_is_never_a_temporary_config_dir(self):
-        """The release checklist said to start Claude Code with
-        `CLAUDE_CONFIG_DIR=$(mktemp -d)`. A session that cannot write its MCP
-        refresh lock under its config dir replays a spent refresh token, and
-        AdCopilot signs a reused one out (2026-10-07). The checklist now warns
-        against it and gives a directory that persists."""
+        """The release checklist said to start Claude Code with a profile in a
+        throwaway directory. A session that cannot write its MCP refresh lock
+        under its profile replays a spent refresh token, and AdCopilot signs a
+        reused one out (2026-10-07). The checklist warns against it and sends a
+        person who needs a separate profile to one that persists.
+
+        0.2.18: it says so in words. The shell line it used to give pointed
+        Claude Code at a profile folder under the home directory, and a profile
+        folder holds a login; the plugin directory holds a plugin that reads a
+        credential from the machine it runs on, so no line of this README
+        sets, names or builds a path to one."""
         releasing = section(read("README.md"), "## Releasing") or ""
         self.assertTrue(releasing, "the README has no Releasing section")
-        self.assertNotRegex(releasing, r"CLAUDE_CONFIG_DIR=\$\(mktemp")
-        self.assertIn("Never point `CLAUDE_CONFIG_DIR` at a temporary "
-                      "directory", releasing)
-        self.assertIn('CLAUDE_CONFIG_DIR="$HOME/.claude-adcopilot-release"',
+        self.assertIn("**Never run them in a temporary profile**, one kept in a "
+                      "directory made to be thrown away.", releasing)
+        self.assertIn("A session that rotates AdCopilot's refresh token and "
+                      "cannot save the new one sends the spent one again.",
                       releasing)
+        self.assertIn("**If you need a separate profile,** use one that "
+                      "persists, as Claude Code's documentation on profiles "
+                      "describes.", releasing)
+        for gone in ("CLAUDE_CONFIG_DIR", "claude-adcopilot-release"):
+            with self.subTest(gone=gone):
+                self.assertNotIn(gone, read("README.md"))
+        for gone in ("mkdir -p", "mktemp"):
+            with self.subTest(gone=gone):
+                self.assertNotIn(gone, releasing)
 
 
 class Copy(unittest.TestCase):
@@ -459,7 +474,10 @@ class PluginVersionMarker(unittest.TestCase):
             shutil.copytree(os.path.join(ROOT, "skills"), os.path.join(work, "skills"))
             done = subprocess.run(
                 [bash, "-c", "set -euo pipefail\n" + loop.group(0)],
-                env=dict(os.environ, COPY=work, VERSION=manifest_version()),
+                # Its own environment and nothing from the machine's: the loop
+                # needs a PATH for awk and printf, and the two variables it reads.
+                env={"PATH": "/usr/bin:/bin", "COPY": work,
+                     "VERSION": manifest_version()},
                 capture_output=True, text=True)
             self.assertEqual(done.returncode, 0, done.stderr)
             stubs = {name: open(os.path.join(work, "skills", name, "SKILL.md"),

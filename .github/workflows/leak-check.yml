@@ -7,7 +7,12 @@ name: leak-check
 # the check.
 #
 # Nothing is fetched by a script and handed to a shell: gitleaks runs from its
-# published image, pinned by digest, and the job reads no secret.
+# published image, pinned by digest, and the job reads no secret. It reads no
+# environment variable of the runner either: the checkout is the step's working
+# directory, so it is mounted by that, and the log goes to a temporary file the
+# step makes itself. The plugin directory holds a plugin that reads a credential
+# from the machine it runs on, and a scan cannot tell a runner's variable from
+# a credential, so nothing in this repository reads one.
 
 on:
   push:
@@ -32,12 +37,13 @@ jobs:
           IMAGE: ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
         run: |
           set -uo pipefail
-          log="$RUNNER_TEMP/gitleaks.log"
+          log="$(mktemp)"
+          trap 'rm -f "$log"' EXIT
           # As the runner's own user: as root, git refuses a checkout another
           # user owns ("dubious ownership"), and gitleaks then scans no commit
           # and still exits 0.
           docker run --rm --user "$(id -u):$(id -g)" \
-            -v "$GITHUB_WORKSPACE:/repo:ro" -w /repo "$IMAGE" \
+            -v "$PWD:/repo:ro" -w /repo "$IMAGE" \
             git --redact --no-banner --verbose --exit-code 1 . >"$log" 2>&1
           rc=$?
           cat "$log"
