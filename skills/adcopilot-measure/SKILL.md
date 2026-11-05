@@ -15,13 +15,48 @@ At every step you take or propose, in four short beats: **name it** the way Goog
 
 ## Two routes to a conversion
 
-Google Ads can count a result two ways, and the customer chooses. **Through Analytics** — the arc below: one event tag feeds the Analytics reports and, through the link and the import, Google Ads; it is the route that meets the import trap. **Directly in Google Ads** — a conversion action from `create_conversion_action`, counted by a Google Ads conversion tag on the same trigger as step 3; no property, link or import, so it never meets the trap, and it counts in Google Ads only. Neither needs the other: never tell a customer that Google Ads has no conversions without the Analytics link. Both routes end at step 6's check, exactly one Primary: `create_conversion_action` asks whether the new action is Primary, and the answer comes from that check, so an account that already has a Primary for this result does not get a second one. If the server already reports conversion tracking, do step 6's read before proposing anything — an action that already counts the result is finished, and importing beside it is how the junk Primaries arrive.
+Google Ads can count a result two ways, and the customer chooses. **Through
+Analytics** — the arc below: one event tag feeds the Analytics reports and,
+through the link and the import, Google Ads; it is the route that meets the
+import trap. **Directly in Google Ads** — a conversion action from
+`create_conversion_action`, counted by a Google Ads conversion tag on the same
+trigger as step 3; no property, link or import, so it never meets the trap, and
+it counts in Google Ads only. Neither needs the other: never tell a customer
+that Google Ads has no conversions without the Analytics link. Both routes end
+at step 6's check, exactly one Primary: `create_conversion_action` asks whether
+the new action is Primary, and the answer comes from that check, so an account
+that already has a Primary for this result does not get a second one. If the
+server already reports conversion tracking, do step 6's read before proposing
+anything — an action that already counts the result is finished, and importing
+beside it is how the junk Primaries arrive.
 
 ## The arc
 
 ### 1. Read what exists
 
-Call `get_org_context` with `source: "claude-plugin/0.2.19"` and take from its answer alone whether Analytics is connected and has a property, whether Tag Manager is connected and which containers it reports, and what it says about the ad account's conversion tracking. Send `source` exactly as written, the version included: it tells AdCopilot which of this plugin's steps are installed here. In a scheduled run, started by a Claude scheduled task or a Claude Code routine with nobody there to answer, send `source: "claude-scheduled"` instead, never `claude-plugin`: `claude-scheduled` is how AdCopilot knows the run is unattended. When the answer's `plugin.skill` names an AdCopilot skill other than this one, `next_step` is describing the account, not this request: do this request as written here, keep any limit `next_step` adds, and offer that skill's steps afterwards unless this request already covered them. Where it reports how many conversion actions exist and how many are Primary, that count is the first fact of this arc: more than one Primary, and the arc starts at step 6 — and if they say a tag is published, step 3's read-back of the container still comes before anything is called done, because a tag that never fires looks published. Name a container by the display name the server returns, never by a number or an ID from memory. A product this arc needs that the server reports as not connected, or as needing to be signed in again, is the `adcopilot-connect` skill's step: follow it for that product, then come back. A customer can arrive mid-arc — "I imported my events, am I done?" — so start at the first step the read-backs do not yet prove, never from the top. Then ask what the action worth counting is; where on the site it happens is the question after that.
+Call `get_org_context` with `source: "claude-plugin/0.2.19"` and take from its
+answer alone whether Analytics is connected and has a property, whether Tag
+Manager is connected and which containers it reports, and what it says about the
+ad account's conversion tracking. Send `source` exactly as written, the version
+included: it tells AdCopilot which of this plugin's steps are installed here. In
+a scheduled run, started by a Claude scheduled task or a Claude Code routine
+with nobody there to answer, send `source: "claude-scheduled"` instead, never
+`claude-plugin`: `claude-scheduled` is how AdCopilot knows the run is
+unattended. When the answer's `plugin.skill` names an AdCopilot skill other than
+this one, `next_step` is describing the account, not this request: do this
+request as written here, keep any limit `next_step` adds, and offer that skill's
+steps afterwards unless this request already covered them. Where it reports how
+many conversion actions exist and how many are Primary, that count is the first
+fact of this arc: more than one Primary, and the arc starts at step 6 — and if
+they say a tag is published, step 3's read-back of the container still comes
+before anything is called done, because a tag that never fires looks published.
+Name a container by the display name the server returns, never by a number or an
+ID from memory. A product this arc needs that the server reports as not
+connected, or as needing to be signed in again, is the `adcopilot-connect`
+skill's step: follow it for that product, then come back. A customer can arrive
+mid-arc — "I imported my events, am I done?" — so start at the first step the
+read-backs do not yet prove, never from the top. Then ask what the action worth
+counting is; where on the site it happens is the question after that.
 
 What breaks: assume a property or a container and every later step lands where nobody looks — a stream on the wrong property, a tag in a container that is not on the site — and each reads back as a success. What it unlocked: the customer knows which of the three pieces — property, container, conversion action — they have and which they do not, and where each one shows in its own screen. What is next: the property and its data stream, because a tag has nothing to send to until a stream gives it a measurement ID.
 
@@ -33,7 +68,30 @@ What breaks: a second property for the same site, or a stream on someone else's,
 
 ### 3. The tags, in Tag Manager
 
-Pick the container that is on the site — if the server reports more than one, ask, by display name; if the site loads none, the customer installs the container snippet first (under Admin in Tag Manager, at the time of writing). List the workspace's tags before staging: a container that already carries a Google tag for this measurement ID needs no second one. Then two tags. The **Google tag** first — type `googtag`, carrying the measurement ID, on firing trigger `2147479573`, which Tag Manager shows as **Initialization - All Pages** — so every page reports to the property. Then the event tag for the action that matters — **Google Analytics: GA4 Event**, type `gaawe`, carrying the event name and the same measurement ID (at the time of writing the parameter keys are `tagId` on the Google tag, `eventName` and `measurementIdOverride` on the event tag) — on a trigger shaped by how the action shows on the page: **Click - Just Links** (`linkClick`) filtered to the link's address, **Form Submission** (`formSubmission`), or **Page View** (`pageview`) filtered to the thank-you page. A filter reads a **built-in variable** (Click URL, Form URL, Page Path, at the time of writing), and the click and form ones are off until enabled — `gtm_list_built_in_variables`, then `gtm_enable_built_in_variable` for what the filter reads, before the trigger — because a filter on a variable that is off matches nothing and the tag never fires, silently. Use Google's recommended event name where one fits (`sign_up`, `generate_lead`, `purchase`). Read the tags, the trigger and the enabled variables back, give the customer the workspace's address as the server returns it, and say that publishing is their click (Submit, then Publish, at the time of writing): nothing fires until they do.
+Pick the container that is on the site — if the server reports more than one,
+ask, by display name; if the site loads none, the customer installs the
+container snippet first (under Admin in Tag Manager, at the time of writing).
+List the workspace's tags before staging: a container that already carries a
+Google tag for this measurement ID needs no second one. Then two tags. The
+**Google tag** first — type `googtag`, carrying the measurement ID, on firing
+trigger `2147479573`, which Tag Manager shows as **Initialization - All Pages**
+— so every page reports to the property. Then the event tag for the action that
+matters — **Google Analytics: GA4 Event**, type `gaawe`, carrying the event name
+and the same measurement ID (at the time of writing the parameter keys are
+`tagId` on the Google tag, `eventName` and `measurementIdOverride` on the event
+tag) — on a trigger shaped by how the action shows on the page: **Click - Just
+Links** (`linkClick`) filtered to the link's address, **Form Submission**
+(`formSubmission`), or **Page View** (`pageview`) filtered to the thank-you
+page. A filter reads a **built-in variable** (Click URL, Form URL, Page Path, at
+the time of writing), and the click and form ones are off until enabled —
+`gtm_list_built_in_variables`, then `gtm_enable_built_in_variable` for what the
+filter reads, before the trigger — because a filter on a variable that is off
+matches nothing and the tag never fires, silently. Use Google's recommended
+event name where one fits (`sign_up`, `generate_lead`, `purchase`). Read the
+tags, the trigger and the enabled variables back, give the customer the
+workspace's address as the server returns it, and say that publishing is their
+click (Submit, then Publish, at the time of writing): nothing fires until they
+do.
 
 **Say what it counts.** A click on a link to a different site — the app on its own subdomain, say — counts the click, not the sign-up: everyone who clicks and never finishes counts too. Say so before they publish, and say what would make it real: the Google tag on the app itself, firing on the page only a finished sign-up reaches; if the app is theirs, offer that instead.
 
@@ -51,7 +109,31 @@ What breaks: a link to a different property, or to a manager account instead of 
 
 ### 6. Demote everything but the one
 
-Google Ads calls each conversion action **Primary**, used for bidding, or **Secondary**, observation only. Right after the import, run `conversion_setup_audit`, and for the list of which actions are Primary, `search` on `conversion_action` with `conversion_action.primary_for_goal`. If the audit ends with `related_reads` — it names a read of how Google Ads' counts compare with Analytics' when the link between them is flagged — run at most one that bears on the question, then answer from all you hold; never repeat a read you hold, and offer, do not chase, the `related_reads` that read brings back. They are reads only: a change is still only proposed. In a scheduled run, skip them. A finding that says "if X" is not a step until you have checked X. Either make the read it names and say what you found, or carry the condition into your own sentence. Never turn it into an instruction. The usual offenders, at the time of writing, are `page_view`, `session_start`, `first_visit` and `user_engagement`: events Analytics collects on its own, which arrive Primary whether they were ticked or not. Tell the customer which actions are Primary in a sentence that names each one, never as a table or list of the rows the audit or `search` returned: they act on the names and what each one counts, and a copy of the server's rows reads as data, not an answer. No tool here changes an existing conversion action, so the demotion is the customer's clicks — in Google Ads, at the time of writing: Goals, then Conversions, then Summary, open each extra action, Edit settings, Goal and action optimization, Secondary action, Save. A duplicate the audit reports is settled the same way: ask which action they trust, and the other becomes Secondary. Then read back again, and do not move on until exactly one enabled action is Primary and it is the one that matters — if two, say which; if none, the sign-up was demoted by mistake.
+Google Ads calls each conversion action **Primary**, used for bidding, or
+**Secondary**, observation only. Right after the import, run
+`conversion_setup_audit`, and for the list of which actions are Primary,
+`search` on `conversion_action` with `conversion_action.primary_for_goal`. If
+the audit ends with `related_reads` — it names a read of how Google Ads' counts
+compare with Analytics' when the link between them is flagged — run at most one
+that bears on the question, then answer from all you hold; never repeat a read
+you hold, and offer, do not chase, the `related_reads` that read brings back.
+They are reads only: a change is still only proposed. In a scheduled run, skip
+them. A finding that says "if X" is not a step until you have checked X. Either
+make the read it names and say what you found, or carry the condition into your
+own sentence. Never turn it into an instruction. The usual offenders, at the
+time of writing, are `page_view`, `session_start`, `first_visit` and
+`user_engagement`: events Analytics collects on its own, which arrive Primary
+whether they were ticked or not. Tell the customer which actions are Primary in
+a sentence that names each one, never as a table or list of the rows the audit
+or `search` returned: they act on the names and what each one counts, and a copy
+of the server's rows reads as data, not an answer. No tool here changes an
+existing conversion action, so the demotion is the customer's clicks — in Google
+Ads, at the time of writing: Goals, then Conversions, then Summary, open each
+extra action, Edit settings, Goal and action optimization, Secondary action,
+Save. A duplicate the audit reports is settled the same way: ask which action
+they trust, and the other becomes Secondary. Then read back again, and do not
+move on until exactly one enabled action is Primary and it is the one that
+matters — if two, say which; if none, the sign-up was demoted by mistake.
 
 Then Analytics, which Secondary does not touch. Google Ads can import only **key events**, so the four are usually still marked as key events in Analytics, and a key event is what every Analytics report counts as a result. Read the property's key events back with `ga4_list_conversion_events`. Each of `page_view`, `session_start`, `first_visit` and `user_engagement` on that list means Analytics counts ordinary visits as conversions. Unmarking them is the customer's click. In Analytics, at the time of writing: Admin, then Data display, then Events, then the **Key events** tab, then click the star beside each one to clear it. Leave the one that counts marked, then read the list back. Past days keep them as key events and the change applies from then on, so say that before the customer compares months.
 
@@ -76,7 +158,7 @@ when it gives one) and the reset. Retry nothing.
 
 ## Prices
 
-This file names no prices. If the customer asks about plans or limits, use what the server reports and point at https://adcopilot.cloud/pricing.
+This file names no prices. If the customer asks about plans or limits, use what the server reports and point at the plan page the server names (`app_urls.billing`).
 
 ## The daily habit
 
@@ -84,9 +166,48 @@ This block is repeated verbatim in every AdCopilot skill and command a person ru
 
 First, Cursor. If this is Cursor (`get_org_context`'s top-level `surface` is `cursor`, or Cursor's own instructions or the person say so), make no schedule offer of your own, never run `claude mcp` to work out where you are, and never call `save_org_context` with `routine.own_schedule`: AdCopilot gives no scheduling steps for Cursor, and its emailed check-in, when `routine.daily.status` is `in_app`, is the morning check there. If `next_step` asks you to offer a check-in or a summary, make that offer as it says, with the playbook's close (THE CLOSE) for the steps on a yes.
 
-Everywhere else, make one offer to turn a morning check of this account into a daily habit — at most once in a conversation — and only when both hold: Google Ads is connected and readable with a campaign switched on, and `get_org_context` hands you its recipe, `routine.schedule`. AdCopilot sends `routine.schedule` only when its `overlays.schedule_offer` is set, which is its own decision for this workspace and this AI client: no schedule is reported, the call is not a scheduled run, and the client is one AdCopilot gives scheduling steps for (Claude or Claude Code; never Cursor, ChatGPT or another client). Never make the offer without it, and never work it out from the other fields. What they mean: AdCopilot reports a schedule when `routine.daily.status` is `user_set` (a schedule they set up in their own assistant), when a scheduled run has checked in on two different days (`routine.scheduled_first_seen_at` and `routine.scheduled_last_seen_at` hold dates on different days), or when `routine.own_schedule` is `saved`, `unavailable` or `declined` (recorded once they saved it, once their Claude turned out to have no scheduled tasks, or once they said not now, which holds the offer for a week and then lets it come back), and then it sends no `routine.schedule`. AdCopilot's emailed check-in, `routine.daily.status` `in_app`, is not a schedule. Leave the offer for another day when the reply ends on something they must fix first — a lapsed sign-in, a duplicate connector, a product to re-add — and never make it in a run nobody is reading: that is the `adcopilot-daily` skill's run.
+Everywhere else, make one offer to turn a morning check of this account into a
+daily habit — at most once in a conversation — and only when both hold: Google
+Ads is connected and readable with a campaign switched on, and `get_org_context`
+hands you its recipe, `routine.schedule`. AdCopilot sends `routine.schedule`
+only when its `overlays.schedule_offer` is set, which is its own decision for
+this workspace and this AI client: no schedule is reported, the call is not a
+scheduled run, and the client is one AdCopilot gives scheduling steps for
+(Claude or Claude Code; never Cursor, ChatGPT or another client). Never make the
+offer without it, and never work it out from the other fields. What they mean:
+AdCopilot reports a schedule when `routine.daily.status` is `user_set` (a
+schedule they set up in their own assistant), when a scheduled run has checked
+in on two different days (`routine.scheduled_first_seen_at` and
+`routine.scheduled_last_seen_at` hold dates on different days), or when
+`routine.own_schedule` is `saved`, `unavailable` or `declined` (recorded once
+they saved it, once their Claude turned out to have no scheduled tasks, or once
+they said not now, which holds the offer for a week and then lets it come back),
+and then it sends no `routine.schedule`. AdCopilot's emailed check-in,
+`routine.daily.status` `in_app`, is not a schedule. Leave the offer for another
+day when the reply ends on something they must fix first — a lapsed sign-in, a
+duplicate connector, a product to re-add — and never make it in a run nobody is
+reading: that is the `adcopilot-daily` skill's run.
 
-Make it in a reply that asks them no yes/no on a fix: the reply that reads back the first fix they approved, where the offer stands in for the next fix's yes/no (name the next fix in one line without asking, and propose it in the reply after), or the close of a reply that proposes no fix at all. Never make it beside a fix that waits for their answer: the yes/no comes first, and the offer waits. When a fix applied in this conversation was for a finding the morning check also reads — searches that spent with no sale, a campaign out of budget or off its budget pace, a disapproved ad, a drop against the 7-day average, a change nobody asked for — tie it to that finding, with the figure you read and never one you did not: a check that runs by itself every weekday at 8:07 would have caught it on its first morning. The offer is always its own paragraph, with a blank line before and after it: it goes right after the read-back (and any line that sums the fixes up), never on the end of one of its sentences and never inside one of its bullets. If they decline the first fix for a finding the morning check also reads, or put it off, make the offer at the close of that reply instead, tied to that finding the same way (before any question the reply ends on). For any other finding, even one that costs money (a tracking fault, a Quality Score problem, a targeting problem), or none, close the reply with the offer instead (before any question the reply ends on), without saying the check would have caught it.
+Make it in a reply that asks them no yes/no on a fix: the reply that reads back
+the first fix they approved, where the offer stands in for the next fix's yes/no
+(name the next fix in one line without asking, and propose it in the reply
+after), or the close of a reply that proposes no fix at all. Never make it
+beside a fix that waits for their answer: the yes/no comes first, and the offer
+waits. When a fix applied in this conversation was for a finding the morning
+check also reads — searches that spent with no sale, a campaign out of budget or
+off its budget pace, a disapproved ad, a drop against the 7-day average, a
+change nobody asked for — tie it to that finding, with the figure you read and
+never one you did not: a check that runs by itself every weekday at 8:07 would
+have caught it on its first morning. The offer is always its own paragraph, with
+a blank line before and after it: it goes right after the read-back (and any
+line that sums the fixes up), never on the end of one of its sentences and never
+inside one of its bullets. If they decline the first fix for a finding the
+morning check also reads, or put it off, make the offer at the close of that
+reply instead, tied to that finding the same way (before any question the reply
+ends on). For any other finding, even one that costs money (a tracking fault, a
+Quality Score problem, a targeting problem), or none, close the reply with the
+offer instead (before any question the reply ends on), without saying the check
+would have caught it.
 
 Word it for where they are, by `routine.schedule.offer`: `claude_code` is Claude Code, and `claude` is the Claude app. `both` means AdCopilot could not tell which Claude this is: if they have said, believe them; otherwise the tell is the one `/adcopilot:setup` uses: Claude Code is where `claude mcp list` runs, and `/schedule` makes a routine there; everywhere else — claude.ai, Cowork, the desktop and mobile apps — it is a Claude scheduled task. In these words, with the finding in the braces kept short (a figure and a noun) and nothing else changed: a paragraph of its own, two sentences, never split into more, and no set-up step before a yes (the third line is for the close):
 

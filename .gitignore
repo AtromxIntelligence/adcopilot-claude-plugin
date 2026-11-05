@@ -2,11 +2,12 @@
 .DS_Store
 Thumbs.db
 
-# Local Claude Code state — never part of the plugin
-.claude/settings.local.json
+# Local client state — never part of the plugin
+*.local.json
 
-# Local evaluation output — never part of the plugin
+# Local evaluation output and replay caches — never part of the plugin
 evals/results/
+.replay/
 
 # Python's compiled files — never part of the plugin. A plugin install copies
 # the repository, and a .pyc records the path of the machine it was compiled on.

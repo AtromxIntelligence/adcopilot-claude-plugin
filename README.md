@@ -4,7 +4,7 @@ The AI agent that runs your Google Ads, with Google Analytics, Google Search Con
 
 AdCopilot is made by Atromx Intelligence (https://adcopilot.cloud) and is not related to other products named AdCopilot.
 
-The plugin is free (MIT). The connector is a hosted service — plans at https://adcopilot.cloud/pricing.
+The plugin is free (MIT). The connector is a hosted service; its plans are on https://adcopilot.cloud.
 
 ## Install
 
@@ -47,7 +47,7 @@ The last step opens the connector list. Choose `adcopilot` and sign in with your
 
 Cursor takes AdCopilot's connector on its own; this plugin does not install
 there as a whole. Its skills are written for Claude, and Cursor reads them too
-when they are copied into `.cursor/skills` or `.claude/skills`. Wherever they
+when they are copied into Cursor's or Claude Code's skills folder. Wherever they
 work out which client they are in (`/adcopilot:setup`, `adcopilot-connect`, the
 daily-habit offer), they check for Cursor first: there they never run
 `claude mcp`, look for the connector in Cursor's MCP settings and make no
@@ -89,7 +89,7 @@ writing). In **Allowlist**, a tool on the allowlist runs without asking and any
 other asks first, so keep AdCopilot's write tools off the allowlist. In
 **Auto-review**, Cursor's recommended default, allowlisted calls also run at
 once, and every other MCP call goes to a classifier that can let a change
-through without asking. **Run Everything** asks before nothing, and a Cursor
+through without asking. Its third run mode asks before nothing, and a Cursor
 cloud agent never asks you to approve an action. Whatever the mode, AdCopilot
 proposes each change first, never deletes anything but a negative keyword, and
 builds every campaign paused.
@@ -129,7 +129,7 @@ Nine skills, which Claude draws on when the conversation calls for them:
 - **adcopilot-fix-checks** — the fixes for the checks an AdCopilot audit flagged, when you send the question from the audit page's or an email's "Fix all three" or "Fix this" button. It takes the checks foundation first (counting results before anything judged by them), reads only what each fix needs rather than running the audit again, and puts each fix to you as one yes/no, with at most five rows of any list. A search-term check goes to the never-show-for words, zero-conversion keywords to a pause, and a conversion-tracking check to the steps AdCopilot can take or the clicks in Google Ads it cannot. Each change is read back, with how to undo it, before the next check.
 - **adcopilot-docs** — answers questions about AdCopilot itself from your live workspace rather than from memory: which products it reaches, how many look-ups are left today and what happens when they run out, which plan you are on, what it is allowed to change, where data goes, and what to do when a call fails. Plans and prices are linked, never quoted. It answers from that one look at your workspace, without reading your accounts or starting another skill, and says what AdCopilot can do as one list. When the question pointed at something a read of your account would answer, it ends on one question offering that read; after a question about look-ups, billing, privacy or safety it offers nothing.
 - **adcopilot-seo** — answers what Google search makes of your site, through Search Console: which pages earn clicks and which earn nothing, what people typed to find you, whether a sitemap is being read, and when a page was last crawled. It is written around the readings that mislead — the sitemap's dead "indexed" column, an average position that is not a rank, impressions that are not demand — and it says plainly what it cannot see: there is no site-wide coverage list and no penalty read, so it asks you for Search Console's Pages export rather than guessing. Once an edit is live it offers to inspect the page again a few days later, and with Google Ads connected it offers to set the searches you pay for beside the ones that already bring you organic clicks.
-- **adcopilot-meta** — for a question about Meta ads (Facebook ads, Instagram ads) or about Meta and Google together. AdCopilot has no Meta integration (one is on the roadmap, with no date), and Meta publishes a connector of its own for Meta ads, so this skill looks for Meta's connector in the conversation first. When it is not there, it says what it is and how to add it, links [Meta's help page](https://www.facebook.com/business/help/1456422242197840) and [AdCopilot's guide](https://adcopilot.cloud/docs/guides/meta-ads-alongside-adcopilot), and states nothing about Meta's terms that Meta has not published. When it is there, Meta's figures come from Meta's connector and Google's from AdCopilot, each labelled with where it came from; nothing read from one is sent to the other; and any change through either connector is proposed first, one platform at a time (for a hard stop, set both connectors' write tools to ask, as at the top of this page). AdCopilot never writes to Meta.
+- **adcopilot-meta** — for a question about Meta ads (Facebook ads, Instagram ads) or about Meta and Google together. AdCopilot has no Meta integration (one is on the roadmap, with no date), and Meta publishes a connector of its own for Meta ads, so this skill looks for Meta's connector in the conversation first. When it is not there, it says what it is and how to add it, links [AdCopilot's guide](https://adcopilot.cloud/docs/guides/meta-ads-alongside-adcopilot), which links Meta's own pages, and states nothing about Meta's terms that Meta has not published. When it is there, Meta's figures come from Meta's connector and Google's from AdCopilot, each labelled with where it came from; nothing read from one is sent to the other; and any change through either connector is proposed first, one platform at a time (for a hard stop, set both connectors' write tools to ask, as at the top of this page). AdCopilot never writes to Meta.
 
 One agent, which Claude hands a job to when it is too big for the conversation:
 
@@ -139,11 +139,59 @@ Together with the connector registration above, the commands, skills and agent a
 
 ### Every morning, without asking
 
-Every command above, and the connect, launch, measure and fix-checks skills, make one short offer to turn a morning check of the account into a daily habit when AdCopilot's own answer hands them the recipe for your AI client (`routine.schedule`): an account with a campaign switched on, no schedule reported yet, and a client AdCopilot gives scheduling steps for, which today means Claude. AdCopilot gives none for Cursor, ChatGPT or another client, and there the plugin makes no schedule offer of its own; in Cursor, when AdCopilot's answer asks for an offer of a check-in or a summary, the plugin makes that one as AdCopilot words it. The offer comes, as a paragraph of its own, only in a reply that asks you no yes/no on a fix: the reply that reads back the first fix you approved, where it stands in for the next fix's yes/no (the next fix is named, and proposed in the reply after), or at the close of a reply that proposes none. When that fix was for a finding the morning check also reads (the searches that spent with no sale, a campaign out of budget, a disapproved ad, a drop against the 7-day average, a change nobody asked for), it is tied to it: a check that runs by itself every weekday at 8:07 would have caught it on its first morning. If you decline that first fix or put it off, the offer closes that reply instead, tied to the finding the same way. With any other finding, or none, the offer closes the reply instead, without that claim. In claude.ai, Cowork or the desktop app it is a Claude **scheduled task**; in Claude Code, a **routine** made with `/schedule`, which it offers to create for you. Say "schedule it" and it walks you through the steps; say no and it does not offer again in that conversation, asks once whether your Claude has scheduled tasks, and records the answer, so a no pauses the offer for a week and a Claude with no scheduled tasks ends it. It records that answer only from Claude, because AdCopilot keeps it for the whole workspace. The offer stops for good once AdCopilot reports a schedule — one you recorded with it, or a scheduled run that has checked in on two different days.
+Every command above, and the connect, launch, measure and fix-checks skills,
+make one short offer to turn a morning check of the account into a daily habit
+when AdCopilot's own answer hands them the recipe for your AI client
+(`routine.schedule`): an account with a campaign switched on, no schedule
+reported yet, and a client AdCopilot gives scheduling steps for, which today
+means Claude. AdCopilot gives none for Cursor, ChatGPT or another client, and
+there the plugin makes no schedule offer of its own; in Cursor, when AdCopilot's
+answer asks for an offer of a check-in or a summary, the plugin makes that one
+as AdCopilot words it. The offer comes, as a paragraph of its own, only in a
+reply that asks you no yes/no on a fix: the reply that reads back the first fix
+you approved, where it stands in for the next fix's yes/no (the next fix is
+named, and proposed in the reply after), or at the close of a reply that
+proposes none. When that fix was for a finding the morning check also reads (the
+searches that spent with no sale, a campaign out of budget, a disapproved ad, a
+drop against the 7-day average, a change nobody asked for), it is tied to it: a
+check that runs by itself every weekday at 8:07 would have caught it on its
+first morning. If you decline that first fix or put it off, the offer closes
+that reply instead, tied to the finding the same way. With any other finding, or
+none, the offer closes the reply instead, without that claim. In claude.ai,
+Cowork or the desktop app it is a Claude **scheduled task**; in Claude Code, a
+**routine** made with `/schedule`, which it offers to create for you. Say
+"schedule it" and it walks you through the steps; say no and it does not offer
+again in that conversation, asks once whether your Claude has scheduled tasks,
+and records the answer, so a no pauses the offer for a week and a Claude with no
+scheduled tasks ends it. It records that answer only from Claude, because
+AdCopilot keeps it for the whole workspace. The offer stops for good once
+AdCopilot reports a schedule — one you recorded with it, or a scheduled run that
+has checked in on two different days.
 
 The instructions you save are AdCopilot's own morning-check recipe, word for word, filled in with your account. A run reads about six or seven times, and each read counts toward your workspace's daily operations. On Free, and on a trial held to Free's 10 a day, an analysis such as budget pacing counts 2 operations and a single read 1, so a run comes to about 8 to 10 operations. On a paid plan or a running trial every read counts 1. If AdCopilot already emails you its daily check-in, that keeps coming as well; the Routine card on AdCopilot's Home page pauses it if you want only one. Scheduled tasks need a Claude plan that has them; on Claude's Free plan, and in Cursor, AdCopilot's emailed daily check-in, when it is on, is the morning check.
 
-**A scheduled run is told not to change anything.** The instructions `adcopilot-daily` gives you are read-only and ask no questions; a fix it finds is a question for when you open the report. AdCopilot holds a scheduled run to reads as well: once a run's first call is `get_org_context` with `source: "claude-scheduled"`, AdCopilot refuses every tool that changes Google Ads, Analytics, Tag Manager or Search Console on that connection for the rest of the run, up to 20 minutes, whatever Claude allows (AdCopilot's own notes aside). It knows a run is scheduled only from that first call, so a run that skips it or sends another source is not held, and a yes typed in the run's own conversation can be refused while the run is on; say it again in a new conversation. Claude Code adds one more hold: AdCopilot marks `set_campaign_status`, the tool that pauses a campaign or switches one on, as needing a person, so Claude Code (version 2.1.214 or later) will not use it in a run on your computer with nobody there to answer, such as `claude -p`. The plugin's skills pause or switch on a campaign only with that tool, never with a status in a change to the campaign's settings (`update_campaign`), and the mark does not hold that change. A Claude Code routine runs its tools without asking, and so does a scheduled task switched to **Automatically approve**; in those, the first call and the instructions are what keep the run to reads, so keep them as written. In claude.ai, Cowork and the desktop app, setting AdCopilot's other **Write/delete tools** to **Blocked**, every one but the two AdCopilot tools below, stops a change outright, in every chat as well as in the run.
+**A scheduled run is told not to change anything.** The instructions
+`adcopilot-daily` gives you are read-only and ask no questions; a fix it finds
+is a question for when you open the report. AdCopilot holds a scheduled run to
+reads as well: once a run's first call is `get_org_context` with
+`source: "claude-scheduled"`, AdCopilot refuses every tool that changes Google
+Ads, Analytics, Tag Manager or Search Console on that connection for the rest of
+the run, up to 20 minutes, whatever Claude allows (AdCopilot's own notes aside).
+It knows a run is scheduled only from that first call, so a run that skips it or
+sends another source is not held, and a yes typed in the run's own conversation
+can be refused while the run is on; say it again in a new conversation. Claude
+Code adds one more hold: AdCopilot marks `set_campaign_status`, the tool that
+pauses a campaign or switches one on, as needing a person, so Claude Code
+(version 2.1.214 or later) will not use it in a run on your computer with nobody
+there to answer, such as a scheduled command-line run. The plugin's skills pause
+or switch on a campaign only with that tool, never with a status in a change to
+the campaign's settings (`update_campaign`), and the mark does not hold that
+change. A Claude Code routine runs its tools without asking, and so does a
+scheduled task whose approval setting no longer asks; in those, the first call
+and the instructions are what keep the run to reads, so keep them as written. In
+claude.ai, Cowork and the desktop app, setting AdCopilot's other **Write/delete
+tools** to **Blocked**, every one but the two AdCopilot tools below, stops a
+change outright, in every chat as well as in the run.
 
 **The one setting a scheduled task needs in Claude.** In claude.ai, Cowork and the desktop app, a run with nobody there stops at the first tool Claude asks about. So the set-up's first step is in AdCopilot's **Tool permissions** (Customize, then Connectors, then AdCopilot): the **Read-only tools** on **Always allow**, and under **Write/delete tools** two of AdCopilot's own, “AdCopilot: workspace context (records visit)” and “AdCopilot: save business notes and progress”, on **Always allow** too. They keep AdCopilot's own notes and never change Google Ads; every other Write/delete tool stays on **Needs approval**, so Claude asks before each change (Cursor has no such screen; see **Approvals in Cursor** above). Claude lists the first of the two under Write/delete tools, and it is every run's first call, so a task set up with only the read-only tools on **Always allow** stops there; setting those two tools to **Always allow** too is the whole fix.
 
@@ -151,7 +199,22 @@ The instructions you save are AdCopilot's own morning-check recipe, word for wor
 
 - **Switch on a campaign it built.** Every campaign it builds is created paused. You switch it on in Google Ads yourself.
 - **Delete anything but a negative keyword.** The connector refuses a REMOVED status server-side: the campaign, ad group, ad and keyword tools accept only ENABLED or PAUSED, and the asset tools refuse a remove outright. Pausing is as far as it goes for all of those, and it is the server that enforces that rather than the assistant's good manners. The one exception is deliberate: each of the three ways to add a negative keyword has a removal behind it, so a negative can be taken back out — which is what makes "you can undo this" true when AdCopilot says it. Attaching a shared negative-keyword list is the genuinely one-way action; there is no detach tool, and a list is detached in Google Ads under Tools, Shared library, Exclusion lists.
-- **Change your account unasked, while your AI client asks before AdCopilot's write tools.** Reads run freely, and AdCopilot proposes each change first. For a hard stop, set your AI client to ask before AdCopilot's write tools: **Needs approval** in claude.ai, Cowork and the desktop app; in Claude Code, leave them off the allowlist and the session out of `auto` and `bypassPermissions` mode; in Cursor, use the **Allowlist** run mode and keep them off the allowlist (see **Approvals in Cursor** above; Cursor's cloud agents never ask). Take the question away and changes to what already exists, a budget or a switched-on campaign among them, apply without it; only a new campaign is still built paused. The one exception is `set_campaign_status`, the tool that pauses a campaign or switches one on: Claude Code (version 2.1.214 or later) asks before every use of it, whatever its settings, and a run with nobody there to answer cannot use it; the Claude desktop app may also ask every time for it. The plugin's skills pause or switch on a campaign only with that tool, never with a status in a change to the campaign's settings (`update_campaign`), which follows your settings like any other change.
+- **Change your account unasked, while your AI client asks before AdCopilot's
+  write tools.** Reads run freely, and AdCopilot proposes each change first. For
+  a hard stop, set your AI client to ask before AdCopilot's write tools: **Needs
+  approval** in claude.ai, Cowork and the desktop app; in Claude Code, leave
+  them off the allowlist, in a session whose permission mode still asks before
+  each tool; in Cursor, use the **Allowlist** run mode and keep them off the
+  allowlist (see **Approvals in Cursor** above; Cursor's cloud agents never
+  ask). Take the question away and changes to what already exists, a budget or a
+  switched-on campaign among them, apply without it; only a new campaign is
+  still built paused. The one exception is `set_campaign_status`, the tool that
+  pauses a campaign or switches one on: Claude Code (version 2.1.214 or later)
+  asks before every use of it, whatever its settings, and a run with nobody
+  there to answer cannot use it; the Claude desktop app may also ask every time
+  for it. The plugin's skills pause or switch on a campaign only with that tool,
+  never with a status in a change to the campaign's settings
+  (`update_campaign`), which follows your settings like any other change.
 
 ## Privacy and terms
 
