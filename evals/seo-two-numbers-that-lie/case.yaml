@@ -82,7 +82,7 @@ graders:
     # both of its arms under `--ablation none`, where it is inert and this
     # grader is scored in both. The version is in the skill body alone, so
     # the tools-only stub carries the same versioned marker
-    # (evals/ablation/tools-only.sh): it passes on the baseline arm too and
+    # (the tools-only ablation's stub): it passes on the baseline arm too and
     # contributes nothing to the delta either way.
     tool: mcp__plugin_adcopilot_adcopilot__get_org_context
     input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin/\d+\.\d+\.\d+")'
