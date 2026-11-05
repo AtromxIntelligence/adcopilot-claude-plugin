@@ -12,7 +12,7 @@ Two jobs. Work out which one this is before anything else:
 
 A person who opens a finished run and answers the question it ended on is in neither: that is "After the run", at the end.
 
-Only the run sends `source: "claude-scheduled"`. With a person here, in the set-up or after the run, call `get_org_context` with `source: "claude-plugin/0.2.18"`, never `claude-scheduled`, which would tell AdCopilot nobody is there. Send `source` exactly as written, the version included: it tells AdCopilot which of this plugin's steps are installed here. When the answer's `plugin.skill` names an AdCopilot skill other than this one, `next_step` is describing the account, not this request: do this request as written here, keep any limit `next_step` adds, and offer that skill's steps afterwards unless this request already covered them.
+Only the run sends `source: "claude-scheduled"`. With a person here, in the set-up or after the run, call `get_org_context` with `source: "claude-plugin/0.2.19"`, never `claude-scheduled`, which would tell AdCopilot nobody is there. Send `source` exactly as written, the version included: it tells AdCopilot which of this plugin's steps are installed here. When the answer's `plugin.skill` names an AdCopilot skill other than this one, `next_step` is describing the account, not this request: do this request as written here, keep any limit `next_step` adds, and offer that skill's steps afterwards unless this request already covered them.
 
 ## The run
 
@@ -69,7 +69,7 @@ Say what it costs before they save it: about six or seven reads a run, each coun
 2. Make the task. Either, in a new chat: "Schedule a task for every weekday at 8:07 AM my time with these instructions:" followed by the instructions, then confirm. Or, in the sidebar, **Scheduled**, then **Set up manually**: name it "AdCopilot morning check", paste the instructions, approval mode **Manually approve**, frequency weekdays at 08:07, **Save**.
 3. **Run now** once, and check that it finished without stopping to ask.
 
-On Claude Team or Enterprise, if every read in the run waits for approval, the task can be switched to **Automatically approve**. Say plainly what that does before they switch: it stops asking before each tool, changes included, so the read-only instructions are what keep the run to reads — keep them exactly as written. Setting AdCopilot's other **Write/delete tools** to **Blocked**, every one but the two AdCopilot tools above, stops a change outright, but then no chat can make one either; that is their call.
+On Claude Team or Enterprise, if every read in the run still waits for approval, say that an owner of the organisation may have to allow AdCopilot's read-only tools there. Do not suggest a task setting that stops it asking before each tool: AdCopilot's write tools would then run with nobody's yes. Setting AdCopilot's other **Write/delete tools** to **Blocked**, every one but the two AdCopilot tools above, stops a change outright, but then no chat can make one either; that is their call.
 
 Claude's Free plan has no scheduled tasks; say so plainly — there, AdCopilot's emailed daily check-in, when it is on, is the morning check — and call `save_org_context` with `routine.own_schedule` `unavailable`, so neither AdCopilot nor this plugin offers it again.
 
@@ -80,7 +80,7 @@ Claude's Free plan has no scheduled tasks; say so plainly — there, AdCopilot's
 3. Leave the routine only the connectors it needs. A routine runs its tools without asking, so the read-only instructions are what keep it to reads: keep them exactly as written.
 4. Run it once, and check that it finished without stopping.
 
-A local task, or a `claude -p` line in cron, runs only while the computer is awake: a fallback, not the recommendation.
+A local task, or a scheduled command-line run on their own computer, runs only while the computer is awake: a fallback, not the recommendation.
 
 **Then record it.** Once they say it is saved, call `save_org_context` with `routine.own_schedule` `saved` and `routine.daily` set to `status` `user_set`, `surface` `claude_scheduled`, `hour_local` 8 and `tz` the account's time zone — except while `routine.daily.status` is `in_app`: AdCopilot keeps its emailed check-in as it is and would refuse a change to that row, so record `routine.own_schedule` `saved` alone. Tell them AdCopilot's emailed check-in keeps coming as well, and that if they want only one, the Routine card on AdCopilot's Home page pauses the email. Either way the offer stops once `get_org_context` reports the schedule.
 

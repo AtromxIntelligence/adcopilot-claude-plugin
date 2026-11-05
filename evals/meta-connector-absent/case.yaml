@@ -5,7 +5,7 @@ description: >
   AdCopilot's connector answers (the shared fixture in evals/mocks applies; it
   is fictional) and Meta's own connector is NOT installed. AdCopilot reaches
   Google and nothing else, so the reply must say that Meta has its own connector
-  for Meta ads, give both links (Meta's help page and AdCopilot's guide), and
+  for Meta ads, give AdCopilot's guide link (which links Meta's pages), and
   stop: no figure from memory, no offer to read Meta through AdCopilot, no claim
   that AdCopilot supports Meta, and none of Meta's countries, roles, cost or
   verification stated as fact, because Meta's pages state none for the route the
@@ -26,13 +26,13 @@ graders:
   # Weights, 39 in all, so that each thing the description says the reply must
   # do or must not do puts a run under the 0.8 line on its own (31/39 = 0.79):
   # rubric items 1 and 2 together, sending them to Meta's own connector with
-  # both links (8); item 3, no number, trend or verdict on their Instagram ads
+  # the guide link (8); item 3, no number, trend or verdict on their Instagram ads
   # (8); item 4, none of Meta's terms stated as fact (8); item 5, no claim or
   # offer that AdCopilot reads Meta (8). Items 1 and 2 share a grader because
   # a grader fails a run alone only if it weighs more than a fifth of the
-  # total, so at most four can. A reply that leaves out a link fails item 2
-  # and the links regex (2) together, 29/39; the links regex alone stays
-  # above the line (37/39), as do the address (1) and the figures regex (1),
+  # total, so at most four can. A reply that leaves out the link fails item 2
+  # and the link regex (2) together, 29/39; the link regex alone stays
+  # above the line (37/39), as do the connector-name regex (1) and the figures regex (1),
   # which also matches a Google figure such as the tools-only arm's "$0" on
   # 2026-10-18. A figure from memory fails item 3 and the figures regex
   # together, 30/39; the terms and offer regexes (0.5 each) add to items 4
@@ -46,17 +46,18 @@ graders:
     type: tool_used
     tool: Skill
     input_match: '"skill"\s*:\s*"(?:[\w-]+:)?adcopilot-meta"'
-  - name: gives-both-links
+  - name: gives-the-guide-link
     type: regex
     target: last_message
     weight: 2
-    # Meta's help page and AdCopilot's guide, in either order. The guide link is
-    # the part a baseline cannot know, so it carries the skill's delta.
-    pattern: '^(?=[\s\S]*facebook\.com/business/help/1456422242197840)(?=[\s\S]*adcopilot\.cloud/docs/guides/meta-ads-alongside-adcopilot)'
-  - name: gives-the-address
+    # AdCopilot's guide, which links Meta's own pages. It is the part a
+    # baseline cannot know, so it carries the skill's delta.
+    pattern: 'adcopilot\.cloud/docs/guides/meta-ads-alongside-adcopilot'
+  - name: names-metas-connector
     type: regex
     target: last_message
-    pattern: 'mcp\.facebook\.com/ads'
+    flags: i
+    pattern: '\bads MCP server\b|\bMeta(?:''s)? (?:own )?(?:ads )?connector\b'
   - name: no-adcopilot-read
     type: regex
     target: mock_calls
@@ -91,7 +92,7 @@ graders:
 
       PASS only if both hold:
       1. It says Meta has its own connector for Meta ads, and that this is what answers a question about Instagram or Facebook ads. It says, or plainly implies, that AdCopilot does not read Meta.
-      2. It says how to get it in a sentence or two (add it in the AI client by Meta's address and sign in) and gives Meta's help page and AdCopilot's guide. It is not a tutorial, and it does not walk through screens of any one assistant from memory.
+      2. It says how to get it in a sentence or two (add it in the AI client and sign in) and gives AdCopilot's guide, which links Meta's own pages. It is not a tutorial, and it does not walk through screens of any one assistant from memory.
 
       FAIL if either does not hold.
   - name: no-verdict-on-their-ads

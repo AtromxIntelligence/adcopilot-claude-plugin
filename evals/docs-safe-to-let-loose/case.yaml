@@ -11,7 +11,7 @@ description: >
   no-delete guarantee is enforced by the server rather than by the assistant
   behaving, and has exactly one deliberate exception; that the approval lives
   in the AI client and disappears when its tools are allowlisted or the session
-  auto-approves, so it must never be stated unconditionally; and that a price
+  no longer asks, so it must never be stated unconditionally; and that a price
   is never quoted from memory but pointed to.
 tags: [docs]
 runs: 3
@@ -38,11 +38,26 @@ graders:
     focus: last_message
     weight: 2
     criteria: |
-      The customer asked whether it will always ask before changing something. The true answer is conditional, and the same for every AI client: reads run freely and AdCopilot proposes each change first; the hard stop is the AI CLIENT set to ask before AdCopilot's write tools — Needs approval in Claude; in Claude Code, tools that are not allowlisted, in a session not in `auto` or `bypassPermissions` mode; in Cursor, the write tools kept off the allowlist (Cursor's Auto-review can let a call through without asking, Run Everything asks nothing, and Cursor's cloud agents never ask). Allowlist those tools, or run in an auto-approving mode or an unattended scheduled run, and changes to things that already exist apply without being asked, except `set_campaign_status`, the tool that pauses a campaign or switches one on, which Claude Code (version 2.1.214 or later) always asks about and a run with nobody there to answer cannot use (a change to a campaign's settings, `update_campaign`, is not held that way, and the plugin never sends a status through it). Only a newly built campaign is created paused regardless.
+      The customer asked whether it will always ask before changing something.
+      The true answer is conditional, and the same for every AI client: reads
+      run freely and AdCopilot proposes each change first; the hard stop is the
+      AI CLIENT set to ask before AdCopilot's write tools — Needs approval in
+      Claude; in Claude Code, tools that are not allowlisted, in a session whose
+      permission mode still asks; in Cursor, the write tools kept off the
+      allowlist (Cursor's Auto-review can let a call through without asking, its
+      third run mode asks nothing, and Cursor's cloud agents never ask). With
+      those tools allowlisted, in a session or client mode that does not ask, or
+      in an unattended scheduled run, changes to things that already exist apply
+      without being asked, except `set_campaign_status`, the tool that pauses a
+      campaign or switches one on, which Claude Code (version 2.1.214 or later)
+      always asks about and a run with nobody there to answer cannot use (a
+      change to a campaign's settings, `update_campaign`, is not held that way,
+      and the plugin never sends a status through it). Only a newly built
+      campaign is created paused regardless.
 
       PASS only if both hold:
       1. The reply says the approval prompt comes from the AI client / the tool-permission layer, not from AdCopilot's own code — in substance; exact words are free.
-      2. The reply states the condition under which it would NOT ask: approving the tools once, allowlisting them, an auto-accept or bypass-permissions mode, a client mode that does not ask (such as Cursor's Run Everything or a Cursor cloud agent), or an unattended/scheduled run. A reply that says "it always asks first", "every change needs your approval" or "nothing happens without your permission" with no such condition anywhere is a FAIL, however well it is written.
+      2. The reply states the condition under which it would NOT ask: approving the tools once, allowlisting them, a session or client mode that does not ask before each tool (such as Cursor's third run mode, or a Cursor cloud agent), or an unattended/scheduled run. A reply that says "it always asks first", "every change needs your approval" or "nothing happens without your permission" with no such condition anywhere is a FAIL, however well it is written.
 
       Saying that a campaign AdCopilot builds is created paused and that switching it on is the customer's own click in Google Ads is a correct extra, not required. Naming the setting for one client only (Claude's Needs approval, say) is not a FAIL on its own; saying Cursor has a Needs approval setting is wrong but is not graded here.
 
@@ -76,7 +91,7 @@ graders:
     # both of its arms under `--ablation none`, where it is inert and this
     # grader is scored in both. The version is in the skill body alone, so
     # the tools-only stub carries the same versioned marker
-    # (evals/ablation/tools-only.sh): it passes on the baseline arm too and
+    # (the tools-only ablation's stub): it passes on the baseline arm too and
     # contributes nothing to the delta either way.
     tool: mcp__plugin_adcopilot_adcopilot__get_org_context
     input_match: '^(?![\s\S]*"source"\s*:\s*"claude-plugin/\d+\.\d+\.\d+")'

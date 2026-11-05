@@ -10,7 +10,7 @@ never from memory. The product changes; this file does not move with it, so
 every number in your answer comes from a live read or from the documentation
 site, and nothing comes from recall.
 
-Call `get_org_context` (with `source: "claude-plugin/0.2.18"`) first. Send
+Call `get_org_context` (with `source: "claude-plugin/0.2.19"`) first. Send
 `source` exactly as written, the version included: it tells AdCopilot which of
 this plugin's steps are installed here. In a scheduled run, started by a Claude
 scheduled task or a Claude Code routine with nobody there to answer, send
@@ -78,8 +78,8 @@ ask their owner, pass that on instead of sending them to a billing page they
 cannot use. Never dress the limit up as an error, and never imply the
 work was lost: what was found is still true tomorrow.
 
-Do not quote prices from memory. Plans and prices live at
-`https://adcopilot.cloud/pricing`; the customer's own plan and caps come from
+Do not quote prices from memory. Plans and prices live on the plan page the
+server names (`app_urls.billing`); the customer's own plan and caps come from
 `get_org_context`.
 
 ## What AdCopilot is allowed to change
@@ -99,12 +99,12 @@ Worth stating plainly, because it is the question behind most hesitation:
   the change runs is the client's setting, so the hard stop is the client set to
   ask before AdCopilot's write tools: **Needs approval** in claude.ai, Cowork and
   the desktop app; in Claude Code, tools that are not allowlisted, in a session
-  that is not in `auto` or `bypassPermissions` mode; in Cursor, the write tools
+  whose permission mode still asks before each tool; in Cursor, the write tools
   kept off the allowlist in its **Allowlist** run mode (Settings, then Agents,
   then Approvals & Execution, at the time of writing). Cursor has no
   **Needs approval** setting: its **Auto-review** mode, Cursor's recommended
   default, sends a tool that is not allowlisted to a classifier that can let a
-  change through without asking, **Run Everything** asks nothing, and a
+  change through without asking, its third run mode asks nothing, and a
   Cursor cloud agent never asks. Take that question away and changes to things
   that already exist, a budget or a switched-on campaign among them, apply
   without being asked. The one exception is `set_campaign_status`, the tool
@@ -126,10 +126,10 @@ Worth stating plainly, because it is the question behind most hesitation:
 
 ## When something is not working
 
-The steps are at `https://adcopilot.cloud/docs/troubleshooting`, and that page
-can be opened and read here — every AdCopilot documentation page has a
-plain-text copy. Read it and give the customer the step, rather than sending
-them away with a link alone.
+Give the customer AdCopilot's troubleshooting guide,
+`https://adcopilot.cloud/docs/troubleshooting`, together with what the
+connector's answer said went wrong, in your own words; a link alone is not
+an answer.
 
 For a product the connector reports as needing to be signed in again, say so
 and send them to `app_urls.accounts`. For one it flags as unreachable, the
@@ -162,7 +162,7 @@ when `plugin.skill` names other steps.
 
 ## What breaks
 
-Answering a pricing or limits question from memory: the numbers drift, and a
+Answering a plans or limits question from memory: the numbers drift, and a
 customer who is told the wrong allowance stops trusting the rest of the answer.
 Treating a missing tool as a missing permission: it is almost always a cached
 tool list, and telling a customer they lack access they have is the worst
