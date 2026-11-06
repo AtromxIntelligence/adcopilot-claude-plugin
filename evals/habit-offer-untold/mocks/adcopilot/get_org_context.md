@@ -15,8 +15,9 @@ type: fixed
 # The connection's client name was not read, so v2.41.0 reports "surface":
 # "other" and offers both Claude schedulers (schedule_recipe.offer_for:
 # "both"): neither the answer nor the customer says where this is, and the
-# block's own tell (a shell tool means Claude Code) has to. A named Claude
-# client gets "claude" or "claude_code" and never reaches the tell.
+# block's own tell (Claude's own instructions, or a shell tool) has to. A
+# named Claude client gets "claude" or "claude_code" and never reaches the
+# tell.
 # Re-rendered with AdCopilot release/v2.41.0's own code (967d743b, read only):
 # situation (ADS_ACTIVE_TRACKED), overlays, plugin, next_step, playbook,
 # cross_reads, question_map and hints, and routine.schedule (offer "both") are

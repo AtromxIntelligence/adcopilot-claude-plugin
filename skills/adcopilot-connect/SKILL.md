@@ -38,11 +38,11 @@ At every step you take or propose, in four short beats: **name it** the way Goog
 
 ### 1. Signed in
 
-Where the connector is signed in depends on the surface. Check for Cursor first; after that, the tell is whether you have a shell.
+Where the connector is signed in depends on the surface. Check for Cursor first; after that, the tell is whether you are Claude Code: your own instructions say so, or you have a shell.
 
 - **Cursor** (`get_org_context`'s top-level `surface` is `cursor`, or Cursor's own instructions or the person say so): never run Claude Code's command-line tool here, even when you can — it lists Claude Code's connectors, not Cursor's. The connector is in Cursor's MCP settings, and one added from cursor.directory may be named `server` rather than `adcopilot`; it is the same connector. Nothing registers it for them in Cursor: if it is not in that list, they add it from AdCopilot's Cursor page, `https://adcopilot.cloud/docs/connect/cursor`, or by its URL, `https://mcp.adcopilot.cloud/mcp`. To sign in, Cursor opens AdCopilot's page, **Let Cursor use your AdCopilot?**, in the browser: press **Approve**. If **Approve** did nothing, remove the connector in Cursor's MCP settings, add it again and press **Approve** once.
-- **Claude Code** (you have a shell tool, such as Bash): `/mcp`, choose `adcopilot`, sign in.
-- **Web** (claude.ai, Cowork, desktop — no shell): the plugin's own **Connectors** tab, sign in to `adcopilot`. It is already listed.
+- **Claude Code** (your own instructions say you are Claude Code, or you have a shell tool, such as Bash): `/mcp`, choose `adcopilot`, sign in.
+- **Web** (claude.ai, Cowork, desktop — neither of those): the plugin's own **Connectors** tab, sign in to `adcopilot`. It is already listed.
 
 In Claude, never tell them to add the connector by hand — the plugin registers it, and in Claude Code a hand-added copy shadows the plugin's own. `/adcopilot:setup` diagnoses that.
 
@@ -165,7 +165,7 @@ Quality Score problem, a targeting problem), or none, close the reply with the
 offer instead (before any question the reply ends on), without saying the check
 would have caught it.
 
-Word it for where they are, by `routine.schedule.offer`: `claude_code` is Claude Code, and `claude` is the Claude app. `both` means AdCopilot could not tell which Claude this is: if they have said, believe them; otherwise the tell is the one `/adcopilot:setup` uses: Claude Code is where you have a shell tool, such as Bash, and `/schedule` makes a routine there; everywhere else — claude.ai, Cowork, the desktop and mobile apps — it is a Claude scheduled task. In these words, with the finding in the braces kept short (a figure and a noun) and nothing else changed: a paragraph of its own, two sentences, never split into more, and no set-up step before a yes (the third line is for the close):
+Word it for where they are, by `routine.schedule.offer`: `claude_code` is Claude Code, and `claude` is the Claude app. `both` means AdCopilot could not tell which Claude this is: if they have said, believe them; otherwise the tell is the one `/adcopilot:setup` uses: Claude Code is where your own instructions say you are Claude Code or you have a shell tool, such as Bash, and `/schedule` makes a routine there; everywhere else — claude.ai, Cowork, the desktop and mobile apps — it is a Claude scheduled task. In these words, with the finding in the braces kept short (a figure and a noun) and nothing else changed: a paragraph of its own, two sentences, never split into more, and no set-up step before a yes (the third line is for the close):
 
 - Claude Code: "A read-only check that runs by itself every weekday at 8:07 would have caught {the finding} on its first morning, opening with "All clear" or "Needs a look" plus one yes/no fix. If you say "schedule it", I'll set it up as a Claude Code routine with /schedule."
 - The Claude app: "A read-only check that runs by itself every weekday at 8:07 would have caught {the finding} on its first morning, opening with "All clear" or "Needs a look" plus one yes/no fix. If you say "schedule it", I'll walk you through saving it as a Claude scheduled task, about two minutes."
