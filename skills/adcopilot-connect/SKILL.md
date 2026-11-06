@@ -38,7 +38,7 @@ At every step you take or propose, in four short beats: **name it** the way Goog
 
 ### 1. Signed in
 
-Where the connector is signed in depends on the surface. Check for Cursor first; after that, the tell is whether you are Claude Code: your own instructions say so, or you have a shell.
+Where the connector is signed in depends on the surface. Check for Cursor first; after that, the tell is whether you are Claude Code: your own instructions say so, or you have a shell. A `surface` of `claude` cannot tell you: it is `claude` for every Claude, Claude Code included.
 
 - **Cursor** (`get_org_context`'s top-level `surface` is `cursor`, or Cursor's own instructions or the person say so): never run Claude Code's command-line tool here, even when you can — it lists Claude Code's connectors, not Cursor's. The connector is in Cursor's MCP settings, and one added from cursor.directory may be named `server` rather than `adcopilot`; it is the same connector. Nothing registers it for them in Cursor: if it is not in that list, they add it from AdCopilot's Cursor page, `https://adcopilot.cloud/docs/connect/cursor`, or by its URL, `https://mcp.adcopilot.cloud/mcp`. To sign in, Cursor opens AdCopilot's page, **Let Cursor use your AdCopilot?**, in the browser: press **Approve**. If **Approve** did nothing, remove the connector in Cursor's MCP settings, add it again and press **Approve** once.
 - **Claude Code** (your own instructions say you are Claude Code, or you have a shell tool, such as Bash): `/mcp`, choose `adcopilot`, sign in.

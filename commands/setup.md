@@ -26,8 +26,11 @@ they remove the connector in Cursor's MCP settings, add it again and press
 
 Otherwise, if your own instructions say you are Claude Code, or you have a
 shell tool, such as Bash, this is Claude Code and the whole of the next two
-paragraphs applies. If neither holds — claude.ai, Cowork, the desktop app —
-none of it does: there is no `/mcp` there, and no shadowing either: claude.ai links a connector by its URL, so a copy they added by hand
+paragraphs applies. `get_org_context`'s `surface` of `claude` cannot tell you
+this: it is `claude` for every Claude, Claude Code included. If neither holds —
+claude.ai, Cowork, the desktop app — none of it does: there is no `/mcp`
+there, and no shadowing either: claude.ai links a connector by its URL, so a
+copy they added by hand
 before installing the plugin is the same connector, not a second one. On the
 web the only question is whether they have signed in to the plugin's own
 connector yet: open the plugin from the plugin list, then its Connectors tab,
