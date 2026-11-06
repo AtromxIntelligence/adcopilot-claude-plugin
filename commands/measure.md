@@ -1,5 +1,4 @@
 ---
-name: measure
 description: Set up conversion tracking end to end and finish with exactly one Primary conversion, proven by a real click.
 ---
 

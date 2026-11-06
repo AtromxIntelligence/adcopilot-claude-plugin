@@ -1,5 +1,4 @@
 ---
-name: launch
 description: Build a first Google Ads Search campaign switched off, verify the settings that leak money, hand over the go-live switch, and read the first week.
 ---
 

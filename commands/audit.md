@@ -1,5 +1,4 @@
 ---
-name: audit
 description: Audit the account — the connector's full check list, then this month's budget pacing — and keep what is only newness out of the findings.
 ---
 

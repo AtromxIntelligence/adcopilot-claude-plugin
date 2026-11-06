@@ -1,5 +1,4 @@
 ---
-name: weekly
 description: "The week in one summary — last Monday to Sunday against the week before: spend, conversions and cost per conversion, the three biggest changes, and three things to do this week, in plain words ready to forward."
 ---
 

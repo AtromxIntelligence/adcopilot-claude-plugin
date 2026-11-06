@@ -1,5 +1,4 @@
 ---
-name: setup
 description: Check the AdCopilot connector is connected and signed in, and say what each connected product unlocks.
 ---
 

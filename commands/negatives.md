@@ -1,5 +1,4 @@
 ---
-name: negatives
 description: Find the searches that cost money and brought nothing in the last seven days, grouped by theme, and propose never-show-for words (negative keywords) for them; the ones added are read back. Use when the customer asks to block searches or add negative keywords; checks from an AdCopilot audit are the fix-checks skill's, and a question about how the ads are doing is the review's.
 ---
 

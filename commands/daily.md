@@ -1,5 +1,4 @@
 ---
-name: daily
 description: The daily check-in — this month's pacing, the last seven days' searches that cost money and brought nothing, any ad Google has stopped, and what changed since yesterday, in that order.
 ---
 
