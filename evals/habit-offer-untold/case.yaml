@@ -5,7 +5,7 @@ description: >
   invented), typed the way a real customer types it: the bare command, with no
   line saying where they are. Every other habit case says, and the daily-habit
   block believes what they say, so the tell it falls back on (Claude Code is
-  where `claude mcp list` runs) is only exercised here. The eval harness is
+  where Claude has a shell tool) is only exercised here. The eval harness is
   Claude Code, so the offer must be worded for Claude Code — a routine made with
   /schedule — not a claude.ai scheduled task, and get_org_context does not say
   where it is either: for a connection whose client name AdCopilot could not

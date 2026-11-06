@@ -6,57 +6,61 @@ description: >
   plugin (the tenant in evals/mocks is fictional; every value is invented).
   Outside this harness Claude Code keeps the hand-added server and silently
   drops the plugin's, so the connector answers normally and nothing in any
-  tool result says there are two. The prompt carries the one fact the
-  customer can see: `claude mcp list` shows an `adcopilot` HTTP server they
-  added, and no `plugin:adcopilot:adcopilot` line — the tell, seen both ways
-  on a real machine. The reply must notice the duplicate, send them to remove
-  it from every scope it can be in — `claude mcp remove adcopilot -s user`,
-  and `-s local` from the directory it was added in, since a local
-  registration belongs to that directory and one bare remove takes it out of
-  one scope only (the founder's own install had it in both) — keep the
-  plugin's, never tell them to remove the plugin, and still do setup's job: what the server reports as
-  connected, in prose, and a next step. The harness registers the mock under
-  the plugin's own server name, so a reply may observe that the plugin's copy
-  answered this time; which copy answered is not judged. Deterministic graders
-  test only strings with one spelling: the remedy command's name, raw field
-  names (not the same words inside a connect address the server returned).
-  Meaning is two rubrics along the case's seams — the duplicate and its
-  scoped removal, the case's outcome, at weight 2 (dead alone: 6/8 = 0.750,
-  below the gate); setup's job and the one next step at weight 1 — so a
-  judge that disagrees about one obligation no longer fails the whole.
+  tool result says there are two. The tell is Claude's own tool names: the
+  hand-added copy's tools are `mcp__adcopilot__<tool>`, and none carry the
+  plugin's `mcp__plugin_adcopilot_adcopilot__<tool>` form. This harness cannot
+  serve that list: a mock folder named adcopilot always stands in for the
+  plugin's own server, and a mock of its own cannot take a name the plugin
+  already uses, so the mock answers under the plugin's names. The prompt
+  therefore carries the tell as one line about the tool names, and says the
+  harness serves them under the plugin's name, as it carried what the
+  customer could see before. The reply must notice the duplicate, say in
+  plain words that a copy they added by hand is hiding the plugin's, send
+  them to AdCopilot's page for the plugin for the steps to remove it from
+  every place it was added (the page carries those steps; the plugin does
+  not), keep the plugin's, never tell them to remove the plugin, say that
+  /mcp and a sign-in follow once theirs is gone, and still do setup's job:
+  what the server reports as connected, in prose, and a next step.
+  Deterministic graders test only strings with one spelling: the page's
+  address, raw field names (not the same words inside a connect address the
+  server returned). Meaning is two rubrics along the case's seams — the
+  duplicate and where its removal steps are, the case's outcome, at weight 2
+  (dead alone: 6/8 = 0.750, below the gate); setup's job and the one next
+  step at weight 1 — so a judge that disagrees about one obligation no longer
+  fails the whole.
 tags: [setup]
 runs: 5
 execution:
   prompt: |
     /adcopilot:setup
-    (context: `claude mcp list` shows an `adcopilot` HTTP server added by the user, and no `plugin:adcopilot:adcopilot` line)
+    (context: in this session AdCopilot's tools are named `mcp__adcopilot__<tool>`, and none are named `mcp__plugin_adcopilot_adcopilot__<tool>`. The test harness serves them under the plugin's name, so take this line as your tool list.)
   max_turns: 8
   timeout_seconds: 240
   allowed_tools: [Skill]
 graders:
-  - name: names-the-remedy-command
+  - name: points-to-the-plugin-page
     type: regex
     target: last_message
     flags: i
-    pattern: 'claude mcp remove adcopilot\b'
+    pattern: 'adcopilot\.cloud/docs/connect/claude-code-plugin\b'
   - name: no-raw-fields-or-json
     type: regex
     target: last_message
     flags: i
     match: not_contains
     pattern: '(?<!/)\b(connect_url|needs_reauth|can_edit|property_defaults|tools_revision|app_urls|cross_reads|search_console|google_ads)\b|"(connected|unlocks|gtm|ga4|products|overlays|situation|next_step|playbook)"\s*:|\{\s*"'
-  - name: duplicate-noticed-and-removed-from-every-scope
+  - name: duplicate-noticed-and-sent-to-the-page
     type: llm
     focus: last_message
     weight: 2
     criteria: |
-      The customer ran /adcopilot:setup. The connector answered normally. The prompt also said that `claude mcp list` shows a bare `adcopilot` HTTP server the customer added by hand, and no `plugin:adcopilot:adcopilot` line. This plugin registers a connector of the same name, and Claude Code keeps a hand-added copy and silently ignores the plugin's. The harness registered the mock under the plugin's own name, so the reply may observe that the plugin's copy answered this call; which copy answered is not judged, and what the reply says the server reported is judged by another rubric and neither helps nor hurts here.
+      The customer ran /adcopilot:setup. The connector answered normally. The prompt also said that in this session AdCopilot's tools are named `mcp__adcopilot__<tool>` and none are named `mcp__plugin_adcopilot_adcopilot__<tool>`: the tools of a copy the customer added by hand, and none of the plugin's own. This plugin registers a connector of the same name, and Claude Code keeps a hand-added copy and silently ignores the plugin's. The prompt said the harness serves the tools under the plugin's name, so a reply may observe that its tools carry the plugin's names this time; which names it saw is not judged, and what the reply says the server reported is judged by another rubric and neither helps nor hurts here.
 
       Judge the reply's meaning only, as someone who first opened a terminal this week. PASS only if both hold:
 
-      1. The duplicate is noticed. The reply takes the customer's `claude mcp list` as true, says there are two registrations of the same connector — one the customer added by hand and the plugin's — and treats the hand-added one as the duplicate to remove. It does not treat the plugin as broken, missing or not installed, does not say it cannot tell whether there is a duplicate, and does not make what to do conditional on the customer checking again first.
+      1. The duplicate is noticed. The reply takes the prompt's line about the tool names as true and says, in plain words, that a copy of the connector the customer added by hand is hiding the plugin's (taking its place, or making Claude Code ignore it), and treats the hand-added copy as the one to remove. It does not treat the plugin as broken, missing or not installed, does not say it cannot tell whether there is a duplicate, and does not make what to do conditional on the customer checking again first.
 
-      2. Removed from every scope, the plugin's kept. The reply tells them to remove the hand-added one with `claude mcp remove adcopilot` from each scope it can be in — user scope (`-s user`) and local scope (`-s local`), the local one run from the directory it was added in because a local registration belongs to that directory — and to keep the plugin's; and it says how they will know it worked (`claude mcp list` shows the `plugin:adcopilot:adcopilot` line once theirs is gone). Mentioning `-s project` as well is fine. A reply that gives only one bare `claude mcp remove adcopilot` with no scope and no word about the scopes, or tells them to uninstall or remove the plugin, or to remove both, FAILS.
+      2. Sent to the page, the plugin's kept. The reply sends them to AdCopilot's page for the plugin (adcopilot.cloud/docs/connect/claude-code-plugin, with or without the part after #) for the steps to remove their copy, keeps the plugin's connector, and says that once their copy is gone they run /mcp, choose adcopilot and sign in. Saying the page covers every place the copy was added is fine. The reply need give no removal steps of its own, since the page carries them; steps of its own beside the page do not fail it, as long as the page is where it sends them. A reply that names no page and leaves them to work out the removal alone, or tells them to uninstall or remove the plugin, or to remove both, FAILS.
 
       FAIL if either is missing.
   - name: setups-job-and-one-next-step
@@ -64,7 +68,7 @@ graders:
     focus: last_message
     weight: 1
     criteria: |
-      The customer ran /adcopilot:setup. The connector answered normally: Google Ads connected (one account, Example Bakery, no campaigns yet), Analytics connected with no property, Search Console connected but needing to be signed in again, Tag Manager not connected, and a fifth product the server calls lantern, not connected. The prompt also said a hand-added copy of the connector is registered; what the reply says about that duplicate is judged by another rubric and neither helps nor hurts here.
+      The customer ran /adcopilot:setup. The connector answered normally: Google Ads connected (one account, Example Bakery, no campaigns yet), Analytics connected with no property, Search Console connected but needing to be signed in again, Tag Manager not connected, and a fifth product the server calls lantern, not connected. The prompt also said this session's tools show a hand-added copy of the connector in place of the plugin's; what the reply says about that duplicate is judged by another rubric and neither helps nor hurts here.
 
       Judge the reply's meaning only, as someone who first opened a terminal this week. PASS only if both hold:
 

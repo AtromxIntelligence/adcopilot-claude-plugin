@@ -22,7 +22,7 @@ The daily budget and the bid — the most one click may cost — are the custome
 A customer can arrive at any step — "the campaign you built is ready, what
 now?", "it's day two, how is it doing?" — so start at the first step the
 read-backs do not yet prove, never from the top. `get_org_context`, called with
-`source: "claude-plugin/0.2.19"` wherever you start, reports whether a campaign
+`source: "claude-plugin/0.2.20"` wherever you start, reports whether a campaign
 exists; what it was built with, and what it has done since, is read back from
 Google Ads, never assumed from the fact that it was built here. Send `source`
 exactly as written, the version included: it tells AdCopilot which of this
@@ -169,7 +169,7 @@ This file names no prices. If the customer asks about plans or limits, use what 
 
 This block is repeated verbatim in every AdCopilot skill and command a person runs; change all eight together.
 
-First, Cursor. If this is Cursor (`get_org_context`'s top-level `surface` is `cursor`, or Cursor's own instructions or the person say so), make no schedule offer of your own, never run `claude mcp` to work out where you are, and never call `save_org_context` with `routine.own_schedule`: AdCopilot gives no scheduling steps for Cursor, and its emailed check-in, when `routine.daily.status` is `in_app`, is the morning check there. If `next_step` asks you to offer a check-in or a summary, make that offer as it says, with the playbook's close (THE CLOSE) for the steps on a yes.
+First, Cursor. If this is Cursor (`get_org_context`'s top-level `surface` is `cursor`, or Cursor's own instructions or the person say so), make no schedule offer of your own, never run Claude Code's command-line tool to work out where you are, and never call `save_org_context` with `routine.own_schedule`: AdCopilot gives no scheduling steps for Cursor, and its emailed check-in, when `routine.daily.status` is `in_app`, is the morning check there. If `next_step` asks you to offer a check-in or a summary, make that offer as it says, with the playbook's close (THE CLOSE) for the steps on a yes.
 
 Everywhere else, make one offer to turn a morning check of this account into a
 daily habit — at most once in a conversation — and only when both hold: Google
@@ -214,7 +214,7 @@ Quality Score problem, a targeting problem), or none, close the reply with the
 offer instead (before any question the reply ends on), without saying the check
 would have caught it.
 
-Word it for where they are, by `routine.schedule.offer`: `claude_code` is Claude Code, and `claude` is the Claude app. `both` means AdCopilot could not tell which Claude this is: if they have said, believe them; otherwise the tell is the one `/adcopilot:setup` uses: Claude Code is where `claude mcp list` runs, and `/schedule` makes a routine there; everywhere else — claude.ai, Cowork, the desktop and mobile apps — it is a Claude scheduled task. In these words, with the finding in the braces kept short (a figure and a noun) and nothing else changed: a paragraph of its own, two sentences, never split into more, and no set-up step before a yes (the third line is for the close):
+Word it for where they are, by `routine.schedule.offer`: `claude_code` is Claude Code, and `claude` is the Claude app. `both` means AdCopilot could not tell which Claude this is: if they have said, believe them; otherwise the tell is the one `/adcopilot:setup` uses: Claude Code is where you have a shell tool, such as Bash, and `/schedule` makes a routine there; everywhere else — claude.ai, Cowork, the desktop and mobile apps — it is a Claude scheduled task. In these words, with the finding in the braces kept short (a figure and a noun) and nothing else changed: a paragraph of its own, two sentences, never split into more, and no set-up step before a yes (the third line is for the close):
 
 - Claude Code: "A read-only check that runs by itself every weekday at 8:07 would have caught {the finding} on its first morning, opening with "All clear" or "Needs a look" plus one yes/no fix. If you say "schedule it", I'll set it up as a Claude Code routine with /schedule."
 - The Claude app: "A read-only check that runs by itself every weekday at 8:07 would have caught {the finding} on its first morning, opening with "All clear" or "Needs a look" plus one yes/no fix. If you say "schedule it", I'll walk you through saving it as a Claude scheduled task, about two minutes."

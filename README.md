@@ -41,7 +41,7 @@ started" again.
 /mcp
 ```
 
-The last step opens the connector list. Choose `adcopilot` and sign in with your own Google account. There is no `claude mcp add` step: the plugin registers the connector at `https://mcp.adcopilot.cloud/mcp` for you. Signing in links your AdCopilot workspace, so you need an AdCopilot account; your Google products are connected once, in AdCopilot at https://app.adcopilot.cloud, not in Claude Code — `/adcopilot:setup` tells you which are missing and sends you to the right page.
+The last step opens the connector list. Choose `adcopilot` and sign in with your own Google account. There is no add step: the plugin registers the connector at `https://mcp.adcopilot.cloud/mcp` for you. Signing in links your AdCopilot workspace, so you need an AdCopilot account; your Google products are connected once, in AdCopilot at https://app.adcopilot.cloud, not in Claude Code — `/adcopilot:setup` tells you which are missing and sends you to the right page.
 
 ### Cursor
 
@@ -49,10 +49,10 @@ Cursor takes AdCopilot's connector on its own; this plugin does not install
 there as a whole. Its skills are written for Claude, and Cursor reads them too
 when they are copied into Cursor's or Claude Code's skills folder. Wherever they
 work out which client they are in (`/adcopilot:setup`, `adcopilot-connect`, the
-daily-habit offer), they check for Cursor first: there they never run
-`claude mcp`, look for the connector in Cursor's MCP settings and make no
-schedule offer of their own; a check-in offer AdCopilot's answer asks for is
-made as it asks.
+daily-habit offer), they check for Cursor first: there they never run Claude
+Code's command-line tool, look for the connector in Cursor's MCP settings and
+make no schedule offer of their own; a check-in offer AdCopilot's answer asks
+for is made as it asks.
 
 1. Add the connector from AdCopilot's own
    [Cursor page](https://adcopilot.cloud/docs/connect/cursor): its **Add to
@@ -105,7 +105,7 @@ nothing connected: that is the server answering correctly, not a fault.
 Run `/adcopilot:setup` first. It says what is connected, what is not, and sends
 you to the right page for each.
 
-If you had already added the connector by hand before installing (Claude Code only — the web has no such command), Claude Code keeps yours and silently ignores the plugin's: `claude mcp list` then shows a bare `adcopilot:` line and no `plugin:adcopilot:adcopilot` line. Remove yours from every scope it is in — `claude mcp remove adcopilot -s user`, and `claude mcp remove adcopilot -s local` run from the directory you added it in, because a local registration belongs to that directory — and the plugin's line appears and asks you to sign in.
+If you had already added the connector by hand before installing (Claude Code only), Claude Code keeps yours and silently ignores the plugin's. `/adcopilot:setup` spots this from the names of the tools Claude has. AdCopilot's page [Already added the connector by hand?](https://adcopilot.cloud/docs/connect/claude-code-plugin#already-added-the-connector-by-hand) gives the steps to remove your copy from every place you added it; after that, `/mcp`, choose `adcopilot` and sign in.
 
 ## What you get
 

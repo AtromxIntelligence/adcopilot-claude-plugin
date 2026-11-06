@@ -9,7 +9,7 @@ You are walking a customer from nothing to a working set of connected, linked Go
 
 ## The first rule: ask, never assume
 
-Call `get_org_context` with `source: "claude-plugin/0.2.19"` before anything
+Call `get_org_context` with `source: "claude-plugin/0.2.20"` before anything
 else and treat its answer as the only source of truth about what exists. Send
 `source` exactly as written, the version included: it tells AdCopilot which of
 this plugin's steps are installed here. In a scheduled run, started by a Claude
@@ -40,8 +40,8 @@ At every step you take or propose, in four short beats: **name it** the way Goog
 
 Where the connector is signed in depends on the surface. Check for Cursor first; after that, the tell is whether you have a shell.
 
-- **Cursor** (`get_org_context`'s top-level `surface` is `cursor`, or Cursor's own instructions or the person say so): never run `claude mcp` here, even when it runs — it lists Claude Code's connectors, not Cursor's. The connector is in Cursor's MCP settings, and one added from cursor.directory may be named `server` rather than `adcopilot`; it is the same connector. Nothing registers it for them in Cursor: if it is not in that list, they add it from AdCopilot's Cursor page, `https://adcopilot.cloud/docs/connect/cursor`, or by its URL, `https://mcp.adcopilot.cloud/mcp`. To sign in, Cursor opens AdCopilot's page, **Let Cursor use your AdCopilot?**, in the browser: press **Approve**. If **Approve** did nothing, remove the connector in Cursor's MCP settings, add it again and press **Approve** once.
-- **Claude Code** (`claude mcp list` runs): `/mcp`, choose `adcopilot`, sign in.
+- **Cursor** (`get_org_context`'s top-level `surface` is `cursor`, or Cursor's own instructions or the person say so): never run Claude Code's command-line tool here, even when you can — it lists Claude Code's connectors, not Cursor's. The connector is in Cursor's MCP settings, and one added from cursor.directory may be named `server` rather than `adcopilot`; it is the same connector. Nothing registers it for them in Cursor: if it is not in that list, they add it from AdCopilot's Cursor page, `https://adcopilot.cloud/docs/connect/cursor`, or by its URL, `https://mcp.adcopilot.cloud/mcp`. To sign in, Cursor opens AdCopilot's page, **Let Cursor use your AdCopilot?**, in the browser: press **Approve**. If **Approve** did nothing, remove the connector in Cursor's MCP settings, add it again and press **Approve** once.
+- **Claude Code** (you have a shell tool, such as Bash): `/mcp`, choose `adcopilot`, sign in.
 - **Web** (claude.ai, Cowork, desktop — no shell): the plugin's own **Connectors** tab, sign in to `adcopilot`. It is already listed.
 
 In Claude, never tell them to add the connector by hand — the plugin registers it, and in Claude Code a hand-added copy shadows the plugin's own. `/adcopilot:setup` diagnoses that.
@@ -120,7 +120,7 @@ This file names no prices. If the customer asks about plans or limits, use what 
 
 This block is repeated verbatim in every AdCopilot skill and command a person runs; change all eight together.
 
-First, Cursor. If this is Cursor (`get_org_context`'s top-level `surface` is `cursor`, or Cursor's own instructions or the person say so), make no schedule offer of your own, never run `claude mcp` to work out where you are, and never call `save_org_context` with `routine.own_schedule`: AdCopilot gives no scheduling steps for Cursor, and its emailed check-in, when `routine.daily.status` is `in_app`, is the morning check there. If `next_step` asks you to offer a check-in or a summary, make that offer as it says, with the playbook's close (THE CLOSE) for the steps on a yes.
+First, Cursor. If this is Cursor (`get_org_context`'s top-level `surface` is `cursor`, or Cursor's own instructions or the person say so), make no schedule offer of your own, never run Claude Code's command-line tool to work out where you are, and never call `save_org_context` with `routine.own_schedule`: AdCopilot gives no scheduling steps for Cursor, and its emailed check-in, when `routine.daily.status` is `in_app`, is the morning check there. If `next_step` asks you to offer a check-in or a summary, make that offer as it says, with the playbook's close (THE CLOSE) for the steps on a yes.
 
 Everywhere else, make one offer to turn a morning check of this account into a
 daily habit — at most once in a conversation — and only when both hold: Google
@@ -165,7 +165,7 @@ Quality Score problem, a targeting problem), or none, close the reply with the
 offer instead (before any question the reply ends on), without saying the check
 would have caught it.
 
-Word it for where they are, by `routine.schedule.offer`: `claude_code` is Claude Code, and `claude` is the Claude app. `both` means AdCopilot could not tell which Claude this is: if they have said, believe them; otherwise the tell is the one `/adcopilot:setup` uses: Claude Code is where `claude mcp list` runs, and `/schedule` makes a routine there; everywhere else — claude.ai, Cowork, the desktop and mobile apps — it is a Claude scheduled task. In these words, with the finding in the braces kept short (a figure and a noun) and nothing else changed: a paragraph of its own, two sentences, never split into more, and no set-up step before a yes (the third line is for the close):
+Word it for where they are, by `routine.schedule.offer`: `claude_code` is Claude Code, and `claude` is the Claude app. `both` means AdCopilot could not tell which Claude this is: if they have said, believe them; otherwise the tell is the one `/adcopilot:setup` uses: Claude Code is where you have a shell tool, such as Bash, and `/schedule` makes a routine there; everywhere else — claude.ai, Cowork, the desktop and mobile apps — it is a Claude scheduled task. In these words, with the finding in the braces kept short (a figure and a noun) and nothing else changed: a paragraph of its own, two sentences, never split into more, and no set-up step before a yes (the third line is for the close):
 
 - Claude Code: "A read-only check that runs by itself every weekday at 8:07 would have caught {the finding} on its first morning, opening with "All clear" or "Needs a look" plus one yes/no fix. If you say "schedule it", I'll set it up as a Claude Code routine with /schedule."
 - The Claude app: "A read-only check that runs by itself every weekday at 8:07 would have caught {the finding} on its first morning, opening with "All clear" or "Needs a look" plus one yes/no fix. If you say "schedule it", I'll walk you through saving it as a Claude scheduled task, about two minutes."
