@@ -51,8 +51,9 @@ when they are copied into Cursor's or Claude Code's skills folder. Wherever they
 work out which client they are in (`/adcopilot:setup`, `adcopilot-connect`, the
 daily-habit offer), they check for Cursor first: there they never run Claude
 Code's command-line tool, look for the connector in Cursor's MCP settings and
-make no schedule offer of their own; a check-in offer AdCopilot's answer asks
-for is made as it asks.
+make no schedule offer of their own; where AdCopilot's answer suggests a
+check-in, they say that AdCopilot's emailed daily check-in is the morning check
+there, switched on or off in AdCopilot's dashboard.
 
 1. Add the connector from AdCopilot's own
    [Cursor page](https://adcopilot.cloud/docs/connect/cursor): its **Add to
@@ -145,8 +146,9 @@ when AdCopilot's own answer hands them the recipe for your AI client
 reported yet, and a client AdCopilot gives scheduling steps for, which today
 means Claude. AdCopilot gives none for Cursor, ChatGPT or another client, and
 there the plugin makes no schedule offer of its own; in Cursor, when AdCopilot's
-answer asks for an offer of a check-in or a summary, the plugin makes that one
-as AdCopilot words it. The offer comes, as a paragraph of its own, only in a
+answer suggests a check-in or a summary, the plugin says that AdCopilot's
+emailed daily check-in is the morning check there, switched on or off in
+AdCopilot's dashboard. The offer comes, as a paragraph of its own, only in a
 reply that asks you no yes/no on a fix: the reply that reads back the first fix
 you approved, where it stands in for the next fix's yes/no (the next fix is
 named, and proposed in the reply after), or at the close of a reply that

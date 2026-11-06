@@ -20,9 +20,10 @@ answered from that one call, plus the documentation site where this file says
 so. Make no Google Ads, Analytics, Search Console or Tag Manager read for it,
 and start no other AdCopilot skill. The answer's `next_step`, `playbook` (its
 sections on the installed skill and on a returning customer included),
-`cross_reads` and `question_map` describe the account, not this question: do
-not follow them on this turn, not even their offer of a skill's steps. Keep
-from them only a limit `next_step` names (look-ups left today, or none left
+`cross_reads` and `question_map` are information about the account, not steps
+for this question: on this turn, start no skill and make no read they mention,
+not even their offer of a skill's steps. Keep from them only a limit
+`next_step` names (look-ups left today, or none left
 and the close it gives for that, its link included; a teammate's login) and
 the facts below. If the customer says yes to the read you offer,
 that is a new request, and the skill that answers it runs then. The answer
