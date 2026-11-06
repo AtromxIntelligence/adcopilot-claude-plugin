@@ -1,6 +1,6 @@
 ---
 name: adcopilot-review
-description: Read a Google Ads account and say what happened, what it cost, what is wasting money and what to change — then propose the change and apply it when the customer says yes. Use whenever the user asks how their ads are doing, for a status, a check, an update, a report or a summary; asks about spend, clicks, impressions, results, cost per result or budget; asks which keywords or searches are wasting money, what is working, what to pause or fix; or asks what they should do next about their ads. This is the everyday skill — reach for it before answering any performance question from memory.
+description: Read a Google Ads account through AdCopilot and say what happened, what it cost, what is wasting money and what to change — then propose the change and apply it when the customer says yes. Use when the user asks how their Google Ads are doing, for a status, a check, an update, a report or a summary of their Google Ads; asks about their Google Ads spend, clicks, impressions, results, cost per result or budget; asks which Google Ads keywords or searches are wasting money, what is working, what to pause or fix; or asks what they should do next about their Google Ads. This is AdCopilot's everyday skill for a Google Ads account.
 ---
 
 # AdCopilot review

@@ -1,6 +1,6 @@
 ---
 name: adcopilot-seo
-description: Answer questions about the customer's organic search presence through Search Console — why pages are not indexed or not ranking, what people search to find them, which pages earn clicks, whether a sitemap is being read, and whether a page has been crawled recently. Use when the user asks about Search Console, indexing, indexed pages, crawling, sitemaps, rankings, keywords they rank for, organic or SEO traffic, why their site does not show up in Google, or how their paid keywords compare with what they already rank for.
+description: Answer questions about the customer's organic Google search presence through AdCopilot's Google Search Console connection — why pages are not indexed or not ranking in Google, what people search on Google to find them, which pages earn clicks, whether Google reads a sitemap, and whether Google has crawled a page recently. Use when the user asks about their site in Google Search Console or Google search: indexing, indexed pages, crawling, sitemaps, Google rankings, keywords they rank for on Google, organic or SEO traffic from Google, why their site does not show up in Google, or how their Google Ads keywords compare with what they already rank for.
 ---
 
 # AdCopilot organic review

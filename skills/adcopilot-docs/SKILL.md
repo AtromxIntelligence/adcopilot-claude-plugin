@@ -1,6 +1,6 @@
 ---
 name: adcopilot-docs
-description: Answer questions about AdCopilot itself — what it can do, which products it reaches, how many look-ups a workspace has left today and what happens when they run out, which plan a workspace is on and how to change it, what it is allowed to change in an ad account, where data goes, and what to do when something is not working. Use when the user asks what AdCopilot can do, what it costs, about plans, limits, quotas or running out, about privacy or safety, or when a tool call fails or a product looks missing.
+description: Answer questions about AdCopilot itself — what it can do, which products it reaches, how many look-ups a workspace has left today and what happens when they run out, which plan a workspace is on and how to change it, what it is allowed to change in an ad account, where data goes, and what to do when something is not working. Use when the user asks what AdCopilot can do, what AdCopilot costs, about AdCopilot's plans, limits, quotas or running out, about AdCopilot's privacy or safety, or when an AdCopilot tool call fails or a Google product looks missing from AdCopilot.
 ---
 
 # AdCopilot docs

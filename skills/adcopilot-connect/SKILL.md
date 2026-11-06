@@ -1,6 +1,6 @@
 ---
 name: adcopilot-connect
-description: Set up AdCopilot and connect the customer's Google products, then link them to each other in the order that works. Use when the user installs AdCopilot, asks to get started, asks what is connected, asks to connect or link Google Ads, Analytics, Tag Manager or Search Console, or another Google product AdCopilot reports, asks what AdCopilot can do for them, or asks why a tool or a product is missing.
+description: Set up AdCopilot and connect the customer's Google products, then link them to each other in the order that works. Use when the user installs AdCopilot, asks to get started with AdCopilot, asks what is connected to AdCopilot, asks to connect or link Google Ads, Google Analytics, Google Tag Manager or Google Search Console, or another Google product AdCopilot reports, asks what AdCopilot can do for them, or asks why an AdCopilot tool or a Google product is missing.
 ---
 
 # AdCopilot connect
@@ -106,7 +106,7 @@ What it unlocked: paid and organic visits in one report, and key events that can
 
 ### 5. Say what they now own
 
-A short inventory, from what you read back and not from what you intended, in Google's own names: each account by the name Google Ads labels it, never by its number; each property by its name in Analytics; each link by where it shows in Analytics. Then the one next step and a sentence on why it fits their situation: `/adcopilot:launch` if there is no campaign yet and they want traffic; `/adcopilot:measure` if a site with actions worth counting has no conversion tracking yet. One, not both.
+A short inventory, from what you read back and not from what you intended, in Google's own names: each account by the name Google Ads labels it, never by its number; each property by its name in Analytics; each link by where it shows in Analytics. Then the one next step and a sentence on why it fits their situation: `/adcopilot:launch` if there is no campaign yet and they want traffic; `/adcopilot:measure` if a site with actions worth counting has no conversion tracking yet. One, not both: name only that command, and not what comes after it.
 
 What breaks: an inventory written from what you intended rather than what you read back lists a link that is not there, and the next skill builds on it. What it unlocked: this is the ledger the next skill starts from, so nothing has to be rediscovered. What is next: the one command above, for the reason given.
 

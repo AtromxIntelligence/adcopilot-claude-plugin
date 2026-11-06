@@ -71,6 +71,9 @@ working, not a fault: the Google products are connected inside AdCopilot at
 `https://app.adcopilot.cloud`, not in this client. Say so and send them there,
 rather than letting them hunt for a broken connector.
 
-End as the skill's step 5 does: the one next step, `/adcopilot:launch` or
-`/adcopilot:measure`, and why it fits their situation — then the skill's
+End on one next step, as the skill's step 5 does: name exactly one command,
+`/adcopilot:launch` when there is no campaign yet and they want traffic, or
+`/adcopilot:measure` when a site with actions worth counting has no conversion
+tracking yet, with one sentence on why it fits their situation. Name only that
+command: not the other one, and not what comes after it. Then the skill's
 daily-habit offer, when its conditions hold.
