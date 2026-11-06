@@ -1,6 +1,6 @@
 # AdCopilot for Claude Code
 
-The AI agent that runs your Google Ads, with Google Analytics, Google Search Console and Google Tag Manager in the same chat. Audit wasted spend, mine search terms, build campaigns and fix conversion tracking from Claude Code. AdCopilot proposes each change first. For a hard stop, set your AI client to ask before AdCopilot's write tools: Needs approval in Claude; in Cursor, use the Allowlist run mode and keep them off the allowlist (Cursor's cloud agents never ask). AdCopilot never deletes anything but a negative keyword. This plugin bundles the hosted AdCopilot connector and carries the steps the connector cannot take for you: what to click in Google's own screens, and the traps that are easy to fall into.
+The AI agent that runs your Google Ads, with Google Analytics, Google Search Console and Google Tag Manager in the same chat. Audit wasted spend, mine search terms, build campaigns and fix conversion tracking from Claude Code. AdCopilot proposes each change first. For a hard stop, set your AI client to ask before AdCopilot's write tools: Needs approval in Claude; in Cursor, use the Allowlist run mode and keep them off the allowlist (Cursor's cloud agents never ask). AdCopilot never deletes a campaign, ad group, ad, keyword or asset. It can remove negative keywords and location targets, each proposed first. This plugin bundles the hosted AdCopilot connector and carries the steps the connector cannot take for you: what to click in Google's own screens, and the traps that are easy to fall into.
 
 AdCopilot is made by Atromx Intelligence (https://adcopilot.cloud) and is not related to other products named AdCopilot.
 
@@ -41,7 +41,7 @@ started" again.
 /mcp
 ```
 
-The last step opens the connector list. Choose `adcopilot` and sign in with your own Google account. There is no `claude mcp add` step: the plugin registers the connector at `https://mcp.adcopilot.cloud/mcp` for you. Signing in links your AdCopilot workspace, so you need an AdCopilot account; your Google products are connected once, in AdCopilot at https://app.adcopilot.cloud, not in Claude Code — `/adcopilot:setup` tells you which are missing and sends you to the right page.
+The last step opens the connector list. Choose `adcopilot` and sign in with your own Google account. There is no add step: the plugin registers the connector at `https://mcp.adcopilot.cloud/mcp` for you. Signing in links your AdCopilot workspace, so you need an AdCopilot account; your Google products are connected once, in AdCopilot at https://app.adcopilot.cloud, not in Claude Code — `/adcopilot:setup` tells you which are missing and sends you to the right page.
 
 ### Cursor
 
@@ -49,17 +49,16 @@ Cursor takes AdCopilot's connector on its own; this plugin does not install
 there as a whole. Its skills are written for Claude, and Cursor reads them too
 when they are copied into Cursor's or Claude Code's skills folder. Wherever they
 work out which client they are in (`/adcopilot:setup`, `adcopilot-connect`, the
-daily-habit offer), they check for Cursor first: there they never run
-`claude mcp`, look for the connector in Cursor's MCP settings and make no
-schedule offer of their own; a check-in offer AdCopilot's answer asks for is
-made as it asks.
+daily-habit offer), they check for Cursor first: there they never run Claude
+Code's command-line tool, look for the connector in Cursor's MCP settings and
+make no schedule offer of their own; where AdCopilot's answer suggests a
+check-in, they say that AdCopilot's emailed daily check-in is the morning check
+there, switched on or off in AdCopilot's dashboard.
 
 1. Add the connector from AdCopilot's own
    [Cursor page](https://adcopilot.cloud/docs/connect/cursor): its **Add to
    Cursor** button opens Cursor with the connector named `adcopilot`. Or add it
-   by hand in Cursor's `mcp.json`: the one in the `.cursor` folder of your home
-   folder applies to every project, and `.cursor/mcp.json` inside a project
-   applies to that project only:
+   by hand in Cursor's MCP settings, with these lines:
 
    ```json
    {
@@ -91,8 +90,9 @@ other asks first, so keep AdCopilot's write tools off the allowlist. In
 once, and every other MCP call goes to a classifier that can let a change
 through without asking. Its third run mode asks before nothing, and a Cursor
 cloud agent never asks you to approve an action. Whatever the mode, AdCopilot
-proposes each change first, never deletes anything but a negative keyword, and
-builds every campaign paused.
+proposes each change first, never deletes a campaign, ad group, ad, keyword or
+asset (it can remove negative keywords and location targets), and builds every
+campaign paused.
 
 ### Then, on every surface
 
@@ -105,7 +105,7 @@ nothing connected: that is the server answering correctly, not a fault.
 Run `/adcopilot:setup` first. It says what is connected, what is not, and sends
 you to the right page for each.
 
-If you had already added the connector by hand before installing (Claude Code only — the web has no such command), Claude Code keeps yours and silently ignores the plugin's: `claude mcp list` then shows a bare `adcopilot:` line and no `plugin:adcopilot:adcopilot` line. Remove yours from every scope it is in — `claude mcp remove adcopilot -s user`, and `claude mcp remove adcopilot -s local` run from the directory you added it in, because a local registration belongs to that directory — and the plugin's line appears and asks you to sign in.
+If you had already added the connector by hand before installing (Claude Code only), Claude Code keeps yours and silently ignores the plugin's. `/adcopilot:setup` spots this from the names of the tools Claude has. AdCopilot's page [Already added the connector by hand?](https://adcopilot.cloud/docs/connect/claude-code-plugin#already-added-the-connector-by-hand) gives the steps to remove your copy from every place you added it; after that, `/mcp`, choose `adcopilot` and sign in.
 
 ## What you get
 
@@ -146,8 +146,9 @@ when AdCopilot's own answer hands them the recipe for your AI client
 reported yet, and a client AdCopilot gives scheduling steps for, which today
 means Claude. AdCopilot gives none for Cursor, ChatGPT or another client, and
 there the plugin makes no schedule offer of its own; in Cursor, when AdCopilot's
-answer asks for an offer of a check-in or a summary, the plugin makes that one
-as AdCopilot words it. The offer comes, as a paragraph of its own, only in a
+answer suggests a check-in or a summary, the plugin says that AdCopilot's
+emailed daily check-in is the morning check there, switched on or off in
+AdCopilot's dashboard. The offer comes, as a paragraph of its own, only in a
 reply that asks you no yes/no on a fix: the reply that reads back the first fix
 you approved, where it stands in for the next fix's yes/no (the next fix is
 named, and proposed in the reply after), or at the close of a reply that
@@ -182,23 +183,23 @@ sends another source is not held, and a yes typed in the run's own conversation
 can be refused while the run is on; say it again in a new conversation. Claude
 Code adds one more hold: AdCopilot marks `set_campaign_status`, the tool that
 pauses a campaign or switches one on, as needing a person, so Claude Code
-(version 2.1.214 or later) will not use it in a run on your computer with nobody
-there to answer, such as a scheduled command-line run. The plugin's skills pause
-or switch on a campaign only with that tool, never with a status in a change to
-the campaign's settings (`update_campaign`), and the mark does not hold that
-change. A Claude Code routine runs its tools without asking, and so does a
-scheduled task whose approval setting no longer asks; in those, the first call
-and the instructions are what keep the run to reads, so keep them as written. In
-claude.ai, Cowork and the desktop app, setting AdCopilot's other **Write/delete
-tools** to **Blocked**, every one but the two AdCopilot tools below, stops a
-change outright, in every chat as well as in the run.
+(version 2.1.214 or later) will not use it in a run with nobody there to answer.
+The plugin's skills pause or switch on a campaign only with that tool, never
+with a status in a change to the campaign's settings (`update_campaign`), and
+the mark does not hold that change. A Claude Code routine runs its tools
+without asking, and so does a scheduled task whose approval setting no longer
+asks; in those, the first call and the instructions are what keep the run to
+reads, so keep them as written. In claude.ai, Cowork and the desktop app,
+setting AdCopilot's other **Write/delete tools** to **Blocked**, every one but
+the two AdCopilot tools below, stops a change outright, in every chat as well
+as in the run.
 
 **The one setting a scheduled task needs in Claude.** In claude.ai, Cowork and the desktop app, a run with nobody there stops at the first tool Claude asks about. So the set-up's first step is in AdCopilot's **Tool permissions** (Customize, then Connectors, then AdCopilot): the **Read-only tools** on **Always allow**, and under **Write/delete tools** two of AdCopilot's own, “AdCopilot: workspace context (records visit)” and “AdCopilot: save business notes and progress”, on **Always allow** too. They keep AdCopilot's own notes and never change Google Ads; every other Write/delete tool stays on **Needs approval**, so Claude asks before each change (Cursor has no such screen; see **Approvals in Cursor** above). Claude lists the first of the two under Write/delete tools, and it is every run's first call, so a task set up with only the read-only tools on **Always allow** stops there; setting those two tools to **Always allow** too is the whole fix.
 
 ## What it will not do
 
 - **Switch on a campaign it built.** Every campaign it builds is created paused. You switch it on in Google Ads yourself.
-- **Delete anything but a negative keyword.** The connector refuses a REMOVED status server-side: the campaign, ad group, ad and keyword tools accept only ENABLED or PAUSED, and the asset tools refuse a remove outright. Pausing is as far as it goes for all of those, and it is the server that enforces that rather than the assistant's good manners. The one exception is deliberate: each of the three ways to add a negative keyword has a removal behind it, so a negative can be taken back out — which is what makes "you can undo this" true when AdCopilot says it. Attaching a shared negative-keyword list is the genuinely one-way action; there is no detach tool, and a list is detached in Google Ads under Tools, Shared library, Exclusion lists.
+- **Delete a campaign, ad group, ad, keyword or asset.** The connector refuses a REMOVED status server-side: the campaign, ad group, ad and keyword tools accept only ENABLED or PAUSED, and the asset tools refuse a remove outright. Pausing is as far as it goes for all of those, and it is the server that enforces that rather than the assistant's good manners. What it can remove, each proposed first like any change: a negative keyword, since each of the three ways to add one has a removal behind it, so a negative can be taken back out — which is what makes "you can undo this" true when AdCopilot says it; and a location target on a campaign. Setting a campaign's languages replaces the list it had. Attaching a shared negative-keyword list is the one-way action; there is no detach tool, and a list is detached in Google Ads under Tools, Shared library, Exclusion lists.
 - **Change your account unasked, while your AI client asks before AdCopilot's
   write tools.** Reads run freely, and AdCopilot proposes each change first. For
   a hard stop, set your AI client to ask before AdCopilot's write tools: **Needs
@@ -229,6 +230,8 @@ cover what happens when you use it:
 
 - Something wrong with the plugin (a command, a skill, this README): [open an issue here](https://github.com/AtromxIntelligence/adcopilot-claude-plugin/issues).
 - Something wrong with the connector (sign-in, a tool call, your account): support@adcopilot.cloud.
+- A security problem in the plugin or the connector: report it to support@adcopilot.cloud.
+- Anything else: https://adcopilot.cloud/contact.
 
 ## Licence
 

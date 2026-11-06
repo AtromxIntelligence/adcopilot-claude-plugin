@@ -1,6 +1,6 @@
 ---
 name: adcopilot-docs
-description: Answer questions about AdCopilot itself — what it can do, which products it reaches, how many look-ups a workspace has left today and what happens when they run out, which plan a workspace is on and how to change it, what it is allowed to change in an ad account, where data goes, and what to do when something is not working. Use when the user asks what AdCopilot can do, what it costs, about plans, limits, quotas or running out, about privacy or safety, or when a tool call fails or a product looks missing.
+description: Answer questions about AdCopilot itself — what it can do, which products it reaches, how many look-ups a workspace has left today and what happens when they run out, which plan a workspace is on and how to change it, what it is allowed to change in an ad account, where data goes, and what to do when something is not working. Use when the user asks what AdCopilot can do, what AdCopilot costs, about AdCopilot's plans, limits, quotas or running out, about AdCopilot's privacy or safety, or when an AdCopilot tool call fails or a Google product looks missing from AdCopilot.
 ---
 
 # AdCopilot docs
@@ -10,7 +10,7 @@ never from memory. The product changes; this file does not move with it, so
 every number in your answer comes from a live read or from the documentation
 site, and nothing comes from recall.
 
-Call `get_org_context` (with `source: "claude-plugin/0.2.19"`) first. Send
+Call `get_org_context` (with `source: "claude-plugin/0.2.20"`) first. Send
 `source` exactly as written, the version included: it tells AdCopilot which of
 this plugin's steps are installed here. In a scheduled run, started by a Claude
 scheduled task or a Claude Code routine with nobody there to answer, send
@@ -20,9 +20,10 @@ answered from that one call, plus the documentation site where this file says
 so. Make no Google Ads, Analytics, Search Console or Tag Manager read for it,
 and start no other AdCopilot skill. The answer's `next_step`, `playbook` (its
 sections on the installed skill and on a returning customer included),
-`cross_reads` and `question_map` describe the account, not this question: do
-not follow them on this turn, not even their offer of a skill's steps. Keep
-from them only a limit `next_step` names (look-ups left today, or none left
+`cross_reads` and `question_map` are information about the account, not steps
+for this question: on this turn, start no skill and make no read they mention,
+not even their offer of a skill's steps. Keep from them only a limit
+`next_step` names (look-ups left today, or none left
 and the close it gives for that, its link included; a teammate's login) and
 the facts below. If the customer says yes to the read you offer,
 that is a new request, and the skill that answers it runs then. The answer
@@ -46,9 +47,10 @@ lets them do; what connecting each of the others would unlock; the routines
 installed here (the daily check-in, the weekly summary, the audit, the
 negative-keyword clean-up, the first-campaign launch, conversion tracking);
 what AdCopilot may change, with its condition (below); and the plan's look-ups.
-Say what each routine reads and proposes, and leave approval to the part on
-what AdCopilot may change, where it is said once with its condition: no
-routine's line adds that nothing happens until they say yes.
+Say what each product lets it do and what each routine reads and proposes, and
+leave approval to the part on what AdCopilot may change, where it is said once
+with its condition: no product's or routine's line adds that nothing happens
+until they say yes, or that it makes changes when they approve.
 That is the whole answer: never a second list in another grouping, and never
 come back later in the same reply to answer it again. One fact from
 `get_org_context`'s 30-day summary (an account's `last_30d` in `ads_probe`,
@@ -86,14 +88,16 @@ server names (`app_urls.billing`); the customer's own plan and caps come from
 
 Worth stating plainly, because it is the question behind most hesitation:
 
-- **Nothing is deleted except a negative keyword, and the server enforces it.**
-  The campaign, ad group, ad and keyword tools accept only ENABLED or PAUSED and
-  refuse a REMOVED status outright; the asset tools refuse a remove. Pausing is
-  as far as it goes. This is the strongest guarantee the product has, because it
-  does not depend on the assistant behaving — say it first. (A negative keyword
-  is the exception, and it is deliberate: each of the three ways to add one has
-  a removal behind it, so a negative can be taken back out. Setting a campaign's
-  languages also replaces the list it had.)
+- **No campaign, ad group, ad, keyword or asset is ever deleted, and the server
+  enforces it.** The campaign, ad group, ad and keyword tools accept only ENABLED
+  or PAUSED and refuse a REMOVED status outright; the asset tools refuse a
+  remove. Pausing is as far as it goes. This is the strongest guarantee the
+  product has, because it does not depend on the assistant behaving — say it
+  first, never shortened to "it deletes nothing", and say beside it what
+  AdCopilot can remove, each proposed first like any change: a negative keyword (each of the three ways to add one has a
+  removal behind it, so a negative can be taken back out) and a campaign's
+  location targets. Setting a campaign's languages also replaces the list it
+  had.
 - **The approval lives in your AI client, not in AdCopilot.** Reads run freely,
   and AdCopilot proposes each change first. Whether the client then asks before
   the change runs is the client's setting, so the hard stop is the client set to
