@@ -86,14 +86,16 @@ server names (`app_urls.billing`); the customer's own plan and caps come from
 
 Worth stating plainly, because it is the question behind most hesitation:
 
-- **Nothing is deleted except a negative keyword, and the server enforces it.**
-  The campaign, ad group, ad and keyword tools accept only ENABLED or PAUSED and
-  refuse a REMOVED status outright; the asset tools refuse a remove. Pausing is
-  as far as it goes. This is the strongest guarantee the product has, because it
-  does not depend on the assistant behaving — say it first. (A negative keyword
-  is the exception, and it is deliberate: each of the three ways to add one has
-  a removal behind it, so a negative can be taken back out. Setting a campaign's
-  languages also replaces the list it had.)
+- **No campaign, ad group, ad, keyword or asset is ever deleted, and the server
+  enforces it.** The campaign, ad group, ad and keyword tools accept only ENABLED
+  or PAUSED and refuse a REMOVED status outright; the asset tools refuse a
+  remove. Pausing is as far as it goes. This is the strongest guarantee the
+  product has, because it does not depend on the assistant behaving — say it
+  first, and say beside it what AdCopilot can remove, each proposed first like
+  any change: a negative keyword (each of the three ways to add one has a
+  removal behind it, so a negative can be taken back out) and a campaign's
+  location targets. Setting a campaign's languages also replaces the list it
+  had.
 - **The approval lives in your AI client, not in AdCopilot.** Reads run freely,
   and AdCopilot proposes each change first. Whether the client then asks before
   the change runs is the client's setting, so the hard stop is the client set to

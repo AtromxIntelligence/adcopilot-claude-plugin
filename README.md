@@ -1,6 +1,6 @@
 # AdCopilot for Claude Code
 
-The AI agent that runs your Google Ads, with Google Analytics, Google Search Console and Google Tag Manager in the same chat. Audit wasted spend, mine search terms, build campaigns and fix conversion tracking from Claude Code. AdCopilot proposes each change first. For a hard stop, set your AI client to ask before AdCopilot's write tools: Needs approval in Claude; in Cursor, use the Allowlist run mode and keep them off the allowlist (Cursor's cloud agents never ask). AdCopilot never deletes anything but a negative keyword. This plugin bundles the hosted AdCopilot connector and carries the steps the connector cannot take for you: what to click in Google's own screens, and the traps that are easy to fall into.
+The AI agent that runs your Google Ads, with Google Analytics, Google Search Console and Google Tag Manager in the same chat. Audit wasted spend, mine search terms, build campaigns and fix conversion tracking from Claude Code. AdCopilot proposes each change first. For a hard stop, set your AI client to ask before AdCopilot's write tools: Needs approval in Claude; in Cursor, use the Allowlist run mode and keep them off the allowlist (Cursor's cloud agents never ask). AdCopilot never deletes a campaign, ad group, ad, keyword or asset. It can remove negative keywords and location targets, each proposed first. This plugin bundles the hosted AdCopilot connector and carries the steps the connector cannot take for you: what to click in Google's own screens, and the traps that are easy to fall into.
 
 AdCopilot is made by Atromx Intelligence (https://adcopilot.cloud) and is not related to other products named AdCopilot.
 
@@ -91,8 +91,9 @@ other asks first, so keep AdCopilot's write tools off the allowlist. In
 once, and every other MCP call goes to a classifier that can let a change
 through without asking. Its third run mode asks before nothing, and a Cursor
 cloud agent never asks you to approve an action. Whatever the mode, AdCopilot
-proposes each change first, never deletes anything but a negative keyword, and
-builds every campaign paused.
+proposes each change first, never deletes a campaign, ad group, ad, keyword or
+asset (it can remove negative keywords and location targets), and builds every
+campaign paused.
 
 ### Then, on every surface
 
@@ -198,7 +199,7 @@ change outright, in every chat as well as in the run.
 ## What it will not do
 
 - **Switch on a campaign it built.** Every campaign it builds is created paused. You switch it on in Google Ads yourself.
-- **Delete anything but a negative keyword.** The connector refuses a REMOVED status server-side: the campaign, ad group, ad and keyword tools accept only ENABLED or PAUSED, and the asset tools refuse a remove outright. Pausing is as far as it goes for all of those, and it is the server that enforces that rather than the assistant's good manners. The one exception is deliberate: each of the three ways to add a negative keyword has a removal behind it, so a negative can be taken back out — which is what makes "you can undo this" true when AdCopilot says it. Attaching a shared negative-keyword list is the genuinely one-way action; there is no detach tool, and a list is detached in Google Ads under Tools, Shared library, Exclusion lists.
+- **Delete a campaign, ad group, ad, keyword or asset.** The connector refuses a REMOVED status server-side: the campaign, ad group, ad and keyword tools accept only ENABLED or PAUSED, and the asset tools refuse a remove outright. Pausing is as far as it goes for all of those, and it is the server that enforces that rather than the assistant's good manners. What it can remove, each proposed first like any change: a negative keyword, since each of the three ways to add one has a removal behind it, so a negative can be taken back out — which is what makes "you can undo this" true when AdCopilot says it; and a location target on a campaign. Setting a campaign's languages replaces the list it had. Attaching a shared negative-keyword list is the one-way action; there is no detach tool, and a list is detached in Google Ads under Tools, Shared library, Exclusion lists.
 - **Change your account unasked, while your AI client asks before AdCopilot's
   write tools.** Reads run freely, and AdCopilot proposes each change first. For
   a hard stop, set your AI client to ask before AdCopilot's write tools: **Needs
@@ -229,6 +230,8 @@ cover what happens when you use it:
 
 - Something wrong with the plugin (a command, a skill, this README): [open an issue here](https://github.com/AtromxIntelligence/adcopilot-claude-plugin/issues).
 - Something wrong with the connector (sign-in, a tool call, your account): support@adcopilot.cloud.
+- A security problem in the plugin or the connector: report it to support@adcopilot.cloud.
+- Anything else: https://adcopilot.cloud/contact.
 
 ## Licence
 

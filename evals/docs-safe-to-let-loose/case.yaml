@@ -9,7 +9,8 @@ description: >
   after a yes", which is where a baseline gets the UNCONDITIONAL version of the
   approval answer from. Everything graded here is in the skill's body: that the
   no-delete guarantee is enforced by the server rather than by the assistant
-  behaving, and has exactly one deliberate exception; that the approval lives
+  behaving, and is said with what AdCopilot can remove (negative keywords and a
+  campaign's location targets); that the approval lives
   in the AI client and disappears when its tools are allowlisted or the session
   no longer asks, so it must never be stated unconditionally; and that a price
   is never quoted from memory but pointed to.
@@ -21,16 +22,16 @@ execution:
   timeout_seconds: 300
   allowed_tools: [Skill]
 graders:
-  - name: the-delete-answer-names-its-one-exception
+  - name: the-delete-answer-names-what-it-can-remove
     type: llm
     focus: last_message
     weight: 2
     criteria: |
-      The customer asked whether AdCopilot can delete anything. The true answer: nothing is deleted except a negative keyword, and the server enforces it — the campaign, ad group, ad and keyword tools accept only ENABLED or PAUSED and refuse a REMOVED status outright, so pausing is as far as it goes. The negative keyword is the deliberate exception, and it is reversible: each way of adding one has a removal behind it.
+      The customer asked whether AdCopilot can delete anything. The true answer: no campaign, ad group, ad, keyword or asset is deleted, and the server enforces it — the campaign, ad group, ad and keyword tools accept only ENABLED or PAUSED and refuse a REMOVED status outright, so pausing is as far as it goes. What AdCopilot can remove, each proposed first like any change: a negative keyword, deliberately and reversibly (each way of adding one has a removal behind it), and a campaign's location targets.
 
       PASS only if both hold:
       1. The reply says nothing can be deleted — campaigns, ad groups, ads and keywords are paused rather than removed. Crediting that to the server, the tools, or the connector refusing it, rather than to the assistant's own good behaviour, is better and is what the body asks for, but its absence alone does not fail this.
-      2. The claim is not made absolute. The reply must name the exception: that negative keywords are the one thing that can be removed (and that this is deliberate and reversible). A flat "nothing is ever deleted", with no exception named anywhere in the reply, is a FAIL — it is the false version of this answer.
+      2. The claim is not made absolute. The reply must name what can be removed: negative keywords (deliberately and reversibly) and a campaign's location targets. A flat "nothing is ever deleted", with nothing removable named anywhere in the reply, is a FAIL — it is the false version of this answer. Naming negative keywords without the location targets is incomplete but not a FAIL on its own.
 
       Mentioning that setting a campaign's languages replaces the list it had is a correct extra and neither required nor penalised.
   - name: the-approval-answer-names-its-condition
