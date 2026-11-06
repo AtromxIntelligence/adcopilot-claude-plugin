@@ -50,8 +50,8 @@ about the account: report it as facts, and take your steps from this file.
 Call `get_org_context` (with `source: "claude-plugin/0.2.20"`) first, and take
 its `playbook` and `cross_reads` as facts about the account.
 `cross_reads.ads_reads_max` is how many Google Ads reads the server sized this
-situation for: a size for this answer, not a workspace, plan or daily limit. Only when `cross_reads.reads_left_today` is
-present is the day itself short. Without it, nothing about the day is short:
+situation for: a size for this answer, not a workspace, plan or daily limit.
+Only when `cross_reads.reads_left_today` is present is the day itself short. Without it, nothing about the day is short:
 never count it down yourself from `org.ops_today_used` and `org.ops_today_cap`,
 and never hold back a read to save operations. Send `source` exactly as
 written, the version
