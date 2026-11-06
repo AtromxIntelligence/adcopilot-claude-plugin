@@ -80,8 +80,6 @@ Claude's Free plan has no scheduled tasks; say so plainly — there, AdCopilot's
 3. Leave the routine only the connectors it needs. A routine runs its tools without asking, so the read-only instructions are what keep it to reads: keep them exactly as written.
 4. Run it once, and check that it finished without stopping.
 
-A local task, or a scheduled command-line run on their own computer, runs only while the computer is awake: a fallback, not the recommendation.
-
 **Then record it.** Once they say it is saved, call `save_org_context` with `routine.own_schedule` `saved` and `routine.daily` set to `status` `user_set`, `surface` `claude_scheduled`, `hour_local` 8 and `tz` the account's time zone — except while `routine.daily.status` is `in_app`: AdCopilot keeps its emailed check-in as it is and would refuse a change to that row, so record `routine.own_schedule` `saved` alone. Tell them AdCopilot's emailed check-in keeps coming as well, and that if they want only one, the Routine card on AdCopilot's Home page pauses the email. Either way the offer stops once `get_org_context` reports the schedule.
 
 ## After the run

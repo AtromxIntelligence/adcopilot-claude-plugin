@@ -57,9 +57,7 @@ for is made as it asks.
 1. Add the connector from AdCopilot's own
    [Cursor page](https://adcopilot.cloud/docs/connect/cursor): its **Add to
    Cursor** button opens Cursor with the connector named `adcopilot`. Or add it
-   by hand in Cursor's `mcp.json`: the one in the `.cursor` folder of your home
-   folder applies to every project, and `.cursor/mcp.json` inside a project
-   applies to that project only:
+   by hand in Cursor's MCP settings, with these lines:
 
    ```json
    {
@@ -183,16 +181,16 @@ sends another source is not held, and a yes typed in the run's own conversation
 can be refused while the run is on; say it again in a new conversation. Claude
 Code adds one more hold: AdCopilot marks `set_campaign_status`, the tool that
 pauses a campaign or switches one on, as needing a person, so Claude Code
-(version 2.1.214 or later) will not use it in a run on your computer with nobody
-there to answer, such as a scheduled command-line run. The plugin's skills pause
-or switch on a campaign only with that tool, never with a status in a change to
-the campaign's settings (`update_campaign`), and the mark does not hold that
-change. A Claude Code routine runs its tools without asking, and so does a
-scheduled task whose approval setting no longer asks; in those, the first call
-and the instructions are what keep the run to reads, so keep them as written. In
-claude.ai, Cowork and the desktop app, setting AdCopilot's other **Write/delete
-tools** to **Blocked**, every one but the two AdCopilot tools below, stops a
-change outright, in every chat as well as in the run.
+(version 2.1.214 or later) will not use it in a run with nobody there to answer.
+The plugin's skills pause or switch on a campaign only with that tool, never
+with a status in a change to the campaign's settings (`update_campaign`), and
+the mark does not hold that change. A Claude Code routine runs its tools
+without asking, and so does a scheduled task whose approval setting no longer
+asks; in those, the first call and the instructions are what keep the run to
+reads, so keep them as written. In claude.ai, Cowork and the desktop app,
+setting AdCopilot's other **Write/delete tools** to **Blocked**, every one but
+the two AdCopilot tools below, stops a change outright, in every chat as well
+as in the run.
 
 **The one setting a scheduled task needs in Claude.** In claude.ai, Cowork and the desktop app, a run with nobody there stops at the first tool Claude asks about. So the set-up's first step is in AdCopilot's **Tool permissions** (Customize, then Connectors, then AdCopilot): the **Read-only tools** on **Always allow**, and under **Write/delete tools** two of AdCopilot's own, “AdCopilot: workspace context (records visit)” and “AdCopilot: save business notes and progress”, on **Always allow** too. They keep AdCopilot's own notes and never change Google Ads; every other Write/delete tool stays on **Needs approval**, so Claude asks before each change (Cursor has no such screen; see **Approvals in Cursor** above). Claude lists the first of the two under Write/delete tools, and it is every run's first call, so a task set up with only the read-only tools on **Always allow** stops there; setting those two tools to **Always allow** too is the whole fix.
 
