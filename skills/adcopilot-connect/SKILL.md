@@ -9,7 +9,7 @@ You are walking a customer from nothing to a working set of connected, linked Go
 
 ## The first rule: ask, never assume
 
-Call `get_org_context` with `source: "claude-plugin/0.2.20"` before anything
+Call `get_org_context` with `source: "claude-plugin/0.2.21"` before anything
 else and treat its answer as the only source of truth about what exists. Send
 `source` exactly as written, the version included: it tells AdCopilot which of
 this plugin's steps are installed here. In a scheduled run, started by a Claude
