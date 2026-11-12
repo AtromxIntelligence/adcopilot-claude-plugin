@@ -11,7 +11,7 @@ A thin answer is the failure here. Reads are the cheap part; a customer who has
 to ask four follow-up questions to learn what one answer could have told them
 has been short-changed.
 
-Call `get_org_context` with `source: "claude-plugin/0.2.20"` first, before any
+Call `get_org_context` with `source: "claude-plugin/0.2.21"` first, before any
 other tool — the marker is how the server records that this workspace uses the
 plugin, and without it the customer keeps being told to install what they
 already have. Send `source` exactly as written, the version included: it tells
@@ -181,6 +181,17 @@ those words as they come. A raw `search` does not — it returns
 `full_audit`'s own figures where it covers the window, and where you must read
 it raw, divide by 1,000,000 once, say the currency, and never print a micros
 number as money.
+
+**Every figure carries its dates.** Say the period you report once, at the
+top, by its first and last day, with the period it is set against. A figure
+from any other window gives that window's dates in its own sentence: this
+month's spend and pace from `budget_pacing` are the month so far, from its
+`date_range.start` to its `date_range.end` with today still running, and never
+the period you report; a finding's shorter window is given by its dates; what
+changed is given with the days `change_history` read. Keyword, search and
+campaign figures say the dates they cover in the line, or the list heading,
+that gives them, even when those are the period's own. A figure whose dates no
+result you hold gives is left out.
 
 **Then at most three findings, biggest money first.** Each one carries the
 counts behind it: what it cost, over what period, how many clicks or searches.

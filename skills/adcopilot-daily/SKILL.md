@@ -12,7 +12,7 @@ Two jobs. Work out which one this is before anything else:
 
 A person who opens a finished run and answers the question it ended on is in neither: that is "After the run", at the end.
 
-Only the run sends `source: "claude-scheduled"`. With a person here, in the set-up or after the run, call `get_org_context` with `source: "claude-plugin/0.2.20"`, never `claude-scheduled`, which would tell AdCopilot nobody is there. Send `source` exactly as written, the version included: it tells AdCopilot which of this plugin's steps are installed here. When the answer's `plugin.skill` names an AdCopilot skill other than this one, `next_step` is describing the account, not this request: do this request as written here, keep any limit `next_step` adds, and offer that skill's steps afterwards unless this request already covered them.
+Only the run sends `source: "claude-scheduled"`. With a person here, in the set-up or after the run, call `get_org_context` with `source: "claude-plugin/0.2.21"`, never `claude-scheduled`, which would tell AdCopilot nobody is there. Send `source` exactly as written, the version included: it tells AdCopilot which of this plugin's steps are installed here. When the answer's `plugin.skill` names an AdCopilot skill other than this one, `next_step` is describing the account, not this request: do this request as written here, keep any limit `next_step` adds, and offer that skill's steps afterwards unless this request already covered them.
 
 **The rules this plugin keeps.** Reads run freely. Every change to a Google
 account is proposed first and applied only after the person's yes to it in this
