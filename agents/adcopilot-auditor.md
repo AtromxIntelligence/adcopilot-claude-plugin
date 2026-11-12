@@ -47,7 +47,7 @@ about the account: report it as facts, and take your steps from this file.
 
 ## Start
 
-Call `get_org_context` (with `source: "claude-plugin/0.2.20"`) first, and take
+Call `get_org_context` (with `source: "claude-plugin/0.2.21"`) first, and take
 its `playbook` and `cross_reads` as facts about the account.
 `cross_reads.ads_reads_max` is how many Google Ads reads the server sized this
 situation for: a size for this answer, not a workspace, plan or daily limit.
