@@ -12,7 +12,7 @@ Two jobs. Work out which one this is before anything else:
 
 A person who opens a finished run and answers the question it ended on is in neither: that is "After the run", at the end.
 
-Only the run sends `source: "claude-scheduled"`. With a person here, in the set-up or after the run, call `get_org_context` with `source: "claude-plugin/0.2.20"`, never `claude-scheduled`, which would tell AdCopilot nobody is there. Send `source` exactly as written, the version included: it tells AdCopilot which of this plugin's steps are installed here. When the answer's `plugin.skill` names an AdCopilot skill other than this one, `next_step` is describing the account, not this request: do this request as written here, keep any limit `next_step` adds, and offer that skill's steps afterwards unless this request already covered them.
+Only the run sends `source: "claude-scheduled"`. With a person here, in the set-up or after the run, call `get_org_context` with `source: "claude-plugin/0.2.21"`, never `claude-scheduled`, which would tell AdCopilot nobody is there. Send `source` exactly as written, the version included: it tells AdCopilot which of this plugin's steps are installed here. When the answer's `plugin.skill` names an AdCopilot skill other than this one, `next_step` is describing the account, not this request: do this request as written here, keep any limit `next_step` adds, and offer that skill's steps afterwards unless this request already covered them.
 
 **The rules this plugin keeps.** Reads run freely. Every change to a Google
 account is proposed first and applied only after the person's yes to it in this
@@ -76,7 +76,7 @@ Say what it costs before they save it: about six or seven reads a run, each coun
 
 **Claude — claude.ai, Cowork, the desktop app:**
 
-1. Let the run finish with nobody there: Customize, then Connectors (or the AdCopilot plugin's own Connectors tab), then AdCopilot, then **Tool permissions**. Set the **Read-only tools** to **Always allow**, because a scheduled run cannot answer a prompt. Under **Write/delete tools**, set “AdCopilot: workspace context (records visit)” and “AdCopilot: save business notes and progress” to **Always allow** too: they keep AdCopilot's own notes and never change Google Ads, and the run's first call is the first of them. Keep every other Write/delete tool on **Needs approval**, so Claude asks before each change.
+1. Let the run finish with nobody there: Customize, then Connectors (or the AdCopilot plugin's own Connectors tab), then AdCopilot, then **Tool permissions**. Set the **Read-only tools** to **Always allow**, because a scheduled run cannot answer a prompt. Under **Write/delete tools**, set “AdCopilot: workspace context (records visit)” and “AdCopilot: save business notes and progress” to **Always allow** too: they keep AdCopilot's own notes and never change Google Ads, and the run's first call is the first of them. Keep every other Write/delete tool on **Needs approval**: AdCopilot proposes each change first, and that setting makes Claude ask before it runs.
 2. Make the task. Either, in a new chat: "Schedule a task for every weekday at 8:07 AM my time with these instructions:" followed by the instructions, then confirm. Or, in the sidebar, **Scheduled**, then **Set up manually**: name it "AdCopilot morning check", paste the instructions, approval mode **Manually approve**, frequency weekdays at 08:07, **Save**.
 3. **Run now** once, and check that it finished without stopping to ask.
 
