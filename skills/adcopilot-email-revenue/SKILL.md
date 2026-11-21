@@ -62,7 +62,7 @@ Then:
 Read Klaviyo from Klaviyo's tools and Google Ads from AdCopilot's. The two
 connectors do not talk to each other.
 
-**The Google side.** Call `get_org_context` with `source: "claude-plugin/0.2.20"`
+**The Google side.** Call `get_org_context` with `source: "claude-plugin/0.2.21"`
 first, before any other AdCopilot tool, whenever Google figures are part of the
 answer. Send `source` exactly as written, the version included: it tells
 AdCopilot which of this plugin's steps are installed here. In a scheduled run,
