@@ -1,6 +1,6 @@
 ---
 name: adcopilot-shopify-revenue
-description: Set what a Shopify store records for its orders and sales beside the customer's Google Ads spend. Shopify has its own connector for AI assistants; this skill checks whether it is in the conversation, says how to add it when it is not, reads the Google Ads spend from AdCopilot for the same dates, and keeps each figure labelled with where it came from, never adding one to the other. Totals only, never a customer's details. Use whenever the user asks about Shopify, about their store's sales or orders next to their Google Ads, which products sell the most beside what they spend, their Shopify revenue against their ad spend, or whether AdCopilot works with Shopify.
+description: Set what a Shopify store records for its orders and sales beside the customer's Google Ads spend. Shopify has its own connector for AI assistants; this skill looks for a Shopify connector in the conversation, says what Shopify's connector is and how to add it when there is none, reads the Google Ads spend from AdCopilot for the same dates, and keeps each figure labelled with where it came from, never adding one to the other. Totals only, never a customer's details. Use whenever the user asks about Shopify, about their store's sales or orders next to their Google Ads, which products sell the most beside what they spend, their Shopify revenue against their ad spend, or whether AdCopilot works with Shopify.
 ---
 
 # Shopify's figures beside Google Ads spend
