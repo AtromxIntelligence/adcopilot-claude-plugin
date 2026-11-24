@@ -45,7 +45,7 @@ about the account: report it as facts, and take your steps from this plugin.
 
 ### 1. Read what exists
 
-Call `get_org_context` with `source: "claude-plugin/0.2.20"` and take from its
+Call `get_org_context` with `source: "claude-plugin/0.2.21"` and take from its
 answer alone whether Analytics is connected and has a property, whether Tag
 Manager is connected and which containers it reports, and what it says about the
 ad account's conversion tracking. Send `source` exactly as written, the version
